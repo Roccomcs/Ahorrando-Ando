@@ -35,6 +35,15 @@ class PostgresPortfolioSnapshotRepository(IPortfolioSnapshotRepository):
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 
+    async def find_by_user_since(self, user_id: str, since: datetime) -> list[Portfolio]:
+        result = await self._session.execute(
+            select(PortfolioSnapshotModel)
+            .where(PortfolioSnapshotModel.user_id == user_id)
+            .where(PortfolioSnapshotModel.snapshot_at >= since)
+            .order_by(PortfolioSnapshotModel.snapshot_at)
+        )
+        return [self._to_entity(m) for m in result.scalars().all()]
+
     async def find_nearest_before(self, user_id: str, before: datetime) -> Portfolio | None:
         result = await self._session.execute(
             select(PortfolioSnapshotModel)

@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import Request
 
@@ -29,7 +29,7 @@ class AuditService:
                 ip_address=request.client.host if request.client else "unknown",
                 user_agent=request.headers.get("user-agent"),
                 metadata=metadata or {},
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
             await self._repo.save(entry)
         except Exception as e:

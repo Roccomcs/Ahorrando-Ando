@@ -109,6 +109,20 @@ class AuthController:
         await self._audit.log("logout", request, user_id=current_user.id)
         return {"detail": "Sesión cerrada"}
 
+    async def change_password(self, current_user: User, current_password: str, new_password: str) -> dict:
+        if not _verify_password(current_password, current_user.hashed_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Contraseña actual incorrecta")
+        hashed = _hash_password(new_password)
+        await self._repo.update_password(current_user.id, hashed)
+        return {"detail": "Contraseña actualizada"}
+
+    async def delete_account(self, current_user: User, confirm_email: str) -> dict:
+        if confirm_email.lower() != current_user.email.lower():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email de confirmación no coincide")
+        from application.use_cases.auth.delete_account import DeleteAccount
+        await DeleteAccount(self._session).execute(current_user.id)
+        return {"detail": "Cuenta eliminada"}
+
     async def get_audit_log(self, user_id: str) -> list:
         from application.dtos.auth.audit_log_dto import AuditLogDTO
         from infrastructure.database.postgres.repositories.postgres_audit_log_repository import PostgresAuditLogRepository

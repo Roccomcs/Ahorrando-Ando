@@ -1,6 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { PortfolioSummaryDTO, PortfolioHistoryDTO, IntegrationSummaryDTO } from '@/lib/types'
+import type {
+  PortfolioSummaryDTO,
+  PortfolioHistoryDTO,
+  IntegrationSummaryDTO,
+  PriceAlertDTO,
+  AllocationItem,
+  ROIItem,
+  BenchmarkResult,
+  ProviderPerformanceResponse,
+} from '@/lib/types'
 
 export function usePortfolio() {
   return useQuery<PortfolioSummaryDTO>({
@@ -39,7 +48,7 @@ export function useIntegrations() {
 export function useAddIntegration() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { provider_type: string; credentials: Record<string, string> }) =>
+    mutationFn: (data: { provider_type: string; credentials: Record<string, unknown> }) =>
       api.post('/api/v1/integrations/', data).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['integrations'] })
@@ -56,5 +65,101 @@ export function useDeleteIntegration() {
       qc.invalidateQueries({ queryKey: ['integrations'] })
       qc.invalidateQueries({ queryKey: ['portfolio'] })
     },
+  })
+}
+
+export function useImportBalanzCSV() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return api.post('/api/v1/integrations/balanz/import', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then((r) => r.data)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['integrations'] })
+      qc.invalidateQueries({ queryKey: ['portfolio'] })
+    },
+  })
+}
+
+export function useSyncIntegration() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.post(`/api/v1/integrations/${id}/sync`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['integrations'] })
+      qc.invalidateQueries({ queryKey: ['portfolio'] })
+    },
+  })
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data: { current_password: string; new_password: string }) =>
+      api.post('/api/v1/auth/change-password', data).then((r) => r.data),
+  })
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: (confirm_email: string) =>
+      api.delete(`/api/v1/auth/me?confirm_email=${encodeURIComponent(confirm_email)}`).then((r) => r.data),
+  })
+}
+
+export function useAllocation() {
+  return useQuery<{ total_usd: number; by_asset: AllocationItem[]; by_provider: AllocationItem[]; by_type: AllocationItem[] }>({
+    queryKey: ['allocation'],
+    queryFn: () => api.get('/api/v1/dashboard/allocation').then((r) => r.data),
+  })
+}
+
+export function useROI() {
+  return useQuery<ROIItem[]>({
+    queryKey: ['roi'],
+    queryFn: () => api.get('/api/v1/dashboard/roi').then((r) => r.data),
+  })
+}
+
+export function useBenchmark(asset: string, period: string) {
+  return useQuery<BenchmarkResult>({
+    queryKey: ['benchmark', asset, period],
+    queryFn: () => api.get(`/api/v1/dashboard/benchmark?asset=${asset}&period=${period}`).then((r) => r.data),
+  })
+}
+
+export function useAlerts() {
+  return useQuery<PriceAlertDTO[]>({
+    queryKey: ['alerts'],
+    queryFn: () => api.get('/api/v1/alerts').then((r) => r.data),
+  })
+}
+
+export function useCreateAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { asset_symbol: string; threshold_usd: number; direction: string; note?: string }) =>
+      api.post('/api/v1/alerts', data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+export function useDeleteAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/v1/alerts/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+
+export function useProviderPerformance(days: number = 30) {
+  return useQuery<ProviderPerformanceResponse>({
+    queryKey: ['provider-performance', days],
+    queryFn: () =>
+      api.get(`/api/v1/dashboard/performance?days=${days}`).then((r) => r.data),
   })
 }

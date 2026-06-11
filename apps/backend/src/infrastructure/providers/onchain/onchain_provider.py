@@ -22,6 +22,7 @@ from .onchain_holdings_mapper import OnChainHoldingsMapper
 _NATIVE = {
     "ethereum": ("ETH", "Ethereum", "ethereum"),
     "polygon": ("MATIC", "Polygon", "matic-network"),
+    "bsc": ("BNB", "BNB Chain", "binancecoin"),
 }
 
 
@@ -42,7 +43,11 @@ class OnChainProvider(IFinancialProvider):
         return "onchain"
 
     async def authenticate(self) -> bool:
-        """Valida que la dirección sea una wallet válida (tiene balance o historial)."""
+        """Valida que la dirección y la red sean válidas."""
+        if self._chain not in _NATIVE:
+            raise ValueError(
+                f"Red no soportada: '{self._chain}'. Opciones: ethereum, polygon, bsc."
+            )
         if not self._address.startswith("0x") or len(self._address) != 42:
             return False
         try:

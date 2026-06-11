@@ -21,6 +21,11 @@ class GetPortfolioHistory:
             for s in snapshots
         ]
 
+        # Downsample to max 200 points so the chart stays responsive
+        if len(points) > 200:
+            step = len(points) // 200
+            points = points[::step]
+
         change_pct_24h = None
         change_pct_30d = None
 

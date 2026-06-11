@@ -54,7 +54,10 @@ api.interceptors.response.use(
     } catch (err) {
       processQueue(err, null)
       clearAuthCookies()
-      window.location.href = '/login'
+      // Evitar loop si ya estamos en /login o /register
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+        window.location.href = '/login'
+      }
       return Promise.reject(err)
     } finally {
       isRefreshing = false

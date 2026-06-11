@@ -7,8 +7,8 @@ from domain.entities.user import User
 
 
 def _make_user(email: str = "user@test.com") -> User:
-    from datetime import datetime
-    return User(id="abc", email=email, hashed_password="hashed", created_at=datetime.utcnow())
+    from datetime import datetime, timezone
+    return User(id="abc", email=email, hashed_password="hashed", created_at=datetime.now(timezone.utc))
 
 
 def _verify_ok(plain: str, hashed: str) -> bool:

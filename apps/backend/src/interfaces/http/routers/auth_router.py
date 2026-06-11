@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 
 from application.dtos.auth.audit_log_dto import AuditLogDTO
+from application.dtos.auth.change_password_dto import ChangePasswordDTO
 from application.dtos.auth.login_dto import LoginDTO, RefreshDTO, TokenDTO
 from application.dtos.auth.register_dto import RegisterDTO
 from application.dtos.auth.user_dto import UserDTO
@@ -42,6 +43,24 @@ async def me(
     controller: AuthController = Depends(),
 ):
     return await controller.me(current_user)
+
+
+@router.post("/change-password")
+async def change_password(
+    dto: ChangePasswordDTO,
+    current_user: User = Depends(get_current_user),
+    controller: AuthController = Depends(),
+):
+    return await controller.change_password(current_user, dto.current_password, dto.new_password)
+
+
+@router.delete("/me")
+async def delete_account(
+    confirm_email: str,
+    current_user: User = Depends(get_current_user),
+    controller: AuthController = Depends(),
+):
+    return await controller.delete_account(current_user, confirm_email)
 
 
 @router.get("/audit", response_model=list[AuditLogDTO])

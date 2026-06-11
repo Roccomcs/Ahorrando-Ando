@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { api, setCookie, clearAuthCookies } from './api'
+import { api, setCookie, getCookie, clearAuthCookies } from './api'
 import type { User, TokenPair } from './types'
 
 interface AuthContextValue {
@@ -19,6 +19,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Si no hay token en cookies, no tiene sentido llamar al backend
+    const hasToken = getCookie('access_token') || getCookie('refresh_token')
+    if (!hasToken) {
+      setLoading(false)
+      return
+    }
     api
       .get<User>('/api/v1/auth/me')
       .then((r) => setUser(r.data))

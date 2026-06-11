@@ -31,6 +31,17 @@ class PostgresUserRepository(IUserRepository):
         await self._session.commit()
         return user
 
+    async def find_all(self) -> list[User]:
+        result = await self._session.execute(select(UserModel))
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def update_password(self, user_id: str, hashed_password: str) -> None:
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
+        model = result.scalar_one_or_none()
+        if model:
+            model.hashed_password = hashed_password
+            await self._session.commit()
+
     async def delete(self, user_id: str) -> None:
         result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         model = result.scalar_one_or_none()

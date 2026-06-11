@@ -8,3 +8,6 @@ class ProviderType(str, Enum):
     LEMONCASH = "lemoncash"
     IOL = "iol"
     ONCHAIN = "onchain"
+    SOLANA = "solana"
+    BALANZ_CSV = "balanz_csv"
+    MANUAL = "manual"

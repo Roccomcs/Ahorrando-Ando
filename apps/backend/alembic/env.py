@@ -13,7 +13,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from infrastructure.database.postgres.connection import Base  # noqa: E402
-from infrastructure.database.postgres.models import user_model, integration_model, portfolio_snapshot_model, audit_log_model  # noqa: E402, F401
+from infrastructure.database.postgres.models import user_model, integration_model, portfolio_snapshot_model, audit_log_model, price_alert_model, push_subscription_model  # noqa: E402, F401
 
 config = context.config
 if config.config_file_name is not None:

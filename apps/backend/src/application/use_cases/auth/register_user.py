@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from application.dtos.auth.register_dto import RegisterDTO
 from domain.entities.user import User
@@ -19,6 +19,6 @@ class RegisterUser:
             id=str(uuid.uuid4()),
             email=dto.email,
             hashed_password=hashed_password,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         return await self._repo.save(user)

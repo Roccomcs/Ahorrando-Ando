@@ -40,7 +40,7 @@ Lo que falta para que el backend sea production-safe.
 
 ---
 
-## Fase 7 — Nuevos providers
+## Fase 7 — Nuevos providers ✅ COMPLETA (2026-06-11)
 
 Extender la cobertura financiera argentina.
 
@@ -118,7 +118,7 @@ El dashboard visual. Es la fase más grande del roadmap.
 
 ---
 
-## Fase 9 — Alertas y notificaciones
+## Fase 9 — Alertas y notificaciones ✅ COMPLETA (2026-06-11)
 
 Valor agregado sobre el portfolio estático.
 
@@ -178,7 +178,7 @@ Llevar todo a producción.
 
 ---
 
-## Fase 11 — Analytics avanzados
+## Fase 11 — Analytics avanzados ✅ COMPLETA (2026-06-11)
 
 Una vez que hay datos históricos acumulados.
 

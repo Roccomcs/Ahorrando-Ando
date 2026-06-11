@@ -15,12 +15,13 @@ import { Button } from '@/components/ui/button'
 import { usePortfolioHistory } from '@/hooks/usePortfolio'
 import { clsx } from 'clsx'
 
-type Range = '7d' | '30d' | '90d'
+type Range = '7d' | '30d' | '90d' | '1y'
 
 const RANGES: { label: string; value: Range; days: number }[] = [
   { label: '7 días', value: '7d', days: 7 },
   { label: '30 días', value: '30d', days: 30 },
   { label: '90 días', value: '90d', days: 90 },
+  { label: '1 año', value: '1y', days: 365 },
 ]
 
 function isoFrom(days: number) {

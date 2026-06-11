@@ -14,6 +14,11 @@ class IPortfolioSnapshotRepository(ABC):
     ) -> list[Portfolio]: ...
 
     @abstractmethod
+    async def find_by_user_since(
+        self, user_id: str, since: datetime
+    ) -> list[Portfolio]: ...
+
+    @abstractmethod
     async def find_nearest_before(
         self, user_id: str, before: datetime
     ) -> Portfolio | None:

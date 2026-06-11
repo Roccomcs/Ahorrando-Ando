@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from domain.entities.integration import Integration
 
@@ -15,3 +16,8 @@ class IIntegrationRepository(ABC):
 
     @abstractmethod
     async def delete(self, integration_id: str) -> None: ...
+
+    @abstractmethod
+    async def update_sync_status(
+        self, integration_id: str, error: str | None, synced_at: datetime | None
+    ) -> None: ...

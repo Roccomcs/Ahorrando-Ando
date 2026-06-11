@@ -1,14 +1,16 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from application.dtos.portfolio.portfolio_summary_dto import PortfolioSummaryDTO
 from application.ports.i_cache_service import ICacheService
 from application.ports.i_encryption_service import IEncryptionService
 from application.ports.i_financial_provider import IFinancialProvider
 from domain.entities.portfolio import Portfolio
+from domain.entities.provider_snapshot import ProviderSnapshot
 from domain.repositories.i_integration_repository import IIntegrationRepository
 from domain.repositories.i_portfolio_snapshot_repository import IPortfolioSnapshotRepository
+from domain.repositories.i_provider_snapshot_repository import IProviderSnapshotRepository
 from domain.value_objects.money import Currency, Money
 from infrastructure.providers.registry import ProviderRegistry
 
@@ -23,12 +25,14 @@ class GetAggregatedPortfolio:
         encryption_service: IEncryptionService,
         cache_service: ICacheService,
         provider_registry: ProviderRegistry,
+        provider_snapshot_repo: IProviderSnapshotRepository | None = None,
     ) -> None:
         self._integration_repo = integration_repo
         self._snapshot_repo = snapshot_repo
         self._encryption = encryption_service
         self._cache = cache_service
         self._registry = provider_registry
+        self._provider_snapshot_repo = provider_snapshot_repo
 
     async def execute(self, user_id: str) -> PortfolioSummaryDTO:
         cached = await self._cache.get(f"portfolio:{user_id}")
@@ -44,14 +48,26 @@ class GetAggregatedPortfolio:
                 *[self._fetch_from_provider(i) for i in integrations],
                 return_exceptions=True,
             )
+            sync_now = datetime.now(timezone.utc)
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
-                    logger.warning("Provider %s falló: %s", integrations[i].type, result)
+                    from infrastructure.providers._base.circuit_breaker import CircuitBreakerOpen
+                    if isinstance(result, CircuitBreakerOpen):
+                        logger.warning("Provider %s omitido (circuit breaker abierto)", integrations[i].type)
+                    else:
+                        logger.warning("Provider %s falló: %s", integrations[i].type, result)
+                    await self._integration_repo.update_sync_status(
+                        integrations[i].id, str(result)[:500], None
+                    )
+                else:
+                    await self._integration_repo.update_sync_status(
+                        integrations[i].id, None, sync_now
+                    )
             valid_results = [r for r in results if not isinstance(r, Exception)]
             summary = PortfolioSummaryDTO.aggregate(valid_results)
 
         # Calcular performance comparando con snapshots anteriores
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         snap_24h, snap_30d = await asyncio.gather(
             self._snapshot_repo.find_nearest_before(user_id, now - timedelta(hours=23)),
             self._snapshot_repo.find_nearest_before(user_id, now - timedelta(days=29)),
@@ -62,20 +78,31 @@ class GetAggregatedPortfolio:
         if snap_30d and snap_30d.total_value.amount > 0:
             summary.change_pct_30d = _pct_change(snap_30d.total_value.amount, summary.total_usd)
 
-        # Guardar snapshot del estado actual
+        # Guardar snapshots del estado actual (total + por provider)
         await self._save_snapshot(user_id, summary.total_usd, now)
+        await self._save_provider_snapshots(user_id, summary, now)
 
         await self._cache.set(f"portfolio:{user_id}", summary.model_dump(), ttl=300)
         return summary
 
     async def _fetch_from_provider(self, integration) -> dict:
+        from infrastructure.providers._base.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
+
         credentials = self._encryption.decrypt(integration.encrypted_credentials)
         provider: IFinancialProvider = self._registry.get(integration.type, credentials)
 
-        holdings, performance = await asyncio.gather(
-            provider.get_holdings(),
-            provider.get_performance(),
-        )
+        try:
+            import sentry_sdk
+            sentry_sdk.set_tag("provider", str(integration.type))
+        except ImportError:
+            pass
+
+        cb = CircuitBreaker(integration.type)
+        async with cb:
+            holdings, performance = await asyncio.gather(
+                provider.get_holdings(),
+                provider.get_performance(),
+            )
 
         total_usd = sum(h.current_value.amount for h in holdings)
         balance = Money(amount=total_usd, currency=Currency.USD)
@@ -98,6 +125,27 @@ class GetAggregatedPortfolio:
             await self._snapshot_repo.save(portfolio)
         except Exception as e:
             logger.warning("No se pudo guardar snapshot: %s", e)
+
+
+    async def _save_provider_snapshots(
+        self, user_id: str, summary, now: datetime
+    ) -> None:
+        if not self._provider_snapshot_repo or not summary.providers:
+            return
+        try:
+            snaps = [
+                ProviderSnapshot(
+                    id="",
+                    user_id=user_id,
+                    provider=p.provider,
+                    balance_usd=p.balance_usd,
+                    snapshot_at=now,
+                )
+                for p in summary.providers
+            ]
+            await self._provider_snapshot_repo.save_many(snaps)
+        except Exception as e:
+            logger.warning("No se pudo guardar provider snapshots: %s", e)
 
 
 def _pct_change(old: float, new: float) -> float:

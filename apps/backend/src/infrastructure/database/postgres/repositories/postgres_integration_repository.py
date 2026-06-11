@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +33,8 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             type=integration.type.value,
             encrypted_credentials=integration.encrypted_credentials,
             is_active=integration.is_active,
+            last_error=integration.last_error,
+            last_sync_at=integration.last_sync_at,
         )
         self._session.add(model)
         await self._session.commit()
@@ -45,6 +49,19 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             await self._session.delete(model)
             await self._session.commit()
 
+    async def update_sync_status(
+        self, integration_id: str, error: str | None, synced_at: datetime | None
+    ) -> None:
+        result = await self._session.execute(
+            select(IntegrationModel).where(IntegrationModel.id == integration_id)
+        )
+        model = result.scalar_one_or_none()
+        if model:
+            model.last_error = error
+            model.last_sync_at = synced_at
+            model.is_active = error is None
+            await self._session.commit()
+
     def _to_entity(self, model: IntegrationModel) -> Integration:
         return Integration(
             id=model.id,
@@ -52,4 +69,6 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             type=ProviderType(model.type),
             encrypted_credentials=model.encrypted_credentials,
             is_active=model.is_active,
+            last_error=model.last_error,
+            last_sync_at=model.last_sync_at,
         )

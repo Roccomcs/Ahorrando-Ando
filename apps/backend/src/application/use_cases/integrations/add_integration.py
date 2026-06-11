@@ -22,8 +22,12 @@ class AddIntegration:
 
     async def execute(self, user_id: str, dto: AddIntegrationDTO) -> IntegrationSummaryDTO:
         provider = self._registry.get(dto.provider_type, dto.credentials)
-        if not await provider.authenticate():
-            raise ValueError("Las credenciales no son válidas")
+        try:
+            valid = await provider.authenticate()
+        except Exception as e:
+            raise ValueError(f"No se pudo verificar las credenciales: {e}") from e
+        if not valid:
+            raise ValueError("Las credenciales no son válidas. Verificá tu API key o usuario/contraseña.")
 
         encrypted = self._encryption.encrypt(json.dumps(dto.credentials))
         integration = Integration(

@@ -20,7 +20,11 @@ dependency-injector = "^4.41.0"
 tenacity = "^8.3.0"
 python-dotenv = "^1.0.0"
 sentry-sdk = {version = "^2.0.0", extras = ["fastapi"], optional = true}
+prometheus-fastapi-instrumentator = "^8.0.0"
+python-json-logger = "^4.1.0"
 bcrypt = "^4.0.0"
+apscheduler = "^3.10.0"
+pywebpush = "^2.0.0"
 
 [tool.poetry.extras]
 monitoring = ["sentry-sdk"]
@@ -41,3 +45,6 @@ select = ["E", "F", "I", "N", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: tests que requieren Postgres y Redis reales (excluir con -m 'not integration')",
+]
