@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ahorrando Ando — Tu portfolio financiero unificado</title>
+  <meta name="description" content="Conectá todos tus exchanges, billeteras y brokers en un solo lugar. Seguí tu portfolio en tiempo real." />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ── Navbar ── -->
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+      </svg>
+      Ahorrando Ando
+    </div>
+    <a href="#descarga" class="nav-cta">Descargar</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-badge">
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    Portfolio en tiempo real
+  </div>
+  <h1>Todos tus activos,<br><span>un solo lugar</span></h1>
+  <p>Conectá Binance, MercadoPago, IOL, billeteras crypto y más. Seguí tu patrimonio en tiempo real con gráficos y alertas de precio.</p>
+  <div class="hero-buttons">
+    <a href="#descarga" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar la app
+    </a>
+    <a href="#" id="btn-web" class="btn btn-secondary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      Abrir en el navegador
+    </a>
+  </div>
+
+  <!-- Mockup browser -->
+  <div class="mockup-wrap">
+    <div class="mockup-browser">
+      <div class="browser-bar">
+        <div class="browser-dot"></div>
+        <div class="browser-dot"></div>
+        <div class="browser-dot"></div>
+        <div class="browser-url">ahorrando.app/dashboard</div>
+      </div>
+      <div class="mockup-screen">
+        <!-- Sidebar mock -->
+        <div class="mock-sidebar">
+          <div style="font-size:.7rem;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;padding:.25rem .6rem;margin-bottom:.25rem;">Menú</div>
+          <div class="mock-nav-item active"><div class="mock-nav-dot"></div>Dashboard</div>
+          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Performance</div>
+          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Historial</div>
+          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Analytics</div>
+          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Integraciones</div>
+          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Alertas</div>
+        </div>
+        <!-- Main content mock -->
+        <div class="mock-main">
+          <div class="mock-card">
+            <div class="mock-card-title">Portfolio total</div>
+            <div class="mock-amount">$24.830 <span>▲ 3.4%</span></div>
+            <div class="mock-donut-row" style="margin-top:.75rem;">
+              <div class="mock-donut"></div>
+              <div class="mock-legend">
+                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:var(--indigo)"></div>Binance 40%</div>
+                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:#f59e0b"></div>MercadoPago 25%</div>
+                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:var(--green)"></div>IOL 20%</div>
+                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:#8b5cf6"></div>Otros 15%</div>
+              </div>
+            </div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-card-title">Activos</div>
+            <div class="mock-pills">
+              <div class="mock-pill blue">BTC $12.400</div>
+              <div class="mock-pill green">ETH $5.200</div>
+              <div class="mock-pill amber">ARS $4.100</div>
+              <div class="mock-pill purple">SOL $3.130</div>
+            </div>
+            <div class="mock-bars" style="margin-top:.75rem;">
+              <div class="mock-bar" style="height:30%"></div>
+              <div class="mock-bar" style="height:55%"></div>
+              <div class="mock-bar hi" style="height:80%"></div>
+              <div class="mock-bar" style="height:65%"></div>
+              <div class="mock-bar hi" style="height:90%"></div>
+              <div class="mock-bar" style="height:70%"></div>
+              <div class="mock-bar hi" style="height:85%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section class="features">
+  <div class="section-header">
+    <h2>Todo lo que necesitás para tu portfolio</h2>
+    <p>Diseñado para inversores argentinos que operan en múltiples plataformas.</p>
+  </div>
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h3>Dashboard unificado</h3>
+      <p>Mirá todo tu patrimonio en un solo pantallazo. Donut chart con distribución por provider y variación en 24h y 30 días.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3>Alertas de precio</h3>
+      <p>Creá alertas para cualquier activo. Te notificamos cuando BTC, ETH o tus acciones superen o bajen del precio que configuraste.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <h3>9 integraciones</h3>
+      <p>Binance, MercadoPago, IOL, Bull Market, Lemon Cash, wallets EVM, Solana, Balanz (CSV) y entrada manual.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h3>Historial completo</h3>
+      <p>Gráfico de evolución de tu portfolio en el tiempo. Filtrá por 7 días, 30 días, 90 días o 1 año.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <h3>Analytics avanzado</h3>
+      <p>Distribución por activo, tipo y provider. ROI por posición y comparativa contra BTC y ETH como benchmark.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h3>Tus datos, seguros</h3>
+      <p>Credenciales cifradas con Fernet. Tokens JWT con rotación. Solo lectura de tus exchanges, nunca ejecutamos órdenes.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Descarga ── -->
+<section class="download" id="descarga">
+  <div class="download-inner">
+    <h2>Empezá ahora</h2>
+    <p>Disponible para Android y desde cualquier navegador. iOS próximamente en App Store.</p>
+
+    <div class="download-cards">
+      <div class="download-card">
+        <span class="dc-icon">🤖</span>
+        <h3>Android</h3>
+        <p>Descargá el APK e instalalo directamente en tu celular.</p>
+        <a href="assets/ahorrando-ando.apk" class="btn btn-primary" download>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar APK
+        </a>
+      </div>
+
+      <div class="download-card">
+        <span class="dc-icon">🌐</span>
+        <h3>Navegador</h3>
+        <p>Usala desde cualquier dispositivo sin instalar nada.</p>
+        <a href="#" id="link-web" class="btn btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Abrir web app
+        </a>
+      </div>
+    </div>
+
+    <div class="ios-note">
+      <span class="note-icon">🍎</span>
+      <div>
+        <strong>iPhone / iPad</strong> — Abrí la web app en Safari y seguí estos pasos para agregarla al inicio:
+        <div class="ios-steps">
+          <span>Tocá el botón Compartir (cuadrado con flecha)</span>
+          <span>Seleccioná "Agregar a pantalla de inicio"</span>
+          <span>Confirmá con "Agregar" — listo, aparece como una app</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <p>© 2026 Ahorrando Ando · Hecho en Argentina 🇦🇷</p>
+</footer>
+
+</body>
+</html>

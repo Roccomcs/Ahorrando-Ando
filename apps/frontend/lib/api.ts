@@ -43,7 +43,13 @@ api.interceptors.response.use(
     original._retry = true
     isRefreshing = true
     try {
-      const res = await fetch('/api/auth/refresh', { method: 'POST' })
+      const refreshToken = getCookie('refresh_token')
+      if (!refreshToken) throw new Error('no_refresh_token')
+      const res = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
       if (!res.ok) throw new Error('refresh_failed')
       const data = await res.json()
       const newToken: string = data.access_token
