@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+dist/
+*.egg-info/
+
+# Entornos
+.env
+.env.local
+.env.prod
+.env.production
+*.env
+
+# Node
+node_modules/
+.next/
+out/
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic no commitear versiones autogeneradas sin revisar
+# (comentar esta línea si querés trackear migraciones)
+# apps/backend/alembic/versions/
+
+# Secrets
+acme/
+acme.json

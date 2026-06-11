@@ -1,0 +1,51 @@
+name: CD — VPS
+
+# Workflow alternativo para deploy en VPS propio.
+# Activar cambiando el trigger o deshabilitando cd-railway.yml.
+on:
+  workflow_dispatch:  # Solo manual por ahora
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & push backend image
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker build -t ghcr.io/${{ github.repository }}/backend:${{ github.sha }} apps/backend/
+          docker push ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+
+      - name: Build & push frontend image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
+            -t ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} \
+            apps/frontend/
+          docker push ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/ahorrando-ando
+
+            # Actualizar imagen en compose
+            export BACKEND_IMAGE=ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+            export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            docker compose -f docker-compose.prod.yml pull backend frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend
+
+            # Esperar que el healthcheck pase
+            sleep 10
+            docker compose -f docker-compose.prod.yml ps

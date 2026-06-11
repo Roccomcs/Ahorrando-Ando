@@ -1,0 +1,9 @@
+class ProviderError(Exception):
+    def __init__(self, provider: str, message: str) -> None:
+        self.provider = provider
+        super().__init__(f"[{provider}] {message}")
+
+
+class AuthenticationError(ProviderError): ...
+class RateLimitError(ProviderError): ...
+class ProviderUnavailableError(ProviderError): ...

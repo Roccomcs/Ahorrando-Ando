@@ -1,0 +1,55 @@
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from domain.entities.integration import Integration
+from domain.repositories.i_integration_repository import IIntegrationRepository
+from domain.value_objects.provider_type import ProviderType
+from infrastructure.database.postgres.models.integration_model import IntegrationModel
+
+
+class PostgresIntegrationRepository(IIntegrationRepository):
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def find_by_user(self, user_id: str) -> list[Integration]:
+        result = await self._session.execute(
+            select(IntegrationModel).where(IntegrationModel.user_id == user_id)
+        )
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def find_by_id(self, integration_id: str) -> Integration | None:
+        result = await self._session.execute(
+            select(IntegrationModel).where(IntegrationModel.id == integration_id)
+        )
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def save(self, integration: Integration) -> Integration:
+        model = IntegrationModel(
+            id=integration.id,
+            user_id=integration.user_id,
+            type=integration.type.value,
+            encrypted_credentials=integration.encrypted_credentials,
+            is_active=integration.is_active,
+        )
+        self._session.add(model)
+        await self._session.commit()
+        return integration
+
+    async def delete(self, integration_id: str) -> None:
+        result = await self._session.execute(
+            select(IntegrationModel).where(IntegrationModel.id == integration_id)
+        )
+        model = result.scalar_one_or_none()
+        if model:
+            await self._session.delete(model)
+            await self._session.commit()
+
+    def _to_entity(self, model: IntegrationModel) -> Integration:
+        return Integration(
+            id=model.id,
+            user_id=model.user_id,
+            type=ProviderType(model.type),
+            encrypted_credentials=model.encrypted_credentials,
+            is_active=model.is_active,
+        )
