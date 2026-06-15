@@ -31,6 +31,7 @@ def run_migrations_offline() -> None:
 
 async def run_migrations_online() -> None:
     url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     connectable = create_async_engine(url)
     async with connectable.connect() as connection:
         await connection.run_sync(
