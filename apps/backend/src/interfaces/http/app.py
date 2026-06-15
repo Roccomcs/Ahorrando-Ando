@@ -58,6 +58,11 @@ def create_app() -> FastAPI:
     else:
         _origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
+    add_error_handlers(app)
+
+    from interfaces.http.middlewares.rate_limiter import RateLimiterMiddleware
+    app.add_middleware(RateLimiterMiddleware)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_origins,
@@ -65,11 +70,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    add_error_handlers(app)
-
-    from interfaces.http.middlewares.rate_limiter import RateLimiterMiddleware
-    app.add_middleware(RateLimiterMiddleware)
 
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/api/v1")
