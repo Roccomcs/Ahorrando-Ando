@@ -14,9 +14,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_index("ix_integrations_user_id", "integrations", ["user_id"])
-    op.create_index("ix_price_alerts_user_id", "price_alerts", ["user_id"])
-    op.create_index("ix_price_alerts_is_active", "price_alerts", ["is_active"])
+    op.execute("CREATE INDEX IF NOT EXISTS ix_integrations_user_id ON integrations (user_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_price_alerts_user_id ON price_alerts (user_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_price_alerts_is_active ON price_alerts (is_active)")
 
 
 def downgrade() -> None:
