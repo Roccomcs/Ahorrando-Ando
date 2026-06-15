@@ -6,7 +6,7 @@ authors = ["Rocco Moreno"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.111.0"
+fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.29.0"}
 pydantic = {extras = ["email"], version = "^2.7.0"}
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
@@ -20,7 +20,6 @@ dependency-injector = "^4.41.0"
 tenacity = "^8.3.0"
 python-dotenv = "^1.0.0"
 sentry-sdk = {version = "^2.0.0", extras = ["fastapi"], optional = true}
-prometheus-fastapi-instrumentator = "^8.0.0"
 python-json-logger = "^4.1.0"
 bcrypt = "^4.0.0"
 apscheduler = "^3.10.0"
