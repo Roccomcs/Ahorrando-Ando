@@ -33,6 +33,8 @@ def add_error_handlers(app: FastAPI) -> None:
     _init_sentry()
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):
+        # Loguear para visibilidad server-side aunque sea un error controlado
+        logger.warning("ValueError en %s %s: %s", request.method, request.url.path, exc)
         return JSONResponse(status_code=400, content={"detail": str(exc)})
 
     @app.exception_handler(ProviderError)

@@ -37,9 +37,17 @@ async def import_balanz_csv(
     """Importa posiciones desde un CSV exportado de Balanz (o formato compatible)."""
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo debe ser un CSV.")
-    content = await file.read()
-    if len(content) > 5 * 1024 * 1024:  # 5 MB max
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo es demasiado grande (máx 5 MB).")
+
+    # Leer en chunks para no agotar memoria antes de rechazar archivos grandes
+    _MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+    chunks: list[bytes] = []
+    size = 0
+    while chunk := await file.read(64 * 1024):  # 64 KB por vez
+        size += len(chunk)
+        if size > _MAX_SIZE:
+            raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El archivo es demasiado grande (máx 5 MB).")
+        chunks.append(chunk)
+    content = b"".join(chunks)
     try:
         return await controller.import_balanz_csv(user_id=current_user.id, csv_bytes=content)
     except ValueError as e:

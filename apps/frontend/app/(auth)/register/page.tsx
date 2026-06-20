@@ -21,7 +21,7 @@ export default function RegisterPage() {
     e.preventDefault()
     const errs: Record<string, string> = {}
     if (!/.+@.+\..+/.test(email)) errs.email = 'Ingresá un email válido'
-    if (password.length < 8) errs.password = 'Mínimo 8 caracteres'
+    if (password.length < 12) errs.password = 'Mínimo 12 caracteres'
     if (password2 !== password) errs.password2 = 'Las contraseñas no coinciden'
     setErrors(errs)
     if (Object.keys(errs).length) return
@@ -76,7 +76,7 @@ export default function RegisterPage() {
           </p>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} error={errors.email} autoComplete="email" required />
-            <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} error={errors.password} hint={!errors.password ? 'Mínimo 8 caracteres' : undefined} autoComplete="new-password" required />
+            <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} error={errors.password} hint={!errors.password ? 'Mínimo 12 caracteres, con letras y números' : undefined} autoComplete="new-password" required />
             <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2} onChange={e => setPassword2(e.target.value)} error={errors.password2} autoComplete="new-password" required />
             {errors.form && (
               <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
