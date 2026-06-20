@@ -40,7 +40,7 @@ export default function RegisterPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 28, textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 28, textDecoration: 'none', color: 'inherit' }}>
           <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
             <path d="M20 4 A16 16 0 0 1 36 20" stroke="#41A4EF" strokeWidth="4" strokeLinecap="round"/>
             <path d="M36 20 A16 16 0 0 1 20 36" stroke="#E8C268" strokeWidth="4" strokeLinecap="round"/>
@@ -49,7 +49,7 @@ export default function RegisterPage() {
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', fontSize: 22 }}>
             Ahorrando <span style={{ color: 'var(--text-3)' }}>Ando</span>
           </span>
-        </a>
+        </Link>
 
         <Card padding="lg" raised>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px' }}>
@@ -76,6 +76,9 @@ export default function RegisterPage() {
         <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
           ¿Ya tenés cuenta?{' '}
           <Link href="/login" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Iniciá sesión</Link>
+        </p>
+        <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-3)', marginTop: 10 }}>
+          <Link href="/" style={{ color: 'var(--text-3)' }}>← Volver al inicio</Link>
         </p>
       </div>
     </div>
