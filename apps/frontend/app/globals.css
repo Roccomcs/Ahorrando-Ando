@@ -49,40 +49,40 @@
   --chart-8: #B5D85A;
   --chart-9: #8A97AB;
 
-  /* Superficies */
-  --surface-canvas: var(--carbon-900);
-  --surface-raised: var(--carbon-850);
-  --surface-card:   var(--carbon-800);
-  --surface-hover:  var(--carbon-700);
-  --surface-inset:  var(--carbon-950);
+  /* Superficies — modo claro (default) */
+  --surface-canvas: #F4F7FB;
+  --surface-raised: #FFFFFF;
+  --surface-card:   #FFFFFF;
+  --surface-hover:  #EDF2F8;
+  --surface-inset:  #EAEFF5;
 
   /* Texto */
-  --text-1: #EDF1F7;
-  --text-2: var(--carbon-300);
-  --text-3: var(--carbon-400);
-  --text-inverse: #07101A;
-  --text-accent: var(--cielo-400);
+  --text-1: #0E1622;
+  --text-2: #44516A;
+  --text-3: #6B7A90;
+  --text-inverse: #FFFFFF;
+  --text-accent: var(--cielo-700);
 
   /* Bordes */
-  --border-1: rgba(148, 170, 200, 0.10);
-  --border-2: rgba(148, 170, 200, 0.20);
-  --border-focus: var(--cielo-500);
+  --border-1: rgba(20, 44, 80, 0.10);
+  --border-2: rgba(20, 44, 80, 0.16);
+  --border-focus: var(--cielo-600);
 
   /* Estados financieros */
-  --up:      var(--verde-400);
-  --up-bg:   rgba(61, 217, 147, 0.10);
-  --down:    var(--rojo-400);
-  --down-bg: rgba(244, 98, 110, 0.10);
-  --flat:    var(--carbon-300);
-  --flat-bg: rgba(132, 146, 166, 0.10);
+  --up:      var(--verde-500);
+  --up-bg:   rgba(33, 184, 115, 0.12);
+  --down:    var(--rojo-500);
+  --down-bg: rgba(224, 69, 83, 0.12);
+  --flat:    var(--carbon-400);
+  --flat-bg: rgba(107, 122, 144, 0.10);
   --warn:    var(--ambar-400);
   --warn-bg: rgba(245, 184, 77, 0.12);
 
   /* Acción */
-  --action-primary:       var(--cielo-500);
-  --action-primary-hover: var(--cielo-400);
-  --accent-bg: rgba(65, 164, 239, 0.12);
-  --gold-bg:   rgba(232, 194, 104, 0.12);
+  --action-primary:       var(--cielo-600);
+  --action-primary-hover: var(--cielo-700);
+  --accent-bg: rgba(42, 139, 217, 0.10);
+  --gold-bg:   rgba(217, 169, 63, 0.14);
 
   /* Tipografía */
   --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
@@ -117,8 +117,8 @@
   --space-12: 48px; --space-16: 64px;
   --radius-xs: 6px; --radius-sm: 8px; --radius-md: 12px;
   --radius-lg: 16px; --radius-xl: 20px; --radius-full: 999px;
-  --elev-card: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --shadow-overlay: 0 24px 64px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35);
+  --elev-card: 0 1px 3px rgba(20, 44, 80, 0.08), 0 1px 2px rgba(20, 44, 80, 0.05);
+  --shadow-overlay: 0 24px 64px rgba(20, 44, 80, 0.14), 0 4px 16px rgba(20, 44, 80, 0.08);
   --ring-focus: 0 0 0 3px rgba(65, 164, 239, 0.30);
   --sidebar-width: 248px;
   --content-max: 1120px;
@@ -130,6 +130,36 @@
   --dur-base: 220ms;
   --dur-slow: 380ms;
 }
+
+/* ── Modo oscuro ────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --surface-canvas: var(--carbon-900);
+  --surface-raised: var(--carbon-850);
+  --surface-card:   var(--carbon-800);
+  --surface-hover:  var(--carbon-700);
+  --surface-inset:  var(--carbon-950);
+  --text-1: #EDF1F7;
+  --text-2: var(--carbon-300);
+  --text-3: var(--carbon-400);
+  --text-inverse: #07101A;
+  --text-accent: var(--cielo-400);
+  --border-1: rgba(148, 170, 200, 0.10);
+  --border-2: rgba(148, 170, 200, 0.20);
+  --border-focus: var(--cielo-500);
+  --up:      var(--verde-400);
+  --up-bg:   rgba(61, 217, 147, 0.10);
+  --down:    var(--rojo-400);
+  --down-bg: rgba(244, 98, 110, 0.10);
+  --flat:    var(--carbon-300);
+  --flat-bg: rgba(132, 146, 166, 0.10);
+  --action-primary:       var(--cielo-500);
+  --action-primary-hover: var(--cielo-400);
+  --accent-bg: rgba(65, 164, 239, 0.12);
+  --gold-bg:   rgba(232, 194, 104, 0.12);
+  --elev-card: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow-overlay: 0 24px 64px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--carbon-600); }
 
 /* ── Reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -149,7 +179,7 @@ a { color: var(--text-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button, input, select, textarea { font-family: inherit; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: var(--carbon-600); border-radius: 5px; border: 2px solid var(--surface-canvas); }
+::-webkit-scrollbar-thumb { background: var(--carbon-200); border-radius: 5px; border: 2px solid var(--surface-canvas); }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ── Utilidades ─────────────────────────────────────────────── */

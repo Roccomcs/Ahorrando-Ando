@@ -64,7 +64,7 @@
   font-stretch: 120%; letter-spacing: -0.025em; line-height: 1.02;
   font-size: clamp(40px, 6vw, 68px); text-wrap: balance; color: var(--text-1);
 }
-.title em { font-style: normal; color: var(--cielo-400); }
+.title em { font-style: normal; color: var(--text-accent); }
 .tagline {
   margin: var(--space-6) 0 0; font-size: var(--text-xl); color: var(--text-1);
   font-weight: var(--weight-medium); letter-spacing: var(--tracking-tight);

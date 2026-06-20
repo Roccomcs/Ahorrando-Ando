@@ -6,14 +6,13 @@ import Image from 'next/image'
 import s from './page.module.css'
 
 function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
   useEffect(() => {
     const saved = localStorage.getItem('aa-theme')
-    if (saved === 'light' || saved === 'dark') {
-      setTheme(saved)
-      document.documentElement.setAttribute('data-theme', saved)
-    }
+    const active = (saved === 'light' || saved === 'dark') ? saved : 'light'
+    setTheme(active)
+    document.documentElement.setAttribute('data-theme', active)
   }, [])
 
   function toggle() {
