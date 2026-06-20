@@ -300,6 +300,29 @@ button, input, select, textarea { font-family: inherit; }
 .aa-side__item--on { background: var(--accent-bg); color: var(--text-accent); }
 .aa-side__user { border-top: 1px solid var(--border-1); padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
 .aa-side__email { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.aa-side__hamburger { display: none; }
+.aa-side__overlay { display: none; }
+
+@media (max-width: 768px) {
+  .aa-main { padding: 72px 16px 28px !important; }
+  .aa-side {
+    position: fixed; inset: 0 auto 0 0; z-index: 200;
+    transform: translateX(-100%); transition: transform 0.25s var(--ease-out);
+    height: 100dvh;
+  }
+  .aa-side--open { transform: translateX(0); box-shadow: var(--shadow-overlay); }
+  .aa-side__hamburger {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; top: 14px; left: 14px; z-index: 201;
+    width: 40px; height: 40px; border-radius: var(--radius-md);
+    background: var(--surface-raised); border: 1px solid var(--border-1);
+    color: var(--text-1); cursor: pointer; box-shadow: var(--shadow-sm);
+  }
+  .aa-side__overlay {
+    display: block; position: fixed; inset: 0; z-index: 199;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);
+  }
+}
 
 /* ── Dialog ─────────────────────────────────────────────────── */
 .aa-dialog-backdrop { position: fixed; inset: 0; background: rgba(6,8,12,0.65); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; animation: aa-fade var(--dur-base) var(--ease-out); }

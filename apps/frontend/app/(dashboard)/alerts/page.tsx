@@ -6,9 +6,9 @@ import { Button } from '@/components/ds/Button'
 import { Input } from '@/components/ds/Input'
 import { EmptyState } from '@/components/ds/EmptyState'
 import { useAlerts, useCreateAlert, useDeleteAlert } from '@/hooks/usePortfolio'
+import { api } from '@/lib/api'
 import type { PriceAlertDTO } from '@/lib/types'
 
-const SUPPORTED_SYMBOLS = ['BTC', 'ETH', 'USDT', 'USDC', 'BNB', 'SOL', 'ADA', 'MATIC', 'DOT', 'AVAX', 'LINK', 'LTC', 'XRP', 'DOGE']
 
 function BellIcon({ size = 20 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -72,7 +72,7 @@ export default function AlertsPage() {
   const deleteMutation = useDeleteAlert()
 
   const [showModal, setShowModal] = useState(false)
-  const [symbol, setSymbol] = useState('BTC')
+  const [symbol, setSymbol] = useState('')
   const [threshold, setThreshold] = useState('')
   const [direction, setDirection] = useState<'above' | 'below'>('above')
   const [note, setNote] = useState('')
@@ -92,20 +92,18 @@ export default function AlertsPage() {
     if (!vapidKey) return
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey })
     const json = sub.toJSON()
-    await fetch('/api/v1/alerts/push/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: json.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth }),
-    })
+    await api.post('/api/v1/alerts/push/subscribe', { endpoint: json.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth })
     setPushEnabled(true)
   }
 
   async function handleCreate() {
     setError('')
+    const sym = symbol.trim().toUpperCase()
+    if (!sym) { setError('Ingresá un símbolo de activo'); return }
     const val = parseFloat(threshold)
     if (isNaN(val) || val <= 0) { setError('Ingresá un umbral válido mayor a 0'); return }
     try {
-      await createMutation.mutateAsync({ asset_symbol: symbol, threshold_usd: val, direction, note: note || undefined })
+      await createMutation.mutateAsync({ asset_symbol: sym, threshold_usd: val, direction, note: note || undefined })
       setShowModal(false); setThreshold(''); setNote('')
     } catch {
       setError('Error al crear la alerta. Intentá de nuevo.')
@@ -159,12 +157,7 @@ export default function AlertsPage() {
           <Card padding="lg" raised style={{ width: '100%', maxWidth: 380 }}>
             <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: '0 0 16px' }}>Nueva alerta</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>Activo</label>
-                <select value={symbol} onChange={e => setSymbol(e.target.value)} className="aa-select" style={{ width: '100%' }}>
-                  {SUPPORTED_SYMBOLS.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
+              <Input label="Activo" placeholder="ej: BTC, ETH, AAPL" value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} />
               <div>
                 <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>Condición</label>
                 <div style={{ display: 'flex', gap: 8 }}>

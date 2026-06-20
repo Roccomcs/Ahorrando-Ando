@@ -368,6 +368,7 @@ export default function IntegrationsPage() {
   const deleteMutation = useDeleteIntegration()
   const syncMutation = useSyncIntegration()
   const [activeWizard, setActiveWizard] = useState<ProviderConfig | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const connectedTypes = new Set(integrations?.map(i => i.provider_type) ?? [])
 
@@ -413,7 +414,7 @@ export default function IntegrationsPage() {
                           <RefreshIcon />
                         </button>
                       )}
-                      <button onClick={() => deleteMutation.mutate(item.id)}
+                      <button onClick={() => setConfirmDeleteId(item.id)}
                         style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--down)', display: 'flex' }}>
                         <TrashIcon />
                       </button>
@@ -463,6 +464,27 @@ export default function IntegrationsPage() {
       </div>
 
       {activeWizard && <WizardModal config={activeWizard} onClose={() => setActiveWizard(null)} onSuccess={() => setActiveWizard(null)} />}
+
+      {confirmDeleteId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', padding: 24 }}>
+          <Card padding="lg" raised style={{ width: '100%', maxWidth: 360 }}>
+            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: '0 0 8px' }}>¿Eliminar integración?</h2>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: '0 0 20px' }}>
+              Se eliminarán las credenciales almacenadas. Podés volver a conectar cuando quieras.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+              <Button
+                variant="danger"
+                onClick={() => { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) }}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
       <style>{`@keyframes aa-pulse { from { opacity: 0.4 } to { opacity: 0.9 } }`}</style>
     </div>
   )

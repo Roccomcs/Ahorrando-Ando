@@ -16,7 +16,7 @@ const CHART_COLORS = ['#63B8F4','#E8C268','#3DD993','#9D8CFF','#45D4C8','#F08FB7
 
 const PROVIDER_LABELS: Record<string, string> = {
   binance: 'Binance', mercadopago: 'Mercado Pago', bullmarket: 'Bull Market',
-  lemoncash: 'Lemon', iol: 'IOL', onchain: 'Wallet EVM',
+  bullmarket_csv: 'Bull Market', lemoncash: 'Lemon', iol: 'IOL', onchain: 'Wallet EVM',
   solana: 'Solana', balanz_csv: 'Balanz', manual: 'Manual',
 }
 

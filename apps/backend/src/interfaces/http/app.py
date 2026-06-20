@@ -45,9 +45,21 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Ahorrando Ando API", version="0.1.0", lifespan=_lifespan)
 
     # ── Prometheus metrics ─────────────────────────────────────────────────────
+    _metrics_token = os.getenv("METRICS_SECRET_TOKEN", "")
     try:
         from prometheus_fastapi_instrumentator import Instrumentator
-        Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+        from starlette.responses import Response as _Resp
+
+        _inst = Instrumentator().instrument(app)
+
+        if _metrics_token:
+            from fastapi import Depends, HTTPException, Header as _Header
+            async def _metrics_auth(x_metrics_token: str = _Header(default="")):
+                if x_metrics_token != _metrics_token:
+                    raise HTTPException(status_code=403, detail="Forbidden")
+            _inst.expose(app, endpoint="/metrics", include_in_schema=False, dependencies=[Depends(_metrics_auth)])
+        else:
+            _inst.expose(app, endpoint="/metrics", include_in_schema=False)
     except ImportError:
         pass
 

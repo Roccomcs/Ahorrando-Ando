@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 
@@ -22,6 +23,8 @@ const ICON_PATHS: Record<string, string> = {
   'bell': 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
   'settings': 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z',
   'log-out': 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  'menu': 'M3 12h18M3 6h18M3 18h18',
+  'x': 'M18 6 6 18M6 6l12 12',
 }
 
 function NavIcon({ name, size = 18 }: { name: string; size?: number }) {
@@ -37,39 +40,70 @@ function NavIcon({ name, size = 18 }: { name: string; size?: number }) {
 export function Sidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const [open, setOpen] = useState(false)
+
+  // Close on route change (navigation)
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  // Prevent body scroll when open on mobile
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden'
+    else document.body.style.overflow = ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   return (
-    <aside className="aa-side">
-      <div className="aa-side__brand">
-        <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
-          <path d="M20 4 A16 16 0 0 1 36 20" stroke="#41A4EF" strokeWidth="4" strokeLinecap="round"/>
-          <path d="M36 20 A16 16 0 0 1 20 36" stroke="#E8C268" strokeWidth="4" strokeLinecap="round"/>
-          <path d="M20 36 A16 16 0 0 1 4 20 A16 16 0 0 1 20 4" stroke="#3DD993" strokeWidth="4" strokeLinecap="round"/>
-        </svg>
-        <div className="aa-side__wm">Ahorrando<br /><span>Ando</span></div>
-      </div>
-      <nav className="aa-side__nav">
-        {NAV.map(item => (
-          <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-            <button
-              className={`aa-side__item${pathname.startsWith(item.href) ? ' aa-side__item--on' : ''}`}
-            >
-              <NavIcon name={item.icon} size={18} />
-              {item.label}
-            </button>
-          </Link>
-        ))}
-      </nav>
-      <div className="aa-side__user">
-        <span className="aa-side__email" title={user?.email}>{user?.email}</span>
-        <button
-          className="aa-icon-btn aa-icon-btn--sm"
-          onClick={logout}
-          title="Cerrar sesión"
-        >
-          <NavIcon name="log-out" size={15} />
-        </button>
-      </div>
-    </aside>
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        className="aa-side__hamburger"
+        onClick={() => setOpen(o => !o)}
+        aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+      >
+        <NavIcon name={open ? 'x' : 'menu'} size={20} />
+      </button>
+
+      {/* Overlay backdrop on mobile */}
+      {open && (
+        <div
+          className="aa-side__overlay"
+          onClick={() => setOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside className={`aa-side${open ? ' aa-side--open' : ''}`}>
+        <div className="aa-side__brand">
+          <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+            <path d="M20 4 A16 16 0 0 1 36 20" stroke="#41A4EF" strokeWidth="4" strokeLinecap="round"/>
+            <path d="M36 20 A16 16 0 0 1 20 36" stroke="#E8C268" strokeWidth="4" strokeLinecap="round"/>
+            <path d="M20 36 A16 16 0 0 1 4 20 A16 16 0 0 1 20 4" stroke="#3DD993" strokeWidth="4" strokeLinecap="round"/>
+          </svg>
+          <div className="aa-side__wm">Ahorrando<br /><span>Ando</span></div>
+        </div>
+        <nav className="aa-side__nav">
+          {NAV.map(item => (
+            <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
+              <button
+                className={`aa-side__item${pathname.startsWith(item.href) ? ' aa-side__item--on' : ''}`}
+              >
+                <NavIcon name={item.icon} size={18} />
+                {item.label}
+              </button>
+            </Link>
+          ))}
+        </nav>
+        <div className="aa-side__user">
+          <span className="aa-side__email" title={user?.email}>{user?.email}</span>
+          <button
+            className="aa-icon-btn aa-icon-btn--sm"
+            onClick={logout}
+            title="Cerrar sesión"
+          >
+            <NavIcon name="log-out" size={15} />
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }

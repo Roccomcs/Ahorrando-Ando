@@ -8,7 +8,7 @@ import { formatMoney } from '@/components/ds/Stat'
 import type { ProviderPerformanceItem } from '@/lib/types'
 
 const PROVIDER_COLORS: Record<string, string> = {
-  binance: '#E8C268', mercadopago: '#63B8F4', bullmarket: '#3DD993',
+  binance: '#E8C268', mercadopago: '#63B8F4', bullmarket: '#3DD993', bullmarket_csv: '#3DD993',
   lemoncash: '#45D4C8', iol: '#9D8CFF', onchain: '#F08FB7',
   solana: '#B5D85A', balanz_csv: '#F4626E', manual: '#8A97AB',
 }

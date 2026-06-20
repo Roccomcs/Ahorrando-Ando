@@ -19,7 +19,7 @@ async def int_client():
 async def test_full_auth_flow(int_client):
     """Register → login → get /auth/me → logout → token blacklisted."""
     email = "integration_test@test.com"
-    password = "pass1234"
+    password = "TestPass1234"
 
     # 1. Register
     r = await int_client.post("/api/v1/auth/register", json={"email": email, "password": password})
@@ -49,7 +49,7 @@ async def test_full_auth_flow(int_client):
 @pytest.mark.asyncio
 async def test_duplicate_register_returns_error(int_client):
     email = "duplicate_int@test.com"
-    payload = {"email": email, "password": "pass1234"}
+    payload = {"email": email, "password": "TestPass1234"}
     await int_client.post("/api/v1/auth/register", json=payload)
     r = await int_client.post("/api/v1/auth/register", json=payload)
     assert r.status_code in (400, 409, 422)

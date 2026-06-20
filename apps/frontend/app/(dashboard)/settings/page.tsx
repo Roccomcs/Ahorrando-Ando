@@ -48,7 +48,7 @@ export default function SettingsPage() {
     setPwError('')
     setPwSuccess(false)
     if (pwForm.new_password !== pwForm.confirm) { setPwError('Las contraseñas nuevas no coinciden.'); return }
-    if (pwForm.new_password.length < 8) { setPwError('Mínimo 8 caracteres.'); return }
+    if (pwForm.new_password.length < 12) { setPwError('Mínimo 12 caracteres, con letras y números.'); return }
     try {
       await changePw.mutateAsync({ current_password: pwForm.current_password, new_password: pwForm.new_password })
       setPwSuccess(true)
