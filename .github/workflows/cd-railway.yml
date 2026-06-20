@@ -27,6 +27,21 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
+      - name: Wait for backend healthcheck
+        run: |
+          echo "Esperando que el backend esté saludable..."
+          for i in $(seq 1 24); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.BACKEND_HEALTH_URL }}/health/ready" || echo "000")
+            echo "Intento $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend saludable."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Backend no respondió después de 240s. Revisar Railway."
+          exit 1
+
   deploy-frontend:
     name: Deploy frontend → Railway
     runs-on: ubuntu-latest
@@ -44,3 +59,18 @@ jobs:
         working-directory: apps/frontend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Wait for frontend healthcheck
+        run: |
+          echo "Esperando que el frontend esté saludable..."
+          for i in $(seq 1 18); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.FRONTEND_HEALTH_URL }}" || echo "000")
+            echo "Intento $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Frontend saludable."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Frontend no respondió después de 180s. Revisar Railway."
+          exit 1

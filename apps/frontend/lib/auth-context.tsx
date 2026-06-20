@@ -20,6 +20,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+
     // Al cargar la app, intentar renovar el access token usando el refresh_token httpOnly
     // Si no hay refresh_token (cookie), la ruta devuelve 401 y no hay sesión.
     fetch('/api/auth/refresh', { method: 'POST' })

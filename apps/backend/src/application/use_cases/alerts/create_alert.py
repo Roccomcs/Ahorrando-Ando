@@ -15,6 +15,9 @@ class CreateAlertDTO:
     note: str | None = None
 
 
+MAX_ALERTS_PER_USER = 50
+
+
 class CreateAlert:
     def __init__(self, repo: IPriceAlertRepository) -> None:
         self._repo = repo
@@ -24,6 +27,11 @@ class CreateAlert:
             raise ValueError("El umbral debe ser mayor a cero")
         if dto.direction not in (AlertDirection.ABOVE, AlertDirection.BELOW):
             raise ValueError("direction debe ser 'above' o 'below'")
+
+        existing = await self._repo.find_by_user(dto.user_id)
+        active = [a for a in existing if a.is_active and not a.triggered_at]
+        if len(active) >= MAX_ALERTS_PER_USER:
+            raise ValueError(f"Límite de {MAX_ALERTS_PER_USER} alertas activas por usuario alcanzado")
 
         alert = PriceAlert(
             id=str(uuid.uuid4()),

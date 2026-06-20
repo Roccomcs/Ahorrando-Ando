@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend — lint + tests
+    name: Backend — lint + unit tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,6 +41,73 @@ jobs:
           poetry run pytest tests/unit/ -q --tb=short
         env:
           PYTHONPATH: src
+
+  backend-integration:
+    name: Backend — integration tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: ahorrando_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pip install poetry==1.8.3
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: apps/backend/.venv
+          key: backend-venv-${{ hashFiles('apps/backend/poetry.lock') }}
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run migrations
+        run: poetry run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/ahorrando_test
+
+      - name: Integration tests
+        run: |
+          poetry run pytest tests/integration/ -q --tb=short
+        env:
+          PYTHONPATH: src
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/ahorrando_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret-for-ci-only-not-production
+          ENV: development
+          ALLOWED_ORIGINS: http://localhost:3000
 
   frontend:
     name: Frontend — typecheck + build

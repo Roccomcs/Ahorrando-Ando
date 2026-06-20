@@ -170,7 +170,12 @@ export default function DashboardPage() {
   if (error) {
     return (
       <Card padding="lg">
-        <span style={{ color: 'var(--down)', fontSize: 'var(--text-sm)' }}>Error al cargar el portfolio. Verificá tu conexión.</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '16px 0', textAlign: 'center' }}>
+          <span style={{ color: 'var(--down)', fontSize: 'var(--text-sm)' }}>Error al cargar el portfolio. Verificá tu conexión.</span>
+          <Button size="sm" variant="secondary" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
+            {refresh.isPending ? 'Reintentando…' : 'Reintentar'}
+          </Button>
+        </div>
       </Card>
     )
   }

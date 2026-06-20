@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ds/Card'
 import { Delta } from '@/components/ds/Delta'
-import { usePortfolioHistory } from '@/hooks/usePortfolio'
+import { usePortfolioHistory, usePortfolio } from '@/hooks/usePortfolio'
 import { formatMoney } from '@/components/ds/Stat'
 
 type Range = '7d' | '30d' | '90d' | '1y'
@@ -111,8 +112,10 @@ export default function HistoryPage() {
   const [range, setRange] = useState<Range>('30d')
   const rangeConfig = RANGES.find(r => r.value === range)!
   const { data, isLoading } = usePortfolioHistory(isoFrom(rangeConfig.days))
+  const { data: portfolio } = usePortfolio()
 
   const points = data?.points.map(p => ({ date: p.snapshot_at, usd: p.total_usd })) ?? []
+  const noIntegrations = !portfolio || portfolio.providers.length === 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -133,6 +136,17 @@ export default function HistoryPage() {
           </button>
         ))}
       </div>
+
+      {noIntegrations && (
+        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>
+            El historial se empieza a acumular cuando tenés al menos una integración conectada.
+          </p>
+          <Link href="/integrations" style={{ textDecoration: 'none', whiteSpace: 'nowrap', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-accent)' }}>
+            Conectar cuenta →
+          </Link>
+        </div>
+      )}
 
       <Card padding="md">
         {isLoading
