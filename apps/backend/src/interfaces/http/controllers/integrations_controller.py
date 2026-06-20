@@ -5,6 +5,7 @@ from application.dtos.integration.add_integration_dto import AddIntegrationDTO
 from application.dtos.integration.integration_summary_dto import IntegrationSummaryDTO
 from application.use_cases.integrations.add_integration import AddIntegration
 from application.use_cases.integrations.import_balanz_csv import ImportBalanzCSV
+from application.use_cases.integrations.import_bullmarket_csv import ImportBullMarketCSV
 from application.use_cases.integrations.list_user_integrations import ListUserIntegrations
 from application.use_cases.integrations.remove_integration import RemoveIntegration
 from infrastructure.cache.redis_cache_service import RedisCacheService
@@ -32,6 +33,9 @@ class IntegrationsController:
 
     async def import_balanz_csv(self, user_id: str, csv_bytes: bytes) -> IntegrationSummaryDTO:
         return await ImportBalanzCSV(self._repo, self._encryption).execute(user_id, csv_bytes)
+
+    async def import_bullmarket_csv(self, user_id: str, csv_bytes: bytes) -> IntegrationSummaryDTO:
+        return await ImportBullMarketCSV(self._repo, self._encryption).execute(user_id, csv_bytes)
 
     async def sync_integration(self, user_id: str, integration_id: str) -> dict:
         integration = await self._repo.find_by_id(integration_id)

@@ -54,6 +54,32 @@ async def import_balanz_csv(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.post("/bullmarket/import", response_model=IntegrationSummaryDTO, status_code=status.HTTP_201_CREATED)
+async def import_bullmarket_csv(
+    file: UploadFile,
+    current_user=Depends(get_current_user),
+    controller: IntegrationsController = Depends(),
+):
+    """Importa posiciones desde un CSV exportado de Bull Market Brokers."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo debe ser un CSV.")
+
+    _MAX_SIZE = 5 * 1024 * 1024
+    chunks: list[bytes] = []
+    size = 0
+    while chunk := await file.read(64 * 1024):
+        size += len(chunk)
+        if size > _MAX_SIZE:
+            raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El archivo es demasiado grande (máx 5 MB).")
+        chunks.append(chunk)
+    content = b"".join(chunks)
+
+    try:
+        return await controller.import_bullmarket_csv(user_id=current_user.id, csv_bytes=content)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.post("/{integration_id}/sync")
 async def sync_integration(
     integration_id: str,

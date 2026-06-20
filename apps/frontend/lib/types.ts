@@ -61,6 +61,7 @@ export type ProviderType =
   | 'onchain'
   | 'solana'
   | 'balanz_csv'
+  | 'bullmarket_csv'
   | 'manual'
 
 export interface AllocationItem {

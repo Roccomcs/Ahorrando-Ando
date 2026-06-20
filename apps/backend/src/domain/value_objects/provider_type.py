@@ -10,4 +10,5 @@ class ProviderType(str, Enum):
     ONCHAIN = "onchain"
     SOLANA = "solana"
     BALANZ_CSV = "balanz_csv"
+    BULLMARKET_CSV = "bullmarket_csv"
     MANUAL = "manual"

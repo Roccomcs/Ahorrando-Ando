@@ -6,7 +6,7 @@ import { Button } from '@/components/ds/Button'
 import { Input } from '@/components/ds/Input'
 import {
   useIntegrations, useAddIntegration, useDeleteIntegration,
-  useSyncIntegration, useImportBalanzCSV,
+  useSyncIntegration, useImportBalanzCSV, useImportBullMarketCSV,
 } from '@/hooks/usePortfolio'
 import type { ProviderType } from '@/lib/types'
 
@@ -67,13 +67,18 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'bullmarket', label: 'BullMarket', tagline: 'Broker argentino', color: '#3DD993', type: 'fields',
-    fields: [{ key: 'username', label: 'Usuario', placeholder: 'Tu usuario de BullMarket' }, { key: 'password', label: 'Contraseña', placeholder: '••••••••', secret: true }],
+    value: 'bullmarket_csv', label: 'Bull Market', tagline: 'Importar portfolio via CSV', color: '#3DD993', type: 'csv',
     instructions: {
-      description: 'BullMarket es un broker argentino de acciones y bonos.',
-      steps: ['Andá a bullmarketbrokers.com e iniciá sesión', 'Usá el mismo usuario y contraseña para conectar', 'La sesión se renueva automáticamente'],
-      credentialUrl: 'https://bullmarketbrokers.com', credentialUrlLabel: 'Ir a BullMarket →',
-      securityNote: 'Tus credenciales se cifran con AES-256. Solo hacemos consultas de lectura.',
+      description: 'Bull Market no tiene API pública estable. Importá tu portfolio exportando un CSV desde su plataforma web.',
+      steps: [
+        'Iniciá sesión en bullmarketbrokers.com',
+        'Andá a "Mi Cartera" o "Posiciones"',
+        'Buscá el botón "Exportar" o "Descargar CSV"',
+        'Guardá el archivo .csv',
+        'Subilo en el formulario de la siguiente pantalla',
+      ],
+      credentialUrl: 'https://bullmarketbrokers.com', credentialUrlLabel: 'Ir a Bull Market →',
+      securityNote: 'El CSV solo contiene tus posiciones. No incluye datos de acceso ni contraseñas.',
     },
   },
   {
@@ -188,7 +193,8 @@ function ProviderPickerCard({ config, connected, onClick }: { config: ProviderCo
 
 function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; onClose: () => void; onSuccess: () => void }) {
   const addMutation = useAddIntegration()
-  const importCSV = useImportBalanzCSV()
+  const importBalanzCSV = useImportBalanzCSV()
+  const importBullMarketCSV = useImportBullMarketCSV()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<1 | 2>(1)
@@ -197,14 +203,18 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
   const [institutionName, setInstitutionName] = useState('')
   const [manualHoldings, setManualHoldings] = useState<ManualHolding[]>([emptyHolding()])
   const [error, setError] = useState('')
-  const isSubmitting = addMutation.isPending || importCSV.isPending
+  const isSubmitting = addMutation.isPending || importBalanzCSV.isPending || importBullMarketCSV.isPending
 
   async function handleConnect() {
     setError('')
     try {
       if (config.type === 'csv') {
         if (!csvFile) { setError('Seleccioná un archivo CSV.'); return }
-        await importCSV.mutateAsync(csvFile)
+        if (config.value === 'bullmarket_csv') {
+          await importBullMarketCSV.mutateAsync(csvFile)
+        } else {
+          await importBalanzCSV.mutateAsync(csvFile)
+        }
       } else if (config.type === 'manual') {
         if (!institutionName.trim()) { setError('Ingresá el nombre de la institución.'); return }
         const holdings = manualHoldings.filter(h => h.symbol.trim() && parseFloat(h.amount) > 0).map(h => ({ symbol: h.symbol.toUpperCase(), name: h.name || h.symbol.toUpperCase(), amount: parseFloat(h.amount), price_usd: parseFloat(h.price_usd) || 0 }))
@@ -280,7 +290,17 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
 
               {config.type === 'csv' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Subí el CSV exportado desde Balanz.</p>
+                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>
+                    {config.value === 'bullmarket_csv' ? 'Subí el CSV exportado desde Bull Market.' : 'Subí el CSV exportado desde Balanz.'}
+                  </p>
+                  {config.value === 'bullmarket_csv' && (
+                    <div style={{ display: 'flex', gap: 10, background: 'rgba(232,194,104,0.10)', border: '1px solid rgba(232,194,104,0.35)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+                      <span style={{ color: '#E8C268', flexShrink: 0, marginTop: 1 }}><AlertIcon /></span>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>
+                        <strong style={{ color: 'var(--text-1)' }}>Recordá:</strong> si comprás o vendés acciones en Bull Market, actualizá el CSV para mantener tu portfolio sincronizado.
+                      </p>
+                    </div>
+                  )}
                   <div onClick={() => fileRef.current?.click()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 'var(--radius-lg)', border: '2px dashed var(--border-2)', padding: 28, cursor: 'pointer', transition: 'border-color var(--dur-fast) var(--ease-out)' }}>
                     <span style={{ color: 'var(--text-3)' }}><UploadIcon /></span>
                     {csvFile
@@ -387,7 +407,7 @@ export default function IntegrationsPage() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      {item.provider_type !== 'balanz_csv' && item.provider_type !== 'manual' && (
+                      {item.provider_type !== 'balanz_csv' && item.provider_type !== 'bullmarket_csv' && item.provider_type !== 'manual' && (
                         <button onClick={() => syncMutation.mutate(item.id)} title="Sincronizar ahora"
                           style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-accent)', display: 'flex' }}>
                           <RefreshIcon />
@@ -399,6 +419,14 @@ export default function IntegrationsPage() {
                       </button>
                     </div>
                   </div>
+                  {item.provider_type === 'bullmarket_csv' && (
+                    <div style={{ marginTop: 10, display: 'flex', gap: 8, background: 'rgba(232,194,104,0.08)', border: '1px solid rgba(232,194,104,0.3)', borderRadius: 'var(--radius-md)', padding: '8px 12px' }}>
+                      <span style={{ color: '#E8C268', flexShrink: 0 }}><AlertIcon /></span>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>
+                        Si comprás o vendés acciones, eliminá esta integración y volvé a importar el CSV actualizado.
+                      </p>
+                    </div>
+                  )}
                   {item.last_error && (
                     <div style={{ marginTop: 10, display: 'flex', gap: 8, background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px' }}>
                       <span style={{ color: 'var(--down)', flexShrink: 0 }}><AlertIcon /></span>

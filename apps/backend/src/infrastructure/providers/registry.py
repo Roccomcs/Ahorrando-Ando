@@ -1,5 +1,6 @@
 from application.ports.i_financial_provider import IFinancialProvider
 from .balanz.balanz_csv_provider import BalanzCSVProvider
+from .bullmarket.bullmarket_csv_provider import BullMarketCSVProvider
 from .binance.binance_provider import BinanceProvider
 from .bullmarket.bullmarket_provider import BullMarketProvider
 from .iol.iol_provider import IOLProvider
@@ -22,6 +23,7 @@ class ProviderRegistry:
         "onchain": OnChainProvider,
         "solana": SolanaProvider,
         "balanz_csv": BalanzCSVProvider,
+        "bullmarket_csv": BullMarketCSVProvider,
         "manual": ManualProvider,
     }
 
