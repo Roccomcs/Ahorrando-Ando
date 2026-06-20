@@ -1,12 +1,13 @@
-import { Sidebar } from '@/components/Sidebar'
+import { Sidebar } from '@/components/ds/Sidebar'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar />
-      {/* En mobile el sidebar es un drawer absoluto, así que el main ocupa todo el ancho */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 p-4 pt-16 md:p-8 md:pt-8">
-        {children}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '28px 32px', minWidth: 0 }}>
+        <div style={{ maxWidth: 'var(--content-max)', margin: '0 auto' }}>
+          {children}
+        </div>
       </main>
     </div>
   )
