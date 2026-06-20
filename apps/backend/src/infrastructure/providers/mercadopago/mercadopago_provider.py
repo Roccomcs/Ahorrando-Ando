@@ -34,13 +34,15 @@ class MercadoPagoProvider(IFinancialProvider):
 
     async def get_holdings(self) -> list[Holding]:
         import asyncio
-        wallet_task = self._wallet_client.fetch_wallet_balance()
-        investments_task = self._investments_client.fetch_investments()
-        ars_rate_task = self._exchange.get_ars_to_usd()
-
-        wallet, investments, ars_to_usd = await asyncio.gather(
-            wallet_task, investments_task, ars_rate_task
+        results = await asyncio.gather(
+            self._wallet_client.fetch_wallet_balance(),
+            self._investments_client.fetch_investments(),
+            self._exchange.get_ars_to_usd(),
+            return_exceptions=True,
         )
+        wallet = results[0] if not isinstance(results[0], Exception) else {"available": 0.0, "currency": "ARS"}
+        investments = results[1] if not isinstance(results[1], Exception) else []
+        ars_to_usd = results[2] if not isinstance(results[2], Exception) else 0.0
         return self._mapper.map(wallet, investments, ars_to_usd)
 
     async def get_performance(self) -> dict[str, float]:
