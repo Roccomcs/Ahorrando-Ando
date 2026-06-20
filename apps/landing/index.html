@@ -1,213 +1,489 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="es-AR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ahorrando Ando — Tu portfolio financiero unificado</title>
-  <meta name="description" content="Conectá todos tus exchanges, billeteras y brokers en un solo lugar. Seguí tu portfolio en tiempo real." />
-  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ahorrando Ando — toda tu plata en una pantalla</title>
+<meta name="description" content="Agregador de portfolios para el mercado argentino. Conectá Binance, IOL, Lemon, Mercado Pago y tus wallets. Patrimonio unificado en USD, con historial y alertas.">
+<link rel="stylesheet" href="styles.css">
+<style>
+  html { scroll-behavior: smooth; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--space-6); }
+
+  /* Botones */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid transparent; cursor: pointer; font-family: var(--font-ui);
+    font-weight: var(--weight-semibold); border-radius: var(--radius-md);
+    white-space: nowrap; height: 48px; padding: 0 22px; font-size: var(--text-md);
+    transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn--sm { height: 40px; padding: 0 16px; font-size: var(--text-base); }
+  .btn--primary { background: var(--action-primary); color: var(--text-inverse); }
+  .btn--primary:hover { background: var(--action-primary-hover); }
+  .btn--secondary { background: transparent; color: var(--text-1); border: 1px solid var(--border-2); }
+  .btn--secondary:hover { background: var(--surface-hover); border-color: var(--carbon-500); }
+  .btn .lucide { width: 18px; height: 18px; }
+
+  /* Navbar */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--surface-canvas) 82%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-1);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .lockup { display: flex; align-items: center; gap: 12px; }
+  .lockup img { width: 32px; height: 32px; }
+  .lockup .wm { font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 18px; }
+  .nav-links { display: flex; align-items: center; gap: var(--space-8); }
+  .nav-links nav { display: flex; gap: var(--space-6); }
+  .nav-links nav a { font-size: var(--text-base); color: var(--text-2); transition: color var(--dur-fast) var(--ease-out); }
+  .nav-links nav a:hover { color: var(--text-1); }
+
+  /* Toggle de tema */
+  .theme-btn {
+    width: 40px; height: 40px; flex: none; display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 1px solid var(--border-2); border-radius: var(--radius-md);
+    color: var(--text-2); cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .theme-btn:hover { background: var(--surface-hover); color: var(--text-1); }
+  .theme-btn .lucide { width: 18px; height: 18px; stroke-width: 2; }
+  .theme-btn .sun { display: none; }
+  .theme-btn .moon { display: block; }
+  [data-theme="light"] .theme-btn .sun { display: block; }
+  [data-theme="light"] .theme-btn .moon { display: none; }
+
+  /* Hero */
+  .hero { padding: clamp(48px, 8vw, 104px) 0 88px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--space-16); align-items: center; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin-bottom: var(--space-6);
+    padding: 6px 12px 6px 10px; border-radius: var(--radius-full);
+    background: var(--accent-bg); border: 1px solid rgba(65,164,239,0.22); }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 3px var(--up-bg); }
+  .eyebrow span { font-size: var(--text-2xs); font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-accent); }
+  h1.title {
+    margin: 0; font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-stretch: 120%; letter-spacing: -0.025em; line-height: 1.02;
+    font-size: clamp(40px, 6vw, 68px); text-wrap: balance;
+  }
+  h1.title em { font-style: normal; color: var(--cielo-400); }
+  .tagline { margin: var(--space-6) 0 0; font-size: var(--text-xl); color: var(--text-1);
+    font-weight: var(--weight-medium); letter-spacing: var(--tracking-tight); }
+  .lede { margin: var(--space-4) 0 0; font-size: var(--text-md); color: var(--text-2);
+    max-width: 46ch; line-height: var(--leading-body); }
+  .cta-row { display: flex; gap: var(--space-3); margin-top: var(--space-8); flex-wrap: wrap; }
+  .trust { display: flex; gap: var(--space-6); margin-top: var(--space-8); flex-wrap: wrap; }
+  .trust .ti { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--text-3); }
+  .trust .ti .lucide { width: 15px; height: 15px; color: var(--text-2); }
+
+  /* Mockup */
+  .mockup { background: var(--surface-card); border: 1px solid var(--border-2);
+    border-radius: var(--radius-xl); box-shadow: var(--shadow-overlay), var(--elev-card);
+    overflow: hidden; }
+  .mk-top { display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border-1); background: var(--surface-raised); }
+  .mk-top .dots { display: flex; gap: 6px; }
+  .mk-top .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--carbon-600); display: block; }
+  .mk-top .seg { display: flex; gap: 2px; padding: 3px; background: var(--surface-inset);
+    border-radius: var(--radius-sm); border: 1px solid var(--border-1); }
+  .mk-top .seg b { font-size: 10px; padding: 4px 10px; border-radius: 5px; color: var(--text-3); font-weight: var(--weight-medium); font-style: normal; }
+  .mk-top .seg b.on { background: var(--surface-card); color: var(--text-1); }
+  .mk-body { padding: 22px; }
+  .mk-overline { font-size: var(--text-2xs); font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-3); }
+  .mk-total { font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-num); font-size: 38px; font-weight: 600; margin-top: 6px; color: var(--text-1); }
+  .mk-delta { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+    padding: 4px 10px; border-radius: var(--radius-full); background: var(--up-bg);
+    color: var(--up); font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; }
+  .mk-delta .lucide { width: 14px; height: 14px; }
+  .spark { margin: 18px 0 4px; width: 100%; height: 64px; }
+  .mk-rows { margin-top: 12px; display: flex; flex-direction: column; }
+  .mk-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-top: 1px solid var(--border-1); }
+  .mk-row .nm { font-size: var(--text-base); color: var(--text-1); font-weight: var(--weight-medium); flex: 1; }
+  .mk-row .vl { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-base); color: var(--text-2); }
+  .mk-row .pc { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-xs); width: 56px; text-align: right; }
+  .pc.up { color: var(--up); } .pc.dn { color: var(--down); }
+  .pmark { display: inline-flex; align-items: center; justify-content: center; flex: none;
+    font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; }
+
+  /* Secciones */
+  section { padding: clamp(64px, 9vw, 112px) 0; }
+  .sec-head { max-width: 640px; margin-bottom: var(--space-12); }
+  .sec-overline { font-size: var(--text-2xs); font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-accent); }
+  .sec-title { margin: var(--space-4) 0 0; font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight);
+    font-size: clamp(28px, 4vw, 40px); line-height: 1.08; }
+  .sec-sub { margin: var(--space-4) 0 0; font-size: var(--text-md); color: var(--text-2); max-width: 52ch; }
+  .divider { border: 0; border-top: 1px solid var(--border-1); margin: 0; }
+
+  /* Features */
+  .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+  .feat {
+    background: var(--surface-card); border: 1px solid var(--border-1); border-radius: var(--radius-lg);
+    box-shadow: var(--elev-card); padding: var(--space-6);
+    transition: border-color var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+  }
+  .feat:hover { border-color: var(--border-2); background: var(--surface-raised); transform: translateY(-2px); }
+  .feat .ico { width: 44px; height: 44px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-bg); border: 1px solid rgba(65,164,239,0.20); margin-bottom: var(--space-5); }
+  .feat .ico .lucide { width: 22px; height: 22px; color: var(--cielo-400); stroke-width: 2; }
+  .feat.gold .ico { background: var(--gold-bg); border-color: rgba(232,194,104,0.20); }
+  .feat.gold .ico .lucide { color: var(--sol-400); }
+  .feat h3 { margin: 0 0 8px; font-size: var(--text-lg); font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-tight); color: var(--text-1); }
+  .feat p { margin: 0; font-size: var(--text-base); color: var(--text-2); line-height: var(--leading-body); }
+
+  /* Providers */
+  .prov-band { background: var(--surface-raised); border-top: 1px solid var(--border-1); border-bottom: 1px solid var(--border-1); }
+  .prov-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-3); margin-top: var(--space-10); }
+  .prov-tile {
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+    padding: var(--space-6) var(--space-3); background: var(--surface-card);
+    border: 1px solid var(--border-1); border-radius: var(--radius-lg);
+    transition: border-color var(--dur-fast) var(--ease-out); }
+  .prov-tile:hover { border-color: var(--border-2); }
+  .prov-tile .nm { font-size: var(--text-xs); color: var(--text-2); text-align: center; font-weight: var(--weight-medium); }
+
+  /* Descarga */
+  .dl-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--space-16); align-items: center; }
+  .dl-actions { display: flex; flex-direction: column; gap: var(--space-3); max-width: 380px; }
+  .dl-btn { display: flex; align-items: center; gap: var(--space-4); text-align: left;
+    padding: 16px 18px; border-radius: var(--radius-lg); border: 1px solid var(--border-2);
+    background: var(--surface-card); cursor: pointer; width: 100%;
+    transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+  .dl-btn:hover { background: var(--surface-hover); border-color: var(--carbon-500); }
+  .dl-btn.primary { background: var(--action-primary); border-color: transparent; }
+  .dl-btn.primary:hover { background: var(--action-primary-hover); }
+  .dl-btn .gl { width: 40px; height: 40px; border-radius: var(--radius-md); flex: none;
+    display: flex; align-items: center; justify-content: center; background: var(--surface-inset); }
+  .dl-btn .gl .lucide { width: 22px; height: 22px; color: var(--text-1); stroke-width: 2; }
+  .dl-btn.primary .gl { background: rgba(7,16,26,0.18); }
+  .dl-btn.primary .gl .lucide { color: #fff; }
+  .dl-btn .tt { display: flex; flex-direction: column; line-height: 1.3; }
+  .dl-btn .tt span { font-size: var(--text-xs); color: var(--text-3); }
+  .dl-btn .tt b { font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text-1); }
+  .dl-btn.primary .tt span { color: rgba(7,16,26,0.65); }
+  .dl-btn.primary .tt b { color: #fff; }
+  .ios-note { margin-top: var(--space-6); padding: var(--space-5);
+    background: var(--surface-inset); border: 1px solid var(--border-1); border-radius: var(--radius-lg); }
+  .ios-note .hd { display: flex; align-items: center; gap: 8px; font-size: var(--text-base);
+    font-weight: var(--weight-semibold); color: var(--text-1); margin-bottom: 8px; }
+  .ios-note .hd .lucide { width: 16px; height: 16px; color: var(--text-2); }
+  .ios-note p { margin: 0; font-size: var(--text-sm); color: var(--text-2); line-height: var(--leading-body); }
+  .ios-note .kbd { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-1);
+    background: var(--surface-card); border: 1px solid var(--border-2); border-radius: var(--radius-xs); padding: 1px 6px; }
+  .dl-card { background: var(--surface-card); border: 1px solid var(--border-1); border-radius: var(--radius-xl);
+    box-shadow: var(--elev-card); padding: var(--space-8); }
+  .dl-stat { padding: var(--space-5) 0; border-bottom: 1px solid var(--border-1); }
+  .dl-stat:last-child { border-bottom: 0; padding-bottom: 0; }
+  .dl-stat:first-child { padding-top: 0; }
+  .dl-stat .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-num); font-size: var(--text-2xl); font-weight: 600; color: var(--text-1); }
+  .dl-stat .v .u { color: var(--text-3); font-size: var(--text-lg); }
+  .dl-stat .l { font-size: var(--text-sm); color: var(--text-2); margin-top: 4px; }
+
+  /* Footer */
+  footer { background: var(--surface-inset); border-top: 1px solid var(--border-1); padding: var(--space-12) 0; }
+  .foot-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; }
+  .foot-inner .wm { font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 16px; }
+  .foot-inner .lockup img { width: 28px; height: 28px; }
+  .foot-note { font-size: var(--text-sm); color: var(--text-3); max-width: 42ch; margin-top: var(--space-4); line-height: var(--leading-body); }
+  .foot-cols { display: flex; gap: var(--space-16); }
+  .foot-col h4 { margin: 0 0 var(--space-4); font-size: var(--text-2xs); font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-3); }
+  .foot-col a { display: block; font-size: var(--text-sm); color: var(--text-2); padding: 5px 0;
+    transition: color var(--dur-fast) var(--ease-out); }
+  .foot-col a:hover { color: var(--text-1); }
+  .foot-base { margin-top: var(--space-10); padding-top: var(--space-6); border-top: 1px solid var(--border-1);
+    display: flex; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;
+    font-size: var(--text-xs); color: var(--text-3); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .hero-grid, .dl-grid { grid-template-columns: 1fr; gap: var(--space-12); }
+    .feat-grid { grid-template-columns: repeat(2, 1fr); }
+    .prov-grid { grid-template-columns: repeat(4, 1fr); }
+    .nav-links nav { display: none; }
+  }
+  @media (max-width: 560px) {
+    .feat-grid { grid-template-columns: 1fr; }
+    .prov-grid { grid-template-columns: repeat(3, 1fr); }
+    .foot-cols { gap: var(--space-10); }
+  }
+</style>
 </head>
 <body>
 
-<!-- ── Navbar ── -->
-<nav>
-  <div class="nav-inner">
-    <div class="logo">
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
-        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
-        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
-      </svg>
-      Ahorrando Ando
-    </div>
-    <a href="#descarga" class="nav-cta">Descargar</a>
-  </div>
-</nav>
-
-<!-- ── Hero ── -->
-<section class="hero">
-  <div class="hero-badge">
-    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-    Portfolio en tiempo real
-  </div>
-  <h1>Todos tus activos,<br><span>un solo lugar</span></h1>
-  <p>Conectá Binance, MercadoPago, IOL, billeteras crypto y más. Seguí tu patrimonio en tiempo real con gráficos y alertas de precio.</p>
-  <div class="hero-buttons">
-    <a href="#descarga" class="btn btn-primary">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Descargar la app
-    </a>
-    <a href="#" id="btn-web" class="btn btn-secondary">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      Abrir en el navegador
-    </a>
-  </div>
-
-  <!-- Mockup browser -->
-  <div class="mockup-wrap">
-    <div class="mockup-browser">
-      <div class="browser-bar">
-        <div class="browser-dot"></div>
-        <div class="browser-dot"></div>
-        <div class="browser-dot"></div>
-        <div class="browser-url">ahorrando.app/dashboard</div>
+  <!-- NAVBAR -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="lockup" href="#top">
+        <img src="assets/logo-mark.svg" alt="Ahorrando Ando">
+        <span class="wm">Ahorrando Ando</span>
+      </a>
+      <div class="nav-links">
+        <nav>
+          <a href="#features">Qué hace</a>
+          <a href="#providers">Conexiones</a>
+          <a href="#descarga">Descargar</a>
+        </nav>
+        <button class="theme-btn" id="themeToggle" type="button" aria-label="Cambiar tema">
+          <i class="lucide moon" data-lucide="moon"></i>
+          <i class="lucide sun" data-lucide="sun"></i>
+        </button>
+        <a href="https://ahorrando-ando.vercel.app" class="btn btn--primary btn--sm">Entrá</a>
       </div>
-      <div class="mockup-screen">
-        <!-- Sidebar mock -->
-        <div class="mock-sidebar">
-          <div style="font-size:.7rem;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;padding:.25rem .6rem;margin-bottom:.25rem;">Menú</div>
-          <div class="mock-nav-item active"><div class="mock-nav-dot"></div>Dashboard</div>
-          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Performance</div>
-          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Historial</div>
-          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Analytics</div>
-          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Integraciones</div>
-          <div class="mock-nav-item"><div class="mock-nav-dot"></div>Alertas</div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <a id="top"></a>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow"><i class="dot"></i><span>Agregador de portfolios · Argentina</span></div>
+        <h1 class="title">Toda tu plata,<br>en <em>una sola</em> pantalla.</h1>
+        <p class="tagline">Exchanges, brokers y billeteras, juntos y en dólares.</p>
+        <p class="lede">Conectá Binance, IOL, Lemon, Mercado Pago y tus wallets on-chain. Ahorrando Ando centraliza tu patrimonio en USD, con gráficos, historial y alertas. Vos mirás; nosotros nunca tocamos.</p>
+        <div class="cta-row">
+          <a href="#descarga" class="btn btn--primary">
+            <i data-lucide="download"></i> Descargá el APK
+          </a>
+          <a href="https://ahorrando-ando.vercel.app" class="btn btn--secondary">
+            <i data-lucide="arrow-up-right"></i> Abrí la app
+          </a>
         </div>
-        <!-- Main content mock -->
-        <div class="mock-main">
-          <div class="mock-card">
-            <div class="mock-card-title">Portfolio total</div>
-            <div class="mock-amount">$24.830 <span>▲ 3.4%</span></div>
-            <div class="mock-donut-row" style="margin-top:.75rem;">
-              <div class="mock-donut"></div>
-              <div class="mock-legend">
-                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:var(--indigo)"></div>Binance 40%</div>
-                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:#f59e0b"></div>MercadoPago 25%</div>
-                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:var(--green)"></div>IOL 20%</div>
-                <div class="mock-legend-item"><div class="mock-legend-dot" style="background:#8b5cf6"></div>Otros 15%</div>
-              </div>
+        <div class="trust">
+          <span class="ti"><i data-lucide="eye"></i> Solo lectura</span>
+          <span class="ti"><i data-lucide="key-round"></i> Claves API, nunca tu contraseña</span>
+          <span class="ti"><i data-lucide="map-pin"></i> Pensado para Argentina</span>
+        </div>
+      </div>
+
+      <!-- Mockup -->
+      <div class="mockup" aria-hidden="true">
+        <div class="mk-top">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="seg"><b class="on">24h</b><b>7d</b><b>30d</b><b>Total</b></div>
+        </div>
+        <div class="mk-body">
+          <div class="mk-overline">Patrimonio total</div>
+          <div class="mk-total">US$ 48.230,57</div>
+          <div class="mk-delta"><i data-lucide="trending-up"></i> +2,41% · +US$ 1.134,80</div>
+          <svg class="spark" viewBox="0 0 320 64" preserveAspectRatio="none" fill="none">
+            <path d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16"
+              stroke="#41A4EF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16 L320,64 L0,64 Z"
+              fill="rgba(65,164,239,0.10)"/>
+          </svg>
+          <div class="mk-rows">
+            <div class="mk-row">
+              <span class="pmark" style="width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--chart-1) 16%,transparent);color:var(--chart-1);border:1px solid color-mix(in srgb,var(--chart-1) 35%,transparent);font-size:11px;">BI</span>
+              <span class="nm">Binance</span><span class="vl">US$ 21.940,12</span><span class="pc up">+1,8%</span>
             </div>
-          </div>
-          <div class="mock-card">
-            <div class="mock-card-title">Activos</div>
-            <div class="mock-pills">
-              <div class="mock-pill blue">BTC $12.400</div>
-              <div class="mock-pill green">ETH $5.200</div>
-              <div class="mock-pill amber">ARS $4.100</div>
-              <div class="mock-pill purple">SOL $3.130</div>
+            <div class="mk-row">
+              <span class="pmark" style="width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--chart-3) 16%,transparent);color:var(--chart-3);border:1px solid color-mix(in srgb,var(--chart-3) 35%,transparent);font-size:11px;">I</span>
+              <span class="nm">IOL</span><span class="vl">US$ 14.875,40</span><span class="pc up">+3,2%</span>
             </div>
-            <div class="mock-bars" style="margin-top:.75rem;">
-              <div class="mock-bar" style="height:30%"></div>
-              <div class="mock-bar" style="height:55%"></div>
-              <div class="mock-bar hi" style="height:80%"></div>
-              <div class="mock-bar" style="height:65%"></div>
-              <div class="mock-bar hi" style="height:90%"></div>
-              <div class="mock-bar" style="height:70%"></div>
-              <div class="mock-bar hi" style="height:85%"></div>
+            <div class="mk-row">
+              <span class="pmark" style="width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--chart-2) 16%,transparent);color:var(--chart-2);border:1px solid color-mix(in srgb,var(--chart-2) 35%,transparent);font-size:11px;">MP</span>
+              <span class="nm">Mercado Pago</span><span class="vl">US$ 6.281,05</span><span class="pc dn">−0,4%</span>
+            </div>
+            <div class="mk-row">
+              <span class="pmark" style="width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--chart-6) 16%,transparent);color:var(--chart-6);border:1px solid color-mix(in srgb,var(--chart-6) 35%,transparent);font-size:11px;">WE</span>
+              <span class="nm">Wallets EVM</span><span class="vl">US$ 5.134,00</span><span class="pc up">+0,9%</span>
             </div>
           </div>
         </div>
       </div>
     </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-overline">Qué hace</div>
+        <h2 class="sec-title">Una terminal para todo tu patrimonio</h2>
+        <p class="sec-sub">Lo que tenés repartido en seis apps, leído en un solo lugar y en dólares. Sin planillas, sin captura de pantalla.</p>
+      </div>
+      <div class="feat-grid">
+        <div class="feat">
+          <div class="ico"><i data-lucide="layout-dashboard"></i></div>
+          <h3>Portfolio unificado</h3>
+          <p>Todas tus cuentas sumadas en un patrimonio único, valuado en USD al instante.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><i data-lucide="bell-ring"></i></div>
+          <h3>Alertas de precio</h3>
+          <p>Poné un umbral y enterate cuando un activo lo cruza. Ni antes ni después.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><i data-lucide="plug-zap"></i></div>
+          <h3>Múltiples exchanges</h3>
+          <p>Binance, Lemon, IOL, Bull Market, Balanz, Mercado Pago y wallets on-chain.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><i data-lucide="history"></i></div>
+          <h3>Historial completo</h3>
+          <p>Cada movimiento, fechado y trazable. Mirá cómo evolucionó tu plata en el tiempo.</p>
+        </div>
+        <div class="feat">
+          <div class="ico"><i data-lucide="line-chart"></i></div>
+          <h3>Analytics</h3>
+          <p>Distribución por activo, rendimiento y exposición. Los números que importan, claros.</p>
+        </div>
+        <div class="feat gold">
+          <div class="ico"><i data-lucide="shield-check"></i></div>
+          <h3>Solo lectura</h3>
+          <p>Nunca ejecutamos órdenes. Conectamos con permisos de lectura: vemos, no movemos.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROVIDERS -->
+  <div class="prov-band">
+    <section id="providers">
+      <div class="wrap">
+        <div class="sec-head">
+          <div class="sec-overline">Conexiones</div>
+          <h2 class="sec-title">Conectá lo que ya usás</h2>
+          <p class="sec-sub">Exchanges, brokers, billeteras y wallets on-chain. Sumás una cuenta en segundos con tu clave API de solo lectura.</p>
+        </div>
+        <div class="prov-grid">
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-1) 16%,transparent);color:var(--chart-1);border:1px solid color-mix(in srgb,var(--chart-1) 35%,transparent);font-size:18px;">BI</span>
+            <span class="nm">Binance</span>
+          </div>
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-5) 16%,transparent);color:var(--chart-5);border:1px solid color-mix(in srgb,var(--chart-5) 35%,transparent);font-size:18px;">L</span>
+            <span class="nm">Lemon</span>
+          </div>
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-3) 16%,transparent);color:var(--chart-3);border:1px solid color-mix(in srgb,var(--chart-3) 35%,transparent);font-size:18px;">I</span>
+            <span class="nm">IOL</span>
+          </div>
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-4) 16%,transparent);color:var(--chart-4);border:1px solid color-mix(in srgb,var(--chart-4) 35%,transparent);font-size:18px;">BM</span>
+            <span class="nm">Bull Market</span>
+          </div>
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-8) 16%,transparent);color:var(--chart-8);border:1px solid color-mix(in srgb,var(--chart-8) 35%,transparent);font-size:18px;">B</span>
+            <span class="nm">Balanz</span>
+          </div>
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-2) 16%,transparent);color:var(--chart-2);border:1px solid color-mix(in srgb,var(--chart-2) 35%,transparent);font-size:18px;">MP</span>
+            <span class="nm">Mercado Pago</span>
+          </div>
+          <div class="prov-tile">
+            <span class="pmark" style="width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--chart-6) 16%,transparent);color:var(--chart-6);border:1px solid color-mix(in srgb,var(--chart-6) 35%,transparent);font-size:18px;">WE</span>
+            <span class="nm">Wallets EVM</span>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
-</section>
 
-<!-- ── Features ── -->
-<section class="features">
-  <div class="section-header">
-    <h2>Todo lo que necesitás para tu portfolio</h2>
-    <p>Diseñado para inversores argentinos que operan en múltiples plataformas.</p>
-  </div>
-  <div class="features-grid">
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      </div>
-      <h3>Dashboard unificado</h3>
-      <p>Mirá todo tu patrimonio en un solo pantallazo. Donut chart con distribución por provider y variación en 24h y 30 días.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <h3>Alertas de precio</h3>
-      <p>Creá alertas para cualquier activo. Te notificamos cuando BTC, ETH o tus acciones superen o bajen del precio que configuraste.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-      </div>
-      <h3>9 integraciones</h3>
-      <p>Binance, MercadoPago, IOL, Bull Market, Lemon Cash, wallets EVM, Solana, Balanz (CSV) y entrada manual.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      </div>
-      <h3>Historial completo</h3>
-      <p>Gráfico de evolución de tu portfolio en el tiempo. Filtrá por 7 días, 30 días, 90 días o 1 año.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      </div>
-      <h3>Analytics avanzado</h3>
-      <p>Distribución por activo, tipo y provider. ROI por posición y comparativa contra BTC y ETH como benchmark.</p>
-    </div>
-
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      </div>
-      <h3>Tus datos, seguros</h3>
-      <p>Credenciales cifradas con Fernet. Tokens JWT con rotación. Solo lectura de tus exchanges, nunca ejecutamos órdenes.</p>
-    </div>
-
-  </div>
-</section>
-
-<!-- ── Descarga ── -->
-<section class="download" id="descarga">
-  <div class="download-inner">
-    <h2>Empezá ahora</h2>
-    <p>Disponible para Android y desde cualquier navegador. iOS próximamente en App Store.</p>
-
-    <div class="download-cards">
-      <div class="download-card">
-        <span class="dc-icon">🤖</span>
-        <h3>Android</h3>
-        <p>Descargá el APK e instalalo directamente en tu celular.</p>
-        <a href="assets/ahorrando-ando.apk" class="btn btn-primary" download>
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Descargar APK
-        </a>
-      </div>
-
-      <div class="download-card">
-        <span class="dc-icon">🌐</span>
-        <h3>Navegador</h3>
-        <p>Usala desde cualquier dispositivo sin instalar nada.</p>
-        <a href="#" id="link-web" class="btn btn-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Abrir web app
-        </a>
-      </div>
-    </div>
-
-    <div class="ios-note">
-      <span class="note-icon">🍎</span>
+  <!-- DESCARGA -->
+  <section id="descarga">
+    <div class="wrap dl-grid">
       <div>
-        <strong>iPhone / iPad</strong> — Abrí la web app en Safari y seguí estos pasos para agregarla al inicio:
-        <div class="ios-steps">
-          <span>Tocá el botón Compartir (cuadrado con flecha)</span>
-          <span>Seleccioná "Agregar a pantalla de inicio"</span>
-          <span>Confirmá con "Agregar" — listo, aparece como una app</span>
+        <div class="sec-overline">Descargá</div>
+        <h2 class="sec-title">Empezá en dos minutos</h2>
+        <p class="sec-sub">Bajá el APK en Android, abrí la app web desde cualquier navegador, o instalala como PWA en tu iPhone.</p>
+        <div class="dl-actions">
+          <a href="assets/ahorrando-ando.apk" class="dl-btn primary" download>
+            <span class="gl"><i data-lucide="smartphone"></i></span>
+            <span class="tt"><span>Android · APK directo</span><b>Descargá el APK</b></span>
+          </a>
+          <a href="https://ahorrando-ando.vercel.app" class="dl-btn">
+            <span class="gl"><i data-lucide="globe"></i></span>
+            <span class="tt"><span>Cualquier navegador</span><b>Abrí la app web</b></span>
+          </a>
+        </div>
+        <div class="ios-note">
+          <div class="hd"><i data-lucide="share"></i> ¿iPhone?</div>
+          <p>Abrí la app web en Safari, tocá <span class="kbd">Compartir</span> y después <span class="kbd">Agregar a inicio</span>. Queda instalada como PWA, igual que una app nativa.</p>
+        </div>
+      </div>
+      <div class="dl-card">
+        <div class="dl-stat">
+          <div class="v">US$ <span class="u">en todo</span></div>
+          <div class="l">Tu patrimonio siempre valuado en dólares</div>
+        </div>
+        <div class="dl-stat">
+          <div class="v">7 <span class="u">conexiones</span></div>
+          <div class="l">Exchanges, brokers, billeteras y wallets</div>
+        </div>
+        <div class="dl-stat">
+          <div class="v">0 <span class="u">órdenes</span></div>
+          <div class="l">Solo lectura. Nunca ejecutamos operaciones</div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ── Footer ── -->
-<footer>
-  <p>© 2026 Ahorrando Ando · Hecho en Argentina 🇦🇷</p>
-</footer>
+  <!-- FOOTER -->
+  <footer>
+    <div class="wrap">
+      <div class="foot-inner">
+        <div>
+          <a class="lockup" href="#top">
+            <img src="assets/logo-mark.svg" alt="">
+            <span class="wm">Ahorrando Ando</span>
+          </a>
+          <p class="foot-note">Agregador de portfolios para el mercado argentino. Solo lectura: leemos tus saldos, nunca movemos tu plata.</p>
+        </div>
+        <div class="foot-cols">
+          <div class="foot-col">
+            <h4>Producto</h4>
+            <a href="#features">Qué hace</a>
+            <a href="#providers">Conexiones</a>
+            <a href="#descarga">Descargar</a>
+          </div>
+          <div class="foot-col">
+            <h4>Legal</h4>
+            <a href="#">Privacidad</a>
+            <a href="#">Términos</a>
+            <a href="#">Seguridad</a>
+          </div>
+        </div>
+      </div>
+      <div class="foot-base">
+        <span>© 2026 Ahorrando Ando. Hecho en Argentina.</span>
+        <span>No somos un broker ni custodiamos fondos. Esto no es asesoramiento financiero.</span>
+      </div>
+    </div>
+  </footer>
 
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    lucide.createIcons({ attrs: { 'stroke-width': 2 } });
+    (function () {
+      var root = document.documentElement;
+      var KEY = 'aa-theme';
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch (e) {}
+      if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved);
+      document.getElementById('themeToggle').addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem(KEY, next); } catch (e) {}
+      });
+    })();
+  </script>
 </body>
 </html>
