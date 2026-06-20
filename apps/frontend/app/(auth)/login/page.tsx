@@ -32,6 +32,22 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <Link href="/" style={{
+        position: 'fixed', top: 20, left: 20,
+        width: 40, height: 40,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--surface-card)', border: '1px solid var(--border-2)',
+        borderRadius: 'var(--radius-md)', color: 'var(--text-2)',
+        textDecoration: 'none', transition: 'background 130ms, color 130ms, border-color 130ms',
+      }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-card)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5"/><path d="m12 5-7 7 7 7"/>
+        </svg>
+      </Link>
+
       <div style={{ width: '100%', maxWidth: 400 }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 28, textDecoration: 'none', color: 'inherit' }}>
           <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
@@ -68,9 +84,6 @@ export default function LoginPage() {
         <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
           ¿No tenés cuenta?{' '}
           <Link href="/register" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Registrate</Link>
-        </p>
-        <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-3)', marginTop: 10 }}>
-          <Link href="/" style={{ color: 'var(--text-3)' }}>← Volver al inicio</Link>
         </p>
       </div>
     </div>

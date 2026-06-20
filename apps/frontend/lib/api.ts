@@ -61,7 +61,9 @@ api.interceptors.response.use(
       processQueue(err, null)
       clearAuthCookies()
       // Evitar loop si ya estamos en /login o /register
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+      const publicPaths = ['/', '/login', '/register']
+      const isPublic = publicPaths.some(p => window.location.pathname === p || window.location.pathname.startsWith(p + '/'))
+      if (typeof window !== 'undefined' && !isPublic) {
         window.location.href = '/login'
       }
       return Promise.reject(err)
