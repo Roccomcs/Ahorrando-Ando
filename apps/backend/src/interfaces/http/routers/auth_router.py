@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel, EmailStr
 
 from application.dtos.auth.audit_log_dto import AuditLogDTO
 from application.dtos.auth.change_password_dto import ChangePasswordDTO
@@ -12,6 +13,15 @@ from interfaces.http.dependencies.get_current_user import get_current_user
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+class SendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
 @router.post("/register", response_model=TokenDTO)
 async def register(dto: RegisterDTO, request: Request, controller: AuthController = Depends()):
     return await controller.register(dto, request)
@@ -20,6 +30,26 @@ async def register(dto: RegisterDTO, request: Request, controller: AuthControlle
 @router.post("/login", response_model=TokenDTO)
 async def login(dto: LoginDTO, request: Request, controller: AuthController = Depends()):
     return await controller.login(dto, request)
+
+
+@router.post("/send-verification")
+async def send_verification(body: SendVerificationRequest, controller: AuthController = Depends()):
+    return await controller.send_verification(body.email)
+
+
+@router.post("/verify-email", response_model=TokenDTO)
+async def verify_email(body: VerifyEmailRequest, controller: AuthController = Depends()):
+    return await controller.verify_email(body.email, body.code)
+
+
+@router.get("/google")
+async def google_start(request: Request, controller: AuthController = Depends()):
+    return await controller.google_start(request)
+
+
+@router.get("/google/callback")
+async def google_callback(code: str = Query(...), request: Request = None, controller: AuthController = Depends()):
+    return await controller.google_callback(code, request)
 
 
 @router.post("/refresh", response_model=TokenDTO)

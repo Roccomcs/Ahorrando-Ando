@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { api } from './api'
 import { tokenStore } from './token-store'
 import type { User, TokenPair } from './types'
@@ -15,17 +16,20 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+const UNVERIFIED_REDIRECT = '/verify-email'
+const PUBLIC_PATHS = ['/login', '/register', '/verify-email', '/oauth-callback', '/']
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
 
-    // Al cargar la app, intentar renovar el access token usando el refresh_token httpOnly
-    // Si no hay refresh_token (cookie), la ruta devuelve 401 y no hay sesión.
     fetch('/api/auth/refresh', { method: 'POST' })
       .then(async (res) => {
         if (!res.ok) return
@@ -37,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  // Redirigir a /verify-email si el usuario no verificó su email
+  useEffect(() => {
+    if (loading) return
+    if (!user) return
+    if (!user.email_verified && !PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+      router.replace(`${UNVERIFIED_REDIRECT}?email=${encodeURIComponent(user.email)}`)
+    }
+  }, [user, loading, pathname, router])
 
   async function login(email: string, password: string) {
     const res = await fetch('/api/auth/login', {

@@ -34,8 +34,21 @@ _handler.setFormatter(JsonFormatter("%(asctime)s %(levelname)s %(name)s %(messag
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
 
 
+async def _run_db_migrations() -> None:
+    from sqlalchemy import text
+    from infrastructure.database.postgres.connection import engine
+    async with engine.begin() as conn:
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR"
+        ))
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
+    await _run_db_migrations()
     start_scheduler()
     yield
     stop_scheduler()

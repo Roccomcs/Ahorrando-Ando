@@ -1,8 +1,11 @@
+import logging
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from fastapi import Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,20 +13,28 @@ from application.dtos.auth.login_dto import LoginDTO, RefreshDTO, TokenDTO
 from application.dtos.auth.register_dto import RegisterDTO
 from application.dtos.auth.user_dto import UserDTO
 from application.services.audit_service import AuditService
+from application.use_cases.auth.google_oauth import HandleGoogleCallback, build_google_auth_url
 from application.use_cases.auth.login_user import LoginUser
 from application.use_cases.auth.register_user import RegisterUser
 from domain.entities.user import User
 from infrastructure.cache.redis_token_blacklist_service import RedisTokenBlacklistService
+from infrastructure.cache.redis_verification_service import RedisVerificationService
 from infrastructure.database.postgres.repositories.postgres_audit_log_repository import PostgresAuditLogRepository
 from infrastructure.database.postgres.repositories.postgres_user_repository import PostgresUserRepository
+from infrastructure.services.email_service import EmailService
 from interfaces.http.dependencies.get_db_session import get_db_session
+
+logger = logging.getLogger(__name__)
 
 SECRET_KEY = os.getenv("JWT_SECRET", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = 60
 REFRESH_TOKEN_DAYS = 30
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 _blacklist = RedisTokenBlacklistService()
+_email_svc = EmailService()
+_verify_svc = RedisVerificationService()
 
 
 def _hash_password(password: str) -> str:
@@ -62,18 +73,44 @@ class AuthController:
         hashed = _hash_password(dto.password)
         user = await use_case.execute(dto, hashed)
         await self._audit.log("register", request, user_id=user.id, metadata={"email": dto.email})
+
+        # Enviar código de verificación de email
+        try:
+            code = await _verify_svc.generate_and_store(dto.email)
+            await _email_svc.send_verification_code(dto.email, code)
+        except Exception:
+            logger.warning("No se pudo enviar email de verificación a %s", dto.email)
+
         return _make_token_pair(user.id)
 
     async def login(self, dto: LoginDTO, request: Request) -> TokenDTO:
         user = await self._repo.find_by_email(dto.email)
-        if not user or not _verify_password(dto.password, user.hashed_password):
+        if not user or not user.hashed_password or not _verify_password(dto.password, user.hashed_password):
             await self._audit.log("login_failed", request, metadata={"email": dto.email})
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
+
+        if not user.email_verified:
+            # Reenviar código automáticamente
+            try:
+                code = await _verify_svc.generate_and_store(dto.email)
+                await _email_svc.send_verification_code(dto.email, code)
+            except Exception:
+                pass
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="email_not_verified",
+            )
+
         await self._audit.log("login", request, user_id=user.id)
         return _make_token_pair(user.id)
 
     async def me(self, current_user: User) -> UserDTO:
-        return UserDTO(id=current_user.id, email=current_user.email, created_at=current_user.created_at)
+        return UserDTO(
+            id=current_user.id,
+            email=current_user.email,
+            created_at=current_user.created_at,
+            email_verified=current_user.email_verified,
+        )
 
     async def refresh(self, dto: RefreshDTO, request: Request) -> TokenDTO:
         invalid = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token inválido")
@@ -94,7 +131,6 @@ class AuthController:
         if not user:
             raise invalid
 
-        # Rotar: invalidar el refresh token usado, emitir par nuevo
         await _blacklist.add(dto.refresh_token, ttl_seconds=REFRESH_TOKEN_DAYS * 86400)
         await self._audit.log("refresh_token", request, user_id=user_id)
         return _make_token_pair(user.id)
@@ -105,11 +141,57 @@ class AuthController:
             if payload.get("type") == "refresh" and payload.get("sub") == current_user.id:
                 await _blacklist.add(dto.refresh_token, ttl_seconds=REFRESH_TOKEN_DAYS * 86400)
         except JWTError:
-            pass  # Token inválido al logout es inofensivo
+            pass
         await self._audit.log("logout", request, user_id=current_user.id)
         return {"detail": "Sesión cerrada"}
 
+    async def send_verification(self, email: str) -> dict:
+        user = await self._repo.find_by_email(email)
+        # Respuesta idéntica tanto si el usuario existe como si no (evita enumeración)
+        if user and not user.email_verified:
+            try:
+                code = await _verify_svc.generate_and_store(email)
+                await _email_svc.send_verification_code(email, code)
+            except Exception as exc:
+                logger.error("Error enviando verificación a %s: %s", email, exc)
+        return {"detail": "Si el email existe, recibirás un código"}
+
+    async def verify_email(self, email: str, code: str) -> TokenDTO:
+        user = await self._repo.find_by_email(email)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
+
+        if user.email_verified:
+            return _make_token_pair(user.id)
+
+        ok = await _verify_svc.verify(email, code)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
+
+        await self._repo.mark_email_verified(user.id)
+        return _make_token_pair(user.id)
+
+    async def google_start(self, request: Request) -> RedirectResponse:
+        state = secrets.token_urlsafe(16)
+        url = build_google_auth_url(state)
+        return RedirectResponse(url)
+
+    async def google_callback(self, code: str, request: Request) -> RedirectResponse:
+        try:
+            use_case = HandleGoogleCallback(self._repo)
+            user = await use_case.execute(code)
+            await self._audit.log("login", request, user_id=user.id, metadata={"method": "google"})
+            tokens = _make_token_pair(user.id)
+            from urllib.parse import urlencode
+            params = urlencode({"at": tokens.access_token, "rt": tokens.refresh_token})
+            return RedirectResponse(f"{FRONTEND_URL}/api/auth/google/callback?{params}")
+        except Exception as exc:
+            logger.error("Google OAuth error: %s", exc)
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=oauth_failed")
+
     async def change_password(self, current_user: User, current_password: str, new_password: str) -> dict:
+        if not current_user.hashed_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Esta cuenta usa Google. No podés cambiar la contraseña.")
         if not _verify_password(current_password, current_user.hashed_password):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Contraseña actual incorrecta")
         hashed = _hash_password(new_password)
@@ -125,7 +207,6 @@ class AuthController:
 
     async def get_audit_log(self, user_id: str) -> list:
         from application.dtos.auth.audit_log_dto import AuditLogDTO
-        from infrastructure.database.postgres.repositories.postgres_audit_log_repository import PostgresAuditLogRepository
         logs = await PostgresAuditLogRepository(self._session).find_by_user(user_id)
         return [
             AuditLogDTO(

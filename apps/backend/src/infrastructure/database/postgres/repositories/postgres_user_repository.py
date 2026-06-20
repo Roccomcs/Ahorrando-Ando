@@ -20,12 +20,19 @@ class PostgresUserRepository(IUserRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def find_by_google_id(self, google_id: str) -> User | None:
+        result = await self._session.execute(select(UserModel).where(UserModel.google_id == google_id))
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def save(self, user: User) -> User:
         model = UserModel(
             id=user.id,
             email=user.email,
             hashed_password=user.hashed_password,
             created_at=user.created_at,
+            email_verified=user.email_verified,
+            google_id=user.google_id,
         )
         self._session.add(model)
         await self._session.commit()
@@ -42,6 +49,21 @@ class PostgresUserRepository(IUserRepository):
             model.hashed_password = hashed_password
             await self._session.commit()
 
+    async def mark_email_verified(self, user_id: str) -> None:
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
+        model = result.scalar_one_or_none()
+        if model:
+            model.email_verified = True
+            await self._session.commit()
+
+    async def update_google(self, user: User) -> None:
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user.id))
+        model = result.scalar_one_or_none()
+        if model:
+            model.google_id = user.google_id
+            model.email_verified = user.email_verified
+            await self._session.commit()
+
     async def delete(self, user_id: str) -> None:
         result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         model = result.scalar_one_or_none()
@@ -55,4 +77,6 @@ class PostgresUserRepository(IUserRepository):
             email=model.email,
             hashed_password=model.hashed_password,
             created_at=model.created_at,
+            email_verified=getattr(model, "email_verified", False),
+            google_id=getattr(model, "google_id", None),
         )

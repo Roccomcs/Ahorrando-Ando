@@ -11,6 +11,9 @@ class IUserRepository(ABC):
     async def find_by_email(self, email: str) -> User | None: ...
 
     @abstractmethod
+    async def find_by_google_id(self, google_id: str) -> User | None: ...
+
+    @abstractmethod
     async def save(self, user: User) -> User: ...
 
     @abstractmethod
@@ -21,3 +24,9 @@ class IUserRepository(ABC):
 
     @abstractmethod
     async def update_password(self, user_id: str, hashed_password: str) -> None: ...
+
+    @abstractmethod
+    async def mark_email_verified(self, user_id: str) -> None: ...
+
+    @abstractmethod
+    async def update_google(self, user: User) -> None: ...
