@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { api, setCookie, getCookie, clearAuthCookies } from './api'
+import { api } from './api'
+import { tokenStore } from './token-store'
 import type { User, TokenPair } from './types'
 
 interface AuthContextValue {
@@ -19,43 +20,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Si no hay token en cookies, no tiene sentido llamar al backend
-    const hasToken = getCookie('access_token') || getCookie('refresh_token')
-    if (!hasToken) {
-      setLoading(false)
-      return
-    }
-    api
-      .get<User>('/api/v1/auth/me')
-      .then((r) => setUser(r.data))
-      .catch(() => setUser(null))
+    // Al cargar la app, intentar renovar el access token usando el refresh_token httpOnly
+    // Si no hay refresh_token (cookie), la ruta devuelve 401 y no hay sesión.
+    fetch('/api/auth/refresh', { method: 'POST' })
+      .then(async (res) => {
+        if (!res.ok) return
+        const data = await res.json()
+        tokenStore.set(data.access_token)
+        const me = await api.get<User>('/api/v1/auth/me')
+        setUser(me.data)
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
   async function login(email: string, password: string) {
-    const { data } = await api.post<TokenPair>('/api/v1/auth/login', { email, password })
-    setTokens(data)
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.detail ?? 'Error al iniciar sesión')
+    }
+    const data: Pick<TokenPair, 'access_token'> = await res.json()
+    tokenStore.set(data.access_token)
     const me = await api.get<User>('/api/v1/auth/me')
     setUser(me.data)
   }
 
   async function register(email: string, password: string) {
-    const { data } = await api.post<TokenPair>('/api/v1/auth/register', { email, password })
-    setTokens(data)
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.detail ?? 'Error al crear la cuenta')
+    }
+    const data: Pick<TokenPair, 'access_token'> = await res.json()
+    tokenStore.set(data.access_token)
     const me = await api.get<User>('/api/v1/auth/me')
     setUser(me.data)
   }
 
   async function logout() {
     try {
-      const refreshToken = document.cookie.match(/refresh_token=([^;]+)/)?.[1]
-      if (refreshToken) {
-        await api.post('/api/v1/auth/logout', { refresh_token: decodeURIComponent(refreshToken) })
-      }
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: tokenStore.get()
+          ? { Authorization: `Bearer ${tokenStore.get()}` }
+          : {},
+      })
     } catch {
       // ignorar errores al cerrar sesión
     } finally {
-      clearAuthCookies()
+      tokenStore.set(null)
       setUser(null)
       window.location.href = '/login'
     }
@@ -72,11 +94,4 @@ export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
   return ctx
-}
-
-function setTokens(tokens: TokenPair) {
-  setCookie('access_token', tokens.access_token, 1 / 24)
-  // El refresh token se setea como httpOnly desde el Route Handler
-  // Acá lo ponemos también para el interceptor de refresh
-  setCookie('refresh_token', tokens.refresh_token, 30)
 }

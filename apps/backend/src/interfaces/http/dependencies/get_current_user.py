@@ -11,7 +11,7 @@ from interfaces.http.dependencies.get_db_session import get_db_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-SECRET_KEY = os.getenv("JWT_SECRET", "changeme")
+SECRET_KEY = os.getenv("JWT_SECRET", "")
 ALGORITHM = "HS256"
 
 _unauthorized = HTTPException(

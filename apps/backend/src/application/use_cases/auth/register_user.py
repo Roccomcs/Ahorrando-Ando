@@ -13,7 +13,7 @@ class RegisterUser:
     async def execute(self, dto: RegisterDTO, hashed_password: str) -> User:
         existing = await self._repo.find_by_email(dto.email)
         if existing:
-            raise ValueError("El email ya está registrado")
+            raise ValueError("No se pudo crear la cuenta. Verificá los datos ingresados.")
 
         user = User(
             id=str(uuid.uuid4()),

@@ -10,8 +10,9 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
   const isAuthPage = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
-  const hasToken =
-    request.cookies.has('access_token') || request.cookies.has('refresh_token')
+  // El refresh_token es httpOnly — solo accesible en el servidor (middleware/route handlers)
+  // El access_token vive en memoria del cliente, no en cookie
+  const hasToken = request.cookies.has('refresh_token')
 
   // Ruta protegida sin sesión → login
   if (!isPublic && !hasToken) {

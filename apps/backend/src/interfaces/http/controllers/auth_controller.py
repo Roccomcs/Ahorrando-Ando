@@ -18,7 +18,7 @@ from infrastructure.database.postgres.repositories.postgres_audit_log_repository
 from infrastructure.database.postgres.repositories.postgres_user_repository import PostgresUserRepository
 from interfaces.http.dependencies.get_db_session import get_db_session
 
-SECRET_KEY = os.getenv("JWT_SECRET", "changeme")
+SECRET_KEY = os.getenv("JWT_SECRET", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = 60
 REFRESH_TOKEN_DAYS = 30

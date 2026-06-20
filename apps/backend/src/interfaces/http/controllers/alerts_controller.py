@@ -28,10 +28,30 @@ class CreateAlertRequest(BaseModel):
         return v.upper()
 
 
+_ALLOWED_PUSH_HOSTS = {
+    "fcm.googleapis.com",
+    "updates.push.services.mozilla.com",
+    "notify.windows.com",
+    "push.apple.com",
+}
+
+
 class PushSubscribeRequest(BaseModel):
     endpoint: str
     p256dh: str
     auth: str
+
+    @field_validator("endpoint")
+    @classmethod
+    def validate_push_endpoint(cls, v: str) -> str:
+        from urllib.parse import urlparse
+        parsed = urlparse(v)
+        if parsed.scheme != "https":
+            raise ValueError("El endpoint de push debe usar HTTPS")
+        host = parsed.hostname or ""
+        if not any(host == allowed or host.endswith("." + allowed) for allowed in _ALLOWED_PUSH_HOSTS):
+            raise ValueError("Endpoint de push no permitido")
+        return v
 
 
 class AlertResponse(BaseModel):

@@ -25,7 +25,13 @@ def _get_redis() -> Redis:
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
-        client_ip = request.client.host if request.client else "unknown"
+        # Usar la IP real del cliente, no la IP del proxy
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # El primer elemento es la IP original del cliente
+            client_ip = forwarded_for.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else "unknown"
         path = request.url.path
         max_requests = PUBLIC_MAX if path in _PUBLIC_PATHS else AUTHED_MAX
 

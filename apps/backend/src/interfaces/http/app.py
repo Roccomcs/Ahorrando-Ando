@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 import sys
-_jwt_secret = os.getenv("JWT_SECRET", "changeme")
-if _jwt_secret == "changeme" and os.getenv("ENV", "development") == "production":
-    print("ERROR: JWT_SECRET no configurado en producción. Abortando.", file=sys.stderr)
+_jwt_secret = os.getenv("JWT_SECRET", "")
+if not _jwt_secret or _jwt_secret == "changeme":
+    print("ERROR: JWT_SECRET no está configurado o usa el valor por defecto inseguro. Abortando.", file=sys.stderr)
     sys.exit(1)
 
 from fastapi import FastAPI
@@ -53,10 +53,14 @@ def create_app() -> FastAPI:
 
     _env = os.getenv("ENV", "production")
     _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
-    if _env == "development" or not _raw_origins:
-        _origins = ["*"]
-    else:
-        _origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+    _origins_list = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+    if _env == "development" and not _origins_list:
+        # En desarrollo permitimos localhost explícitamente (nunca wildcard con credentials)
+        _origins_list = ["http://localhost:3000", "http://localhost:8000"]
+    elif not _origins_list:
+        print("ERROR: ALLOWED_ORIGINS no está configurado en producción. Abortando.", file=sys.stderr)
+        sys.exit(1)
 
     add_error_handlers(app)
 
@@ -65,10 +69,10 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=_origins,
+        allow_origins=_origins_list,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     app.include_router(health_router)
