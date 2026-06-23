@@ -8,17 +8,18 @@ _CODE_TTL = 900  # 15 minutos
 
 
 class RedisVerificationService:
-    def __init__(self) -> None:
+    def __init__(self, namespace: str = "email_verify") -> None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379")
         self._redis = Redis.from_url(url, decode_responses=True)
+        self._ns = namespace
 
     def _key(self, email: str) -> str:
         digest = hashlib.sha256(email.lower().encode()).hexdigest()
-        return f"email_verify:{digest}"
+        return f"{self._ns}:{digest}"
 
     def _attempts_key(self, email: str) -> str:
         digest = hashlib.sha256(email.lower().encode()).hexdigest()
-        return f"email_verify_attempts:{digest}"
+        return f"{self._ns}_attempts:{digest}"
 
     async def generate_and_store(self, email: str) -> str:
         code = str(secrets.randbelow(900000) + 100000)  # 6 dígitos [100000, 999999]

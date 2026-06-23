@@ -14,6 +14,17 @@ if not _jwt_secret or _jwt_secret == "changeme":
     print("ERROR: JWT_SECRET no está configurado o usa el valor por defecto inseguro. Abortando.", file=sys.stderr)
     sys.exit(1)
 
+import sentry_sdk
+
+_sentry_dsn = os.getenv("SENTRY_DSN", "")
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        traces_sample_rate=0.2,
+        profiles_sample_rate=0.1,
+        environment=os.getenv("ENV", "production"),
+    )
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

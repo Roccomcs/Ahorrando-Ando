@@ -34,7 +34,8 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 _blacklist = RedisTokenBlacklistService()
 _email_svc = EmailService()
-_verify_svc = RedisVerificationService()
+_verify_svc = RedisVerificationService(namespace="email_verify")
+_reset_svc = RedisVerificationService(namespace="pwd_reset")
 
 
 def _hash_password(password: str) -> str:
@@ -188,6 +189,32 @@ class AuthController:
         except Exception as exc:
             logger.error("Google OAuth error: %s", exc)
             return RedirectResponse(f"{FRONTEND_URL}/login?error=oauth_failed")
+
+    async def forgot_password(self, email: str) -> dict:
+        user = await self._repo.find_by_email(email)
+        if user and user.hashed_password:  # solo usuarios con contraseña (no Google-only)
+            try:
+                code = await _reset_svc.generate_and_store(email)
+                await _email_svc.send_password_reset_code(email, code)
+            except Exception as exc:
+                logger.error("Error enviando reset a %s: %s", email, exc)
+        return {"detail": "Si el email existe, recibirás un código para resetear tu contraseña"}
+
+    async def reset_password(self, email: str, code: str, new_password: str) -> TokenDTO:
+        user = await self._repo.find_by_email(email)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
+
+        ok = await _reset_svc.verify(email, code)
+        if not ok:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
+
+        hashed = _hash_password(new_password)
+        await self._repo.update_password(user.id, hashed)
+        # Si el email no estaba verificado, esta acción también lo verifica
+        if not user.email_verified:
+            await self._repo.mark_email_verified(user.id)
+        return _make_token_pair(user.id)
 
     async def change_password(self, current_user: User, current_password: str, new_password: str) -> dict:
         if not current_user.hashed_password:

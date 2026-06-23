@@ -39,6 +39,19 @@ class EmailService:
             logger.error("Error enviando email a %s: %s", to, exc)
             raise
 
+    async def send_password_reset_code(self, to: str, code: str) -> None:
+        html = f"""
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+          <h2 style="color:#1a1a2e;margin:0 0 8px">Resetear contraseña</h2>
+          <p style="color:#666;margin:0 0 24px">Usá este código para crear una nueva contraseña en Ahorrando Ando.</p>
+          <div style="background:#f4f4f8;border-radius:12px;padding:24px;text-align:center;margin:0 0 24px">
+            <span style="font-family:monospace;font-size:36px;font-weight:700;letter-spacing:12px;color:#4f46e5">{code}</span>
+          </div>
+          <p style="color:#999;font-size:13px">Este código expira en 15 minutos. Si no pediste este cambio, ignorá este email.</p>
+        </div>
+        """
+        await self.send(to, "Resetear contraseña — Ahorrando Ando", html)
+
     async def send_verification_code(self, to: str, code: str) -> None:
         html = f"""
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">

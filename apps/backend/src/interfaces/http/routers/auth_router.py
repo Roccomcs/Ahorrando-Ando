@@ -22,6 +22,16 @@ class VerifyEmailRequest(BaseModel):
     code: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+
 @router.post("/register", response_model=TokenDTO)
 async def register(dto: RegisterDTO, request: Request, controller: AuthController = Depends()):
     return await controller.register(dto, request)
@@ -40,6 +50,16 @@ async def send_verification(body: SendVerificationRequest, controller: AuthContr
 @router.post("/verify-email", response_model=TokenDTO)
 async def verify_email(body: VerifyEmailRequest, controller: AuthController = Depends()):
     return await controller.verify_email(body.email, body.code)
+
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest, controller: AuthController = Depends()):
+    return await controller.forgot_password(body.email)
+
+
+@router.post("/reset-password", response_model=TokenDTO)
+async def reset_password(body: ResetPasswordRequest, controller: AuthController = Depends()):
+    return await controller.reset_password(body.email, body.code, body.new_password)
 
 
 @router.get("/google")

@@ -19,15 +19,13 @@ cryptography = "^42.0.0"
 dependency-injector = "^4.41.0"
 tenacity = "^8.3.0"
 python-dotenv = "^1.0.0"
-sentry-sdk = {version = "^2.0.0", extras = ["fastapi"], optional = true}
+sentry-sdk = {version = "^2.0.0", extras = ["fastapi"]}
 python-json-logger = "^4.1.0"
 bcrypt = "^4.0.0"
 python-multipart = "^0.0.9"
 apscheduler = "^3.10.0"
 pywebpush = "^2.0.0"
 
-[tool.poetry.extras]
-monitoring = ["sentry-sdk"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

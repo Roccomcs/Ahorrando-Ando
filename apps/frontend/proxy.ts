@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Rutas que nunca necesitan token (landing + auth)
-const PUBLIC_PATHS = ['/', '/login', '/register', '/verify-email', '/oauth-callback']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/verify-email', '/oauth-callback', '/forgot-password', '/reset-password', '/privacy', '/terms']
 // Rutas de auth que redirigen al dashboard si ya tenés sesión
 const AUTH_PATHS = ['/login', '/register']
 

@@ -130,7 +130,14 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
             <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
-            <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+            <div>
+              <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+              <div style={{ textAlign: 'right', marginTop: 6 }}>
+                <Link href="/forgot-password" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-accent)', textDecoration: 'none' }}>
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+            </div>
             {error && (
               <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
                 {error}
@@ -150,6 +157,10 @@ export default function LoginPage() {
         <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
           ¿No tenés cuenta?{' '}
           <Link href="/register" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Registrate</Link>
+        </p>
+        <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 16, display: 'flex', justifyContent: 'center', gap: 16 }}>
+          <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Privacidad</Link>
+          <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Términos</Link>
         </p>
       </div>
     </div>
