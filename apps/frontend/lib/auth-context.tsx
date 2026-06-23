@@ -77,10 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const err = await res.json()
       throw new Error(err.detail ?? 'Error al crear la cuenta')
     }
-    const data: Pick<TokenPair, 'access_token'> = await res.json()
-    tokenStore.set(data.access_token)
-    const me = await api.get<User>('/api/v1/auth/me')
-    setUser(me.data)
+    // No seteamos token ni user — el usuario debe verificar email primero.
+    // Los tokens se emiten en /verify-email al confirmar el código.
   }
 
   async function logout() {

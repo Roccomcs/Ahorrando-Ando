@@ -214,9 +214,9 @@ export default function LandingPage() {
             <h2 className={s.secTitle}>Empezá en dos minutos</h2>
             <p className={s.secSub}>Bajá el APK en Android, abrí la app web desde cualquier navegador, o instalala como PWA en tu iPhone.</p>
             <div className={s.dlActions}>
-              <a href="/ahorrando-ando.apk" className={`${s.dlBtn} ${s.dlBtnPrimary}`} download>
+              <a href="/ahorrando-ando.apk" className={`${s.dlBtn} ${s.dlBtnPrimary}`} download="ahorrando-ando.apk">
                 <span className={s.dlGlyph}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </span>
                 <span className={s.dlBtnText}>
                   <span>Android · APK directo</span>
@@ -280,6 +280,11 @@ export default function LandingPage() {
                 <h4>App</h4>
                 <Link href="/login">Iniciar sesión</Link>
                 <Link href="/register">Registrarse</Link>
+              </div>
+              <div className={s.footCol}>
+                <h4>Legal</h4>
+                <Link href="/privacy">Política de privacidad</Link>
+                <Link href="/terms">Términos de uso</Link>
               </div>
             </div>
           </div>

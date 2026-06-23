@@ -12,18 +12,18 @@ export function AppLogo({ size = 32 }: AppLogoProps) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* Stem */}
-      <rect x="44" y="50" width="12" height="60" rx="6" fill="#3DD993" />
+      {/* Stem — grueso, redondeado abajo */}
+      <rect x="41" y="50" width="18" height="62" rx="9" fill="#3DD993" />
 
-      {/* Left leaf — green, points upper-left */}
+      {/* Hoja izquierda — verde, amplia, apunta al noroeste */}
       <path
-        d="M50 55 C30 58 8 40 16 20 C24 2 52 28 50 55Z"
+        d="M50 58 C28 62 4 44 14 18 C24 -6 56 24 50 58Z"
         fill="#3DD993"
       />
 
-      {/* Right leaf — gold, points upper-right */}
+      {/* Hoja derecha — dorada, apunta al noreste */}
       <path
-        d="M52 50 C58 28 82 12 78 22 C72 32 56 48 52 50Z"
+        d="M52 52 C62 22 90 10 84 24 C78 38 60 50 52 52Z"
         fill="#E8C268"
       />
     </svg>

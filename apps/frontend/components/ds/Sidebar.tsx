@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
 import { AppLogo } from '@/components/ds/AppLogo'
 
 const NAV = [
@@ -40,7 +39,6 @@ function NavIcon({ name, size = 18 }: { name: string; size?: number }) {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
 
   // Close on route change (navigation)
@@ -90,16 +88,6 @@ export function Sidebar() {
             </Link>
           ))}
         </nav>
-        <div className="aa-side__user">
-          <span className="aa-side__email" title={user?.email}>{user?.email}</span>
-          <button
-            className="aa-icon-btn aa-icon-btn--sm"
-            onClick={logout}
-            title="Cerrar sesión"
-          >
-            <NavIcon name="log-out" size={15} />
-          </button>
-        </div>
       </aside>
     </>
   )

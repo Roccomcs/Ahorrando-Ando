@@ -19,9 +19,10 @@
 
 /* Navbar */
 .nav {
-  position: sticky; top: 0; z-index: 50;
-  background: color-mix(in srgb, var(--surface-canvas) 82%, transparent);
-  backdrop-filter: blur(12px);
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  background: color-mix(in srgb, var(--surface-canvas) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-1);
 }
 .navInner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
@@ -46,8 +47,8 @@
 }
 .themeBtn:hover { background: var(--surface-hover); color: var(--text-1); }
 
-/* Hero */
-.hero { padding: clamp(48px, 8vw, 104px) 0 88px; }
+/* Hero — padding-top compensa el header fixed (68px) */
+.hero { padding: calc(68px + clamp(48px, 8vw, 104px)) 0 88px; }
 .heroGrid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--space-16); align-items: center; }
 .eyebrow {
   display: inline-flex; align-items: center; gap: 8px; margin-bottom: var(--space-6);
