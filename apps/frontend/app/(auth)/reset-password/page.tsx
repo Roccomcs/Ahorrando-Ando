@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { Suspense, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ds/Card'
@@ -9,7 +9,7 @@ import { Input } from '@/components/ds/Input'
 import { AppLogo } from '@/components/ds/AppLogo'
 import { tokenStore } from '@/lib/token-store'
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const router = useRouter()
   const params = useSearchParams()
   const email = params.get('email') ?? ''
@@ -97,6 +97,54 @@ export default function ResetPasswordPage() {
   })
 
   return (
+    <>
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px' }}>
+        Nueva contraseña
+      </h1>
+      <p style={{ margin: '0 0 20px', fontSize: 'var(--text-sm)', color: 'var(--text-2)' }}>
+        Ingresá el código que enviamos a <strong>{email}</strong> y elegí tu nueva contraseña.
+      </p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div>
+          <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 10 }}>Código de verificación</label>
+          <div style={{ display: 'flex', gap: 8 }} onPaste={handlePaste}>
+            {digits.map((d, i) => (
+              <input key={i} ref={el => { inputs.current[i] = el }} value={d}
+                onChange={e => handleDigit(i, e.target.value)}
+                onKeyDown={e => handleKeyDown(i, e)}
+                maxLength={1} inputMode="numeric" style={digitStyle(!!d)}
+                autoFocus={i === 0} disabled={loading} />
+            ))}
+          </div>
+          <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
+            style={{ marginTop: 8, background: 'none', border: 'none', cursor: resendCooldown > 0 ? 'default' : 'pointer', fontSize: 'var(--text-xs)', color: resendCooldown > 0 ? 'var(--text-3)' : 'var(--text-accent)' }}>
+            {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
+          </button>
+        </div>
+
+        <Input label="Nueva contraseña" type="password" placeholder="••••••••" value={password}
+          onChange={e => setPassword(e.target.value)}
+          hint={!error.includes('contraseña') ? 'Mínimo 12 caracteres, con letras y números' : undefined}
+          autoComplete="new-password" required />
+        <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2}
+          onChange={e => setPassword2(e.target.value)} autoComplete="new-password" required />
+
+        {error && (
+          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
+            {error}
+          </div>
+        )}
+        <Button type="submit" size="lg" full disabled={loading}>
+          {loading ? 'Guardando…' : 'Guardar nueva contraseña'}
+        </Button>
+      </form>
+    </>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <Link href="/forgot-password" style={{
         position: 'fixed', top: 20, left: 20, width: 40, height: 40,
@@ -118,47 +166,9 @@ export default function ResetPasswordPage() {
         </Link>
 
         <Card padding="lg" raised>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px' }}>
-            Nueva contraseña
-          </h1>
-          <p style={{ margin: '0 0 20px', fontSize: 'var(--text-sm)', color: 'var(--text-2)' }}>
-            Ingresá el código que enviamos a <strong>{email}</strong> y elegí tu nueva contraseña.
-          </p>
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <div>
-              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 10 }}>Código de verificación</label>
-              <div style={{ display: 'flex', gap: 8 }} onPaste={handlePaste}>
-                {digits.map((d, i) => (
-                  <input key={i} ref={el => { inputs.current[i] = el }} value={d}
-                    onChange={e => handleDigit(i, e.target.value)}
-                    onKeyDown={e => handleKeyDown(i, e)}
-                    maxLength={1} inputMode="numeric" style={digitStyle(!!d)}
-                    autoFocus={i === 0} disabled={loading} />
-                ))}
-              </div>
-              <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
-                style={{ marginTop: 8, background: 'none', border: 'none', cursor: resendCooldown > 0 ? 'default' : 'pointer', fontSize: 'var(--text-xs)', color: resendCooldown > 0 ? 'var(--text-3)' : 'var(--text-accent)' }}>
-                {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
-              </button>
-            </div>
-
-            <Input label="Nueva contraseña" type="password" placeholder="••••••••" value={password}
-              onChange={e => setPassword(e.target.value)}
-              hint={!error.includes('contraseña') ? 'Mínimo 12 caracteres, con letras y números' : undefined}
-              autoComplete="new-password" required />
-            <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2}
-              onChange={e => setPassword2(e.target.value)} autoComplete="new-password" required />
-
-            {error && (
-              <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
-                {error}
-              </div>
-            )}
-            <Button type="submit" size="lg" full disabled={loading}>
-              {loading ? 'Guardando…' : 'Guardar nueva contraseña'}
-            </Button>
-          </form>
+          <Suspense>
+            <ResetPasswordInner />
+          </Suspense>
         </Card>
       </div>
     </div>
