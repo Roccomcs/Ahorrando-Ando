@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ds/Card'
 import { Button } from '@/components/ds/Button'
 import { Input } from '@/components/ds/Input'
+import { AppLogo } from '@/components/ds/AppLogo'
 import { tokenStore } from '@/lib/token-store'
 
 export default function ResetPasswordPage() {
@@ -110,11 +111,7 @@ export default function ResetPasswordPage() {
 
       <div style={{ width: '100%', maxWidth: 420 }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 28, textDecoration: 'none', color: 'inherit' }}>
-          <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
-            <path d="M20 4 A16 16 0 0 1 36 20" stroke="#41A4EF" strokeWidth="4" strokeLinecap="round"/>
-            <path d="M36 20 A16 16 0 0 1 20 36" stroke="#E8C268" strokeWidth="4" strokeLinecap="round"/>
-            <path d="M20 36 A16 16 0 0 1 4 20 A16 16 0 0 1 20 4" stroke="#3DD993" strokeWidth="4" strokeLinecap="round"/>
-          </svg>
+          <AppLogo size={32} />
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', fontSize: 22 }}>
             Ahorrando <span style={{ color: 'var(--text-3)' }}>Ando</span>
           </span>

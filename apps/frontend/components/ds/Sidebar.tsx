@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { AppLogo } from '@/components/ds/AppLogo'
 
 const NAV = [
   { href: '/dashboard',    label: 'Dashboard',      icon: 'layout-dashboard' },
@@ -74,11 +75,7 @@ export function Sidebar() {
 
       <aside className={`aa-side${open ? ' aa-side--open' : ''}`}>
         <div className="aa-side__brand">
-          <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
-            <path d="M20 4 A16 16 0 0 1 36 20" stroke="#41A4EF" strokeWidth="4" strokeLinecap="round"/>
-            <path d="M36 20 A16 16 0 0 1 20 36" stroke="#E8C268" strokeWidth="4" strokeLinecap="round"/>
-            <path d="M20 36 A16 16 0 0 1 4 20 A16 16 0 0 1 20 4" stroke="#3DD993" strokeWidth="4" strokeLinecap="round"/>
-          </svg>
+          <AppLogo size={26} />
           <div className="aa-side__wm">Ahorrando<br /><span>Ando</span></div>
         </div>
         <nav className="aa-side__nav">
