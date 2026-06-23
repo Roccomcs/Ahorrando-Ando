@@ -36,8 +36,6 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   widenClientFileUpload: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-  // Si no hay DSN configurado, Sentry no hace nada
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
 })
