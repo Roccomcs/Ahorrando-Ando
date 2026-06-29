@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+/* fuentes cargadas vía next/font en layout.tsx */
 
 /* ── Tokens ─────────────────────────────────────────────────── */
 :root {
@@ -85,9 +85,10 @@
   --gold-bg:   rgba(217, 169, 63, 0.14);
 
   /* Tipografía */
-  --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
-  --font-ui:      'Archivo', 'Helvetica Neue', Arial, sans-serif;
-  --font-mono:    'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+  --font-display: var(--ff-display), 'Helvetica Neue', Arial, sans-serif;
+  --font-serif:   var(--ff-serif), Georgia, serif;
+  --font-ui:      var(--ff-body), 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:    var(--ff-mono), 'SFMono-Regular', Menlo, monospace;
   --display-stretch: 115%;
   --text-2xs: 11px;
   --text-xs:  12px;
@@ -247,6 +248,8 @@ body {
 a { color: var(--text-accent); text-decoration: none; }
 a:hover { color: var(--text-accent); }
 button, input, select, textarea { font-family: inherit; }
+h1 { font-family: var(--font-display); }
+h2, h3 { font-family: var(--font-serif); }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--carbon-200); border-radius: 5px; border: 2px solid var(--surface-canvas); }
 ::-webkit-scrollbar-track { background: transparent; }
