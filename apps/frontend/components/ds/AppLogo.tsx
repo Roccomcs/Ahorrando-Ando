@@ -16,7 +16,7 @@ export function AppLogo({ size = 32 }: AppLogoProps) {
       alt="Ahorrando Ando"
       width={size}
       height={size}
-      style={{ display: 'block', objectFit: 'contain' }}
+      style={{ display: 'block', objectFit: 'contain', filter: 'invert(1)', mixBlendMode: 'screen' }}
     />
   )
 }
