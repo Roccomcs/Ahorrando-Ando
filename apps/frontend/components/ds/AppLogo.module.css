@@ -1,5 +1,7 @@
 .wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
 
+.wrap img { object-fit: contain; }
+
 .light { display: block; }
 .dark  { display: none;  }
 
