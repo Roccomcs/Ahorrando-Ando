@@ -4,37 +4,25 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import s from './page.module.css'
 import { AppLogo } from '@/components/ds/AppLogo'
+import { ForceDarkTheme } from '@/lib/theme-context'
 
-function ThemeToggle() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('light')
+function useHideOnScroll() {
+  const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('aa-theme')
-    const active = (saved === 'light' || saved === 'dark') ? saved : 'light'
-    setTheme(active)
-    document.documentElement.setAttribute('data-theme', active)
+    let lastY = window.scrollY
+    function onScroll() {
+      const y = window.scrollY
+      // Oculta al bajar (pasado el header), muestra al subir
+      if (y > lastY && y > 120) setHidden(true)
+      else if (y < lastY) setHidden(false)
+      lastY = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  function toggle() {
-    const next = theme === 'light' ? 'dark' : 'light'
-    setTheme(next)
-    document.documentElement.setAttribute('data-theme', next)
-    localStorage.setItem('aa-theme', next)
-  }
-
-  return (
-    <button className={s.themeBtn} type="button" aria-label="Cambiar tema" onClick={toggle}>
-      {theme === 'light' ? (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-        </svg>
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-        </svg>
-      )}
-    </button>
-  )
+  return hidden
 }
 
 const PROVIDERS = [
@@ -54,31 +42,36 @@ const MOCK_ROWS = [
   { initials: 'WE', name: 'Wallets EVM',   amount: 'US$  5.134,00', pct: '+0,9%', dir: 'up', chart: '--chart-6' },
 ]
 
-export default function LandingPage() {
+function Check() {
   return (
-    <>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  )
+}
+
+export default function LandingPage() {
+  const hidden = useHideOnScroll()
+
+  return (
+    <div className={s.page}>
+      <ForceDarkTheme />
+
       {/* NAVBAR */}
-      <header className={s.nav}>
+      <header className={`${s.nav} ${hidden ? s.navHidden : ''}`}>
         <div className={`${s.wrap} ${s.navInner}`}>
           <a href="#top" className={s.lockup}>
-            <AppLogo size={32} />
+            <AppLogo size={40} />
             <span className={s.wm}>Ahorrando Ando</span>
           </a>
-          <div className={s.navLinks}>
-            <nav>
-              <a href="#features">Qué hace</a>
-              <a href="#providers">Conexiones</a>
-              <a href="#descarga">Descargar</a>
-            </nav>
-            <ThemeToggle />
-            <Link href="/login" className={`${s.btn} ${s.btnPrimary} ${s.btnSm}`}>Entrá</Link>
+          <div className={s.navCta}>
+            <Link href="/login" className={s.navLink}>Iniciar sesión</Link>
+            <Link href="/register" className={`${s.btn} ${s.btnSm} ${s.btnPill}`}>Registrarse</Link>
           </div>
         </div>
       </header>
 
       {/* HERO */}
       <a id="top" />
-      <section className={s.hero}>
+      <section className={`${s.hero}`}>
         <div className={`${s.wrap} ${s.heroGrid}`}>
           <div>
             <div className={s.eyebrow}>
@@ -93,14 +86,8 @@ export default function LandingPage() {
               Vos mirás; nosotros nunca tocamos.
             </p>
             <div className={s.ctaRow}>
-              <a href="/ahorrando-ando.apk" download="ahorrando-ando.apk" className={`${s.btn} ${s.btnPrimary}`}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Descargá el APK
-              </a>
-              <Link href="/login" className={`${s.btn} ${s.btnSecondary}`}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
-                Abrí la app
-              </Link>
+              <Link href="/register" className={`${s.btn} ${s.btnPill}`}>Crear cuenta gratis</Link>
+              <Link href="/login" className={`${s.btn} ${s.btnSecondary}`}>Iniciar sesión</Link>
             </div>
             <div className={s.trust}>
               <span className={s.ti}>
@@ -154,13 +141,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <hr className={s.divider} />
-
-      {/* FEATURES */}
-      <section id="features" className={s.section}>
+      {/* QUÉ HACEMOS */}
+      <section id="features" className={`${s.section} ${s.secGray}`}>
         <div className={s.wrap}>
           <div className={s.secHead}>
-            <div className={s.secOverline}>Qué hace</div>
+            <div className={s.secOverline}>Qué hacemos</div>
             <h2 className={s.secTitle}>Una terminal para todo tu patrimonio</h2>
             <p className={s.secSub}>Lo que tenés repartido en seis apps, leído en un solo lugar y en dólares. Sin planillas, sin captura de pantalla.</p>
           </div>
@@ -183,76 +168,135 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PROVIDERS */}
-      <div className={s.provBand}>
-        <section id="providers" className={s.section}>
-          <div className={s.wrap}>
-            <div className={s.secHead}>
-              <div className={s.secOverline}>Conexiones</div>
-              <h2 className={s.secTitle}>Conectá lo que ya usás</h2>
-              <p className={s.secSub}>Exchanges, brokers, billeteras y wallets on-chain. Sumás una cuenta en segundos con tu clave API de solo lectura.</p>
-            </div>
-            <div className={s.provGrid}>
-              {PROVIDERS.map(p => (
-                <div key={p.name} className={s.provTile}>
-                  <span className={s.pmark} style={{ width: 48, height: 48, borderRadius: 14, background: `color-mix(in srgb,var(${p.chartVar}) 16%,transparent)`, color: `var(${p.chartVar})`, border: `1px solid color-mix(in srgb,var(${p.chartVar}) 35%,transparent)`, fontSize: 18 }}>
-                    {p.initials}
-                  </span>
-                  <span className={s.nm}>{p.name}</span>
-                </div>
-              ))}
-            </div>
+      {/* CONEXIONES */}
+      <section id="providers" className={`${s.section} ${s.secBlack}`}>
+        <div className={s.wrap}>
+          <div className={s.secHead}>
+            <div className={s.secOverline}>Conexiones</div>
+            <h2 className={s.secTitle}>Conectá lo que ya usás</h2>
+            <p className={s.secSub}>Exchanges, brokers, billeteras y wallets on-chain. Sumás una cuenta en segundos con tu clave API de solo lectura.</p>
           </div>
-        </section>
-      </div>
-
-      {/* DESCARGA */}
-      <section id="descarga" className={s.section}>
-        <div className={`${s.wrap} ${s.dlGrid}`}>
-          <div>
-            <div className={s.secOverline}>Descargá</div>
-            <h2 className={s.secTitle}>Empezá en dos minutos</h2>
-            <p className={s.secSub}>Bajá el APK en Android, abrí la app web desde cualquier navegador, o instalala como PWA en tu iPhone.</p>
-            <div className={s.dlActions}>
-              <a href="/ahorrando-ando.apk" className={`${s.dlBtn} ${s.dlBtnPrimary}`} download="ahorrando-ando.apk">
-                <span className={s.dlGlyph}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <div className={s.provGrid}>
+            {PROVIDERS.map(p => (
+              <div key={p.name} className={s.provTile}>
+                <span className={s.pmark} style={{ width: 48, height: 48, borderRadius: 14, background: `color-mix(in srgb,var(${p.chartVar}) 16%,transparent)`, color: `var(${p.chartVar})`, border: `1px solid color-mix(in srgb,var(${p.chartVar}) 35%,transparent)`, fontSize: 18 }}>
+                  {p.initials}
                 </span>
-                <span className={s.dlBtnText}>
-                  <span>Android · APK directo</span>
-                  <b>Descargá el APK</b>
-                </span>
-              </a>
-              <Link href="/login" className={s.dlBtn}>
-                <span className={s.dlGlyph}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                </span>
-                <span className={s.dlBtnText}>
-                  <span>Cualquier navegador</span>
-                  <b>Abrí la app web</b>
-                </span>
-              </Link>
-            </div>
-            <div className={s.iosNote}>
-              <div className={s.iosNoteHead}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                ¿iPhone?
+                <span className={s.nm}>{p.name}</span>
               </div>
-              <p>Abrí la app web en Safari, tocá <span className={s.kbd}>Compartir</span> y después <span className={s.kbd}>Agregar a inicio</span>. Queda instalada como PWA, igual que una app nativa.</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PERFORMANCE */}
+      <section id="performance" className={`${s.section} ${s.secGray}`}>
+        <div className={`${s.wrap} ${s.featureRow}`}>
+          <div className={s.featureCopy}>
+            <div className={s.secOverline}>Performance</div>
+            <h2 className={s.secTitle}>Cuánto rinde cada cuenta</h2>
+            <p className={s.secSub}>Compará el rendimiento de cada exchange y broker lado a lado. Descubrí qué te hace ganar y qué te frena, valuado siempre en dólares.</p>
+            <ul className={s.featureList}>
+              <li><Check /> Rendimiento por proveedor y por activo</li>
+              <li><Check /> Variación 24h, 7d, 30d y total</li>
+              <li><Check /> Ranking de ganadores y perdedores</li>
+            </ul>
+          </div>
+          <div className={s.featureVisual}>
+            <div className={s.mockup} aria-hidden="true">
+              <div className={s.mkTop}>
+                <div className={s.dots}><i /><i /><i /></div>
+                <div className={s.seg}><b>24h</b><b>7d</b><b className={s.on}>30d</b><b>Total</b></div>
+              </div>
+              <div className={s.mkBody}>
+                <div className={s.mkOverline}>Rendimiento 30 días</div>
+                <div className={s.mkTotal}>+8,7%</div>
+                <div className={s.mkDelta}>+US$ 3.860,40</div>
+                <div className={s.mkRows}>
+                  {MOCK_ROWS.map(r => (
+                    <div key={r.name} className={s.mkRow}>
+                      <span className={s.pmark} style={{ width: 30, height: 30, borderRadius: 9, background: `color-mix(in srgb,var(${r.chart}) 16%,transparent)`, color: `var(${r.chart})`, border: `1px solid color-mix(in srgb,var(${r.chart}) 35%,transparent)`, fontSize: 11 }}>{r.initials}</span>
+                      <span className={s.nm}>{r.name}</span>
+                      <span className={`${s.pc} ${r.dir === 'up' ? s.up : s.dn}`}>{r.pct}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-          <div className={s.dlCard}>
-            <div className={s.dlStat}>
-              <div className={s.dlStatVal}>US$ <span className={s.dlStatUnit}>en todo</span></div>
-              <div className={s.dlStatLabel}>Tu patrimonio siempre valuado en dólares</div>
+        </div>
+      </section>
+
+      {/* HISTORIAL */}
+      <section id="history" className={`${s.section} ${s.secBlack}`}>
+        <div className={`${s.wrap} ${s.featureRow} ${s.featureRowReverse}`}>
+          <div className={s.featureCopy}>
+            <div className={s.secOverline}>Historial</div>
+            <h2 className={s.secTitle}>Cómo evolucionó tu plata</h2>
+            <p className={s.secSub}>Cada snapshot de tu patrimonio, fechado y trazable. Mirá la curva completa y entendé cómo crecés en el tiempo, sin planillas.</p>
+            <ul className={s.featureList}>
+              <li><Check /> Evolución del patrimonio total en USD</li>
+              <li><Check /> Snapshots automáticos por proveedor</li>
+              <li><Check /> Exportá tu historial a CSV</li>
+            </ul>
+          </div>
+          <div className={s.featureVisual}>
+            <div className={s.mockup} aria-hidden="true">
+              <div className={s.mkTop}>
+                <div className={s.dots}><i /><i /><i /></div>
+                <div className={s.seg}><b>1M</b><b>3M</b><b className={s.on}>1A</b><b>Todo</b></div>
+              </div>
+              <div className={s.mkBody}>
+                <div className={s.mkOverline}>Patrimonio · último año</div>
+                <div className={s.mkTotal}>US$ 48.230</div>
+                <div className={s.mkDelta}>+34,2% · +US$ 12.290</div>
+                <svg className={s.spark} viewBox="0 0 320 64" preserveAspectRatio="none" fill="none">
+                  <path d="M0,56 L40,52 L80,54 L120,44 L160,46 L200,32 L240,30 L280,18 L320,10" stroke="#3DD993" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M0,56 L40,52 L80,54 L120,44 L160,46 L200,32 L240,30 L280,18 L320,10 L320,64 L0,64 Z" fill="rgba(61,217,147,0.10)"/>
+                </svg>
+              </div>
             </div>
-            <div className={s.dlStat}>
-              <div className={s.dlStatVal}>7 <span className={s.dlStatUnit}>conexiones</span></div>
-              <div className={s.dlStatLabel}>Exchanges, brokers, billeteras y wallets</div>
-            </div>
-            <div className={s.dlStat}>
-              <div className={s.dlStatVal}>0 <span className={s.dlStatUnit}>órdenes</span></div>
-              <div className={s.dlStatLabel}>Solo lectura. Nunca ejecutamos operaciones</div>
+          </div>
+        </div>
+      </section>
+
+      {/* ANALYTICS */}
+      <section id="analytics" className={`${s.section} ${s.secGray}`}>
+        <div className={`${s.wrap} ${s.featureRow}`}>
+          <div className={s.featureCopy}>
+            <div className={s.secOverline}>Analytics</div>
+            <h2 className={s.secTitle}>Los números que importan</h2>
+            <p className={s.secSub}>Distribución por activo, ROI y comparación contra BTC y ETH. Entendé tu exposición real de un vistazo y tomá mejores decisiones.</p>
+            <ul className={s.featureList}>
+              <li><Check /> Distribución (allocation) por activo y proveedor</li>
+              <li><Check /> ROI por holding</li>
+              <li><Check /> Benchmark contra BTC y ETH</li>
+            </ul>
+          </div>
+          <div className={s.featureVisual}>
+            <div className={s.mockup} aria-hidden="true">
+              <div className={s.mkTop}>
+                <div className={s.dots}><i /><i /><i /></div>
+                <div className={s.seg}><b className={s.on}>Activos</b><b>ROI</b><b>Benchmark</b></div>
+              </div>
+              <div className={s.mkBody}>
+                <div className={s.mkOverline}>Distribución por activo</div>
+                <div className={s.mkRows}>
+                  {[
+                    { name: 'BTC',  pct: '38%', chart: '--chart-1' },
+                    { name: 'ETH',  pct: '24%', chart: '--chart-3' },
+                    { name: 'USDT', pct: '18%', chart: '--chart-2' },
+                    { name: 'CEDEARs', pct: '12%', chart: '--chart-6' },
+                    { name: 'Otros', pct: '8%', chart: '--chart-9' },
+                  ].map(a => (
+                    <div key={a.name} className={s.mkRow}>
+                      <span className={s.pmark} style={{ width: 30, height: 30, borderRadius: 9, background: `color-mix(in srgb,var(${a.chart}) 16%,transparent)`, color: `var(${a.chart})`, border: `1px solid color-mix(in srgb,var(${a.chart}) 35%,transparent)`, fontSize: 10 }}>{a.name.slice(0, 2)}</span>
+                      <span className={s.nm}>{a.name}</span>
+                      <span className={s.vl}>{a.pct}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -264,17 +308,18 @@ export default function LandingPage() {
           <div className={s.footInner}>
             <div>
               <a href="#top" className={s.lockup}>
-                <AppLogo size={28} />
-                <span className={s.wm} style={{ fontSize: 16 }}>Ahorrando Ando</span>
+                <AppLogo size={32} />
+                <span className={s.wm} style={{ fontSize: 18 }}>Ahorrando Ando</span>
               </a>
               <p className={s.footNote}>Agregador de portfolios para el mercado argentino. Solo lectura: leemos tus saldos, nunca movemos tu plata.</p>
             </div>
             <div className={s.footCols}>
               <div className={s.footCol}>
                 <h4>Producto</h4>
-                <a href="#features">Qué hace</a>
+                <a href="#features">Qué hacemos</a>
                 <a href="#providers">Conexiones</a>
-                <a href="#descarga">Descargar</a>
+                <a href="#performance">Performance</a>
+                <a href="#analytics">Analytics</a>
               </div>
               <div className={s.footCol}>
                 <h4>App</h4>
@@ -294,6 +339,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </>
+    </div>
   )
 }

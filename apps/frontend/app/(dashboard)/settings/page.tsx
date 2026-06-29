@@ -9,6 +9,7 @@ import { Input } from '@/components/ds/Input'
 import { useAuth } from '@/lib/auth-context'
 import { useChangePassword, useDeleteAccount } from '@/hooks/usePortfolio'
 import { api } from '@/lib/api'
+import { useTheme, THEMES } from '@/lib/theme-context'
 
 interface AuditLog {
   id: string
@@ -36,6 +37,7 @@ const sectionHeadStyle: React.CSSProperties = { fontSize: 'var(--text-base)', fo
 export default function SettingsPage() {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const [showAudit, setShowAudit] = useState(false)
 
   // Password
@@ -100,6 +102,35 @@ export default function SettingsPage() {
             <span style={labelStyle}>Miembro desde</span>
             <span style={valueStyle}>{user?.created_at ? new Date(user.created_at).toLocaleDateString('es-AR', { dateStyle: 'long' }) : '—'}</span>
           </div>
+        </div>
+      </Card>
+
+      {/* Apariencia */}
+      <Card padding="md">
+        <p style={sectionHeadStyle}>Apariencia</p>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: '0 0 16px' }}>Elegí el tema de color de la aplicación. Se guarda en este dispositivo.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
+          {THEMES.map(t => {
+            const active = theme === t.value
+            return (
+              <button
+                key={t.value}
+                onClick={() => setTheme(t.value)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                  borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'left',
+                  background: active ? 'var(--accent-bg)' : 'var(--surface-inset)',
+                  border: `1px solid ${active ? 'var(--border-focus)' : 'var(--border-2)'}`,
+                  color: active ? 'var(--text-accent)' : 'var(--text-1)',
+                  fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
+                  transition: 'background 130ms, border-color 130ms',
+                }}
+              >
+                <span style={{ width: 22, height: 22, borderRadius: 6, background: t.swatch, border: '1px solid var(--border-2)', flex: 'none' }} />
+                {t.label}
+              </button>
+            )
+          })}
         </div>
       </Card>
 

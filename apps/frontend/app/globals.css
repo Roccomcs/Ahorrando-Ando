@@ -161,6 +161,75 @@
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--carbon-600); }
 
+/* ── Tema Medianoche (azul profundo) ────────────────────────── */
+[data-theme="midnight"] {
+  --surface-canvas: #0A0F1E;
+  --surface-raised: #111A33;
+  --surface-card:   #16203E;
+  --surface-hover:  #1E2A4D;
+  --surface-inset:  #070B16;
+  --text-1: #E8EDF7;
+  --text-2: #97A3C0;
+  --text-3: #5E6B8C;
+  --text-inverse: #070B16;
+  --text-accent: var(--cielo-400);
+  --border-1: rgba(120, 150, 220, 0.12);
+  --border-2: rgba(120, 150, 220, 0.22);
+  --border-focus: var(--cielo-500);
+  --up:      var(--verde-400);
+  --up-bg:   rgba(61, 217, 147, 0.10);
+  --down:    var(--rojo-400);
+  --down-bg: rgba(244, 98, 110, 0.10);
+  --flat:    var(--carbon-300);
+  --flat-bg: rgba(132, 146, 166, 0.10);
+  --action-primary:       var(--cielo-500);
+  --action-primary-hover: var(--cielo-400);
+  --accent-bg: rgba(99, 184, 244, 0.14);
+  --gold-bg:   rgba(232, 194, 104, 0.12);
+  --elev-card: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-overlay: 0 24px 64px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4);
+}
+[data-theme="midnight"] ::-webkit-scrollbar-thumb { background: #2A3A66; }
+
+/* ── Tema Sepia (cálido) ────────────────────────────────────── */
+[data-theme="sepia"] {
+  --surface-canvas: #F3EBDD;
+  --surface-raised: #FBF5EA;
+  --surface-card:   #FBF5EA;
+  --surface-hover:  #EFE4D2;
+  --surface-inset:  #E9DDC8;
+  --text-1: #2E2618;
+  --text-2: #5C5240;
+  --text-3: #857A64;
+  --text-inverse: #FBF5EA;
+  --text-accent: #9A6B1F;
+  --border-1: rgba(90, 70, 40, 0.12);
+  --border-2: rgba(90, 70, 40, 0.20);
+  --border-focus: #B07D2B;
+  --up:      var(--verde-500);
+  --up-bg:   rgba(33, 184, 115, 0.12);
+  --down:    var(--rojo-500);
+  --down-bg: rgba(224, 69, 83, 0.12);
+  --flat:    #857A64;
+  --flat-bg: rgba(133, 122, 100, 0.12);
+  --action-primary:       #B07D2B;
+  --action-primary-hover: #8A5F1C;
+  --accent-bg: rgba(176, 125, 43, 0.14);
+  --gold-bg:   rgba(176, 125, 43, 0.16);
+}
+[data-theme="sepia"] ::-webkit-scrollbar-thumb { background: #C9B58E; }
+
+/* ── Paleta landing/login (estilo Revolut, dark fijo) ───────── */
+:root {
+  --ll-black:  #000000;   /* header + primera sección */
+  --ll-gray:   #14171A;   /* secciones alternas */
+  --ll-footer: #1B2530;   /* footer azul-grisáceo */
+  --ll-text-1: #FFFFFF;
+  --ll-text-2: #A8B0BA;
+  --ll-text-3: #6B7480;
+  --ll-border: rgba(255, 255, 255, 0.08);
+}
+
 /* ── Reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -176,7 +245,7 @@ body {
 }
 ::selection { background: rgba(65, 164, 239, 0.35); color: var(--text-1); }
 a { color: var(--text-accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a:hover { color: var(--text-accent); }
 button, input, select, textarea { font-family: inherit; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--carbon-200); border-radius: 5px; border: 2px solid var(--surface-canvas); }
