@@ -2,8 +2,8 @@
 
 .wrap img { object-fit: contain; }
 
-.light { display: block; }
-.dark  { display: none;  }
+.light { display: block; mix-blend-mode: multiply; }
+.dark  { display: none;  mix-blend-mode: screen;   }
 
 :global([data-theme="dark"])     .light,
 :global([data-theme="midnight"]) .light { display: none; }
