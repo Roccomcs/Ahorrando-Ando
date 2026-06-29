@@ -1,0 +1,10 @@
+.wrap { display: inline-flex; align-items: center; flex-shrink: 0; }
+
+.light { display: block; }
+.dark  { display: none;  }
+
+:global([data-theme="dark"])     .light,
+:global([data-theme="midnight"]) .light { display: none; }
+
+:global([data-theme="dark"])     .dark,
+:global([data-theme="midnight"]) .dark  { display: block; }

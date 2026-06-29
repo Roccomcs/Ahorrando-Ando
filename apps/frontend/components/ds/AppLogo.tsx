@@ -1,22 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
+import styles from './AppLogo.module.css'
 
 interface AppLogoProps {
   size?: number
 }
 
-/**
- * Logo de Ahorrando Ando.
- * Renderiza el archivo en /public/logo.svg (provisto por diseño).
- * Reemplazar ese archivo actualiza el logo en landing, login y sidebar.
- */
 export function AppLogo({ size = 32 }: AppLogoProps) {
   return (
-    <img
-      src="/logo.svg"
-      alt="Ahorrando Ando"
-      width={size}
-      height={size}
-      style={{ display: 'block', objectFit: 'contain', filter: 'invert(1)', mixBlendMode: 'screen' }}
-    />
+    <span className={styles.wrap} style={{ width: size, height: size }}>
+      <img src="/logoNegro.svg" alt="Ahorrando Ando" width={size} height={size} className={styles.dark} style={{ display: 'block', objectFit: 'contain' }} />
+      <img src="/logo.svg"      alt="Ahorrando Ando" width={size} height={size} className={styles.light} style={{ display: 'block', objectFit: 'contain' }} />
+    </span>
   )
 }
