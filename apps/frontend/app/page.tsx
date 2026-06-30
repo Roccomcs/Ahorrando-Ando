@@ -132,7 +132,7 @@ export default function LandingPage() {
           </div>
           <div className={s.featGrid}>
             {[
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, title: 'Portfolio unificado', desc: 'Todas tus cuentas sumadas en un patrimonio único, valuado en USD al instante.' },
+              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, title: 'Portfolio unificado', desc: 'Todas tus cuentas sumadas en un patrimonio único, en pesos y dólares al instante.' },
               { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/><path d="M22 8c0-2.3-.8-4.3-2-6"/></svg>, title: 'Alertas de precio', desc: 'Poné un umbral y enterate cuando un activo lo cruza. Ni antes ni después.' },
               { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V11"/><path d="m15 8-3-3-3 3"/><path d="M8 22H5a2 2 0 0 1-2-2V6l3-2 3 2V4"/><path d="M18 11v11"/><path d="m21 14-3-3-3 3"/></svg>, title: 'Múltiples exchanges', desc: 'Binance, Lemon, IOL, Bull Market, Balanz, Mercado Pago y wallets on-chain.' },
               { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>, title: 'Historial completo', desc: 'Cada movimiento, fechado y trazable. Mirá cómo evolucionó tu plata en el tiempo.' },
@@ -181,7 +181,7 @@ export default function LandingPage() {
           <div className={s.featureCopy}>
             <div className={s.secOverline}>Performance</div>
             <h2 className={s.secTitle}>Cuánto rinde cada cuenta</h2>
-            <p className={s.secSub}>Compará el rendimiento de cada exchange y broker lado a lado. Descubrí qué te hace ganar y qué te frena, valuado siempre en dólares.</p>
+            <p className={s.secSub}>Compará el rendimiento de cada exchange y broker lado a lado. Descubrí qué te hace ganar y qué te frena.</p>
             <ul className={s.featureList}>
               <li><Check /> Rendimiento por proveedor y por activo</li>
               <li><Check /> Variación 24h, 7d, 30d y total</li>

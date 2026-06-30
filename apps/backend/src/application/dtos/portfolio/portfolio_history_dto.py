@@ -10,5 +10,6 @@ class PortfolioHistoryPointDTO(BaseModel):
 
 class PortfolioHistoryDTO(BaseModel):
     points: list[PortfolioHistoryPointDTO]
+    usd_to_ars: float | None = None
     change_pct_24h: float | None = None
     change_pct_30d: float | None = None

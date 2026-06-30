@@ -19,6 +19,7 @@ class ProviderSummaryDTO(BaseModel):
 
 class PortfolioSummaryDTO(BaseModel):
     total_usd: float
+    usd_to_ars: float | None = None
     change_pct_24h: float | None = None
     change_pct_30d: float | None = None
     providers: list[ProviderSummaryDTO]

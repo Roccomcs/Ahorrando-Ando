@@ -7,7 +7,7 @@ import { Card } from '@/components/ds/Card'
 import { Button } from '@/components/ds/Button'
 import { Badge } from '@/components/ds/Badge'
 import { Delta } from '@/components/ds/Delta'
-import { Stat, formatMoney } from '@/components/ds/Stat'
+import { Stat, formatMoney, formatMoneyDual } from '@/components/ds/Stat'
 import { EmptyState } from '@/components/ds/EmptyState'
 import { ProviderMark } from '@/components/ds/ProviderMark'
 import type { PortfolioSummaryDTO, ProviderSummaryDTO } from '@/lib/types'
@@ -96,7 +96,7 @@ function PortfolioDonut({ portfolio }: { portfolio: PortfolioSummaryDTO }) {
   )
 }
 
-function ProviderRow({ provider, totalUsd, idx, defaultOpen }: { provider: ProviderSummaryDTO; totalUsd: number; idx: number; defaultOpen: boolean }) {
+function ProviderRow({ provider, totalUsd, rate, idx, defaultOpen }: { provider: ProviderSummaryDTO; totalUsd: number; rate?: number | null; idx: number; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   const pct = totalUsd > 0 ? (provider.balance_usd / totalUsd) * 100 : 0
   const color = CHART_COLORS[idx % CHART_COLORS.length]
@@ -113,7 +113,7 @@ function ProviderRow({ provider, totalUsd, idx, defaultOpen }: { provider: Provi
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{label(provider.provider)}</span>
             <span className="aa-num" style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-bold)', color: 'var(--text-1)' }}>
-              {formatMoney(provider.balance_usd)}
+              {formatMoneyDual(provider.balance_usd, rate)}
             </span>
           </div>
           <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -143,7 +143,7 @@ function ProviderRow({ provider, totalUsd, idx, defaultOpen }: { provider: Provi
               </div>
               <div style={{ textAlign: 'right' }}>
                 <p className="aa-num" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-1)', margin: 0 }}>
-                  {formatMoney(h.current_value_usd)}
+                  {formatMoneyDual(h.current_value_usd, rate)}
                 </p>
                 {h.performance_24h !== null && <Delta value={h.performance_24h} />}
               </div>
@@ -210,8 +210,9 @@ export default function DashboardPage() {
           <div style={{ flex: 1, minWidth: 200 }}>
             <Stat
               label="Total del portfolio"
-              value={formatMoney(portfolio!.total_usd)}
+              value={portfolio!.usd_to_ars ? formatMoney(portfolio!.total_usd * portfolio!.usd_to_ars, 'AR$') : formatMoney(portfolio!.total_usd)}
               size="lg"
+              sub={portfolio!.usd_to_ars ? <span className="aa-num" style={{ fontSize: 'var(--text-md)', color: 'var(--text-2)', fontWeight: 'var(--weight-medium)' }}>{formatMoney(portfolio!.total_usd)}</span> : undefined}
             />
             <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 24 }}>
               <div>
@@ -249,7 +250,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {portfolio!.providers.map((p, i) => (
-            <ProviderRow key={p.provider} provider={p} totalUsd={portfolio!.total_usd} idx={i} defaultOpen={i === 0} />
+            <ProviderRow key={p.provider} provider={p} totalUsd={portfolio!.total_usd} rate={portfolio!.usd_to_ars} idx={i} defaultOpen={i === 0} />
           ))}
         </div>
       </div>

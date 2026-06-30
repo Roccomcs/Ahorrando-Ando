@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Card } from '@/components/ds/Card'
 import { Delta } from '@/components/ds/Delta'
-import { useProviderPerformance } from '@/hooks/usePortfolio'
-import { formatMoney } from '@/components/ds/Stat'
+import { useProviderPerformance, usePortfolio } from '@/hooks/usePortfolio'
+import { formatMoneyDual } from '@/components/ds/Stat'
 import type { ProviderPerformanceItem } from '@/lib/types'
 
 const PROVIDER_COLORS: Record<string, string> = {
@@ -44,6 +44,7 @@ function MiniSparkline({ data, color }: { data: { date: string; balance_usd: num
 }
 
 function SummaryTable({ providers }: { providers: ProviderPerformanceItem[] }) {
+  const { data: portfolio } = usePortfolio()
   return (
     <Card padding="none">
       <div style={{ padding: '16px 16px 0' }}>
@@ -53,7 +54,7 @@ function SummaryTable({ providers }: { providers: ProviderPerformanceItem[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
           <thead>
             <tr>
-              {['Cuenta', 'Actual USD', '24h', '7d', '30d'].map((h, i) => (
+              {['Cuenta', 'Actual', '24h', '7d', '30d'].map((h, i) => (
                 <th key={h} style={{ padding: '10px 16px', textAlign: i >= 1 ? 'right' : 'left', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', borderBottom: '1px solid var(--border-1)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -67,7 +68,7 @@ function SummaryTable({ providers }: { providers: ProviderPerformanceItem[] }) {
                     <span style={{ fontWeight: 'var(--weight-medium)', color: 'var(--text-1)' }}>{p.label}</span>
                   </div>
                 </td>
-                <td className="aa-num" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{formatMoney(p.current_usd)}</td>
+                <td className="aa-num" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{formatMoneyDual(p.current_usd, portfolio?.usd_to_ars)}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>{p.change_pct_24h !== null ? <Delta value={p.change_pct_24h} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>{p.change_pct_7d !== null ? <Delta value={p.change_pct_7d} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>{p.change_pct_30d !== null ? <Delta value={p.change_pct_30d} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
@@ -82,6 +83,7 @@ function SummaryTable({ providers }: { providers: ProviderPerformanceItem[] }) {
 
 function ProviderMiniCard({ provider, idx }: { provider: ProviderPerformanceItem; idx: number }) {
   const c = pColor(provider.provider, idx)
+  const { data: portfolio } = usePortfolio()
   return (
     <Card padding="md">
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -91,7 +93,7 @@ function ProviderMiniCard({ provider, idx }: { provider: ProviderPerformanceItem
           </div>
           <div>
             <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: 0 }}>{provider.label}</p>
-            <p className="aa-num" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>{formatMoney(provider.current_usd)}</p>
+            <p className="aa-num" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>{formatMoneyDual(provider.current_usd, portfolio?.usd_to_ars)}</p>
           </div>
         </div>
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>

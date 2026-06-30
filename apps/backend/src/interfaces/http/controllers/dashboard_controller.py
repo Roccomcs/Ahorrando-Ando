@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import Depends
@@ -19,8 +20,14 @@ from infrastructure.database.postgres.repositories.postgres_integration_reposito
 from infrastructure.database.postgres.repositories.postgres_portfolio_snapshot_repository import PostgresPortfolioSnapshotRepository
 from infrastructure.database.postgres.repositories.postgres_provider_snapshot_repository import PostgresProviderSnapshotRepository
 from infrastructure.encryption.fernet_encryption_service import FernetEncryptionService
+from infrastructure.prices.exchange_rate_service import ExchangeRateService
 from infrastructure.providers.registry import ProviderRegistry
 from interfaces.http.dependencies.get_db_session import get_db_session
+
+logger = logging.getLogger(__name__)
+
+_USD_ARS_CACHE_KEY = "fx:usd_to_ars"
+_USD_ARS_TTL = 600  # 10 min
 
 
 class DashboardController:
@@ -29,6 +36,21 @@ class DashboardController:
         self._cache = RedisCacheService()
         self._snapshot_repo = PostgresPortfolioSnapshotRepository(session)
         self._provider_snapshot_repo = PostgresProviderSnapshotRepository(session)
+
+    async def _usd_to_ars(self) -> float | None:
+        """Cotización dólar blue cacheada en Redis. None si no se pudo obtener."""
+        cached = await self._cache.get(_USD_ARS_CACHE_KEY)
+        if cached:
+            return cached
+        try:
+            rate = await ExchangeRateService().get_usd_to_ars()
+        except Exception as exc:
+            logger.warning("No se pudo obtener cotización ARS: %s", exc)
+            return None
+        if rate > 0:
+            await self._cache.set(_USD_ARS_CACHE_KEY, rate, ttl=_USD_ARS_TTL)
+            return rate
+        return None
 
     def _get_portfolio_use_case(self) -> GetAggregatedPortfolio:
         return GetAggregatedPortfolio(
@@ -41,17 +63,23 @@ class DashboardController:
         )
 
     async def get_aggregated(self, user_id: str) -> PortfolioSummaryDTO:
-        return await self._get_portfolio_use_case().execute(user_id)
+        summary = await self._get_portfolio_use_case().execute(user_id)
+        summary.usd_to_ars = await self._usd_to_ars()
+        return summary
 
     async def get_history(
         self, user_id: str, start: datetime, end: datetime
     ) -> PortfolioHistoryDTO:
         use_case = GetPortfolioHistory(self._snapshot_repo)
-        return await use_case.execute(user_id, start, end)
+        history = await use_case.execute(user_id, start, end)
+        history.usd_to_ars = await self._usd_to_ars()
+        return history
 
     async def refresh(self, user_id: str) -> PortfolioSummaryDTO:
         await RefreshPortfolioData(self._cache).execute(user_id)
-        return await self._get_portfolio_use_case().execute(user_id)
+        summary = await self._get_portfolio_use_case().execute(user_id)
+        summary.usd_to_ars = await self._usd_to_ars()
+        return summary
 
     async def get_allocation(self, user_id: str) -> dict:
         return await GetAllocation(self._get_portfolio_use_case()).execute(user_id)

@@ -11,6 +11,17 @@ export function formatMoney(amount: number, currency = 'US$') {
   return `${currency} ${amount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+/**
+ * Formatea un monto en USD mostrando también su equivalente en pesos.
+ * Si no hay cotización (rate null/0), cae a solo USD.
+ */
+export function formatMoneyDual(amountUsd: number, rate?: number | null) {
+  const usd = formatMoney(amountUsd, 'US$')
+  if (!rate || rate <= 0) return usd
+  const ars = formatMoney(amountUsd * rate, 'AR$')
+  return `${ars} · ${usd}`
+}
+
 export function Stat({ label, value, size = 'md', sub }: Props) {
   return (
     <div className="aa-stat">

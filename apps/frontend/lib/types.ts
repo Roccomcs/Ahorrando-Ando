@@ -29,6 +29,7 @@ export interface ProviderSummaryDTO {
 
 export interface PortfolioSummaryDTO {
   total_usd: number
+  usd_to_ars: number | null
   change_pct_24h: number | null
   change_pct_30d: number | null
   providers: ProviderSummaryDTO[]
@@ -41,6 +42,7 @@ export interface HistoryPoint {
 
 export interface PortfolioHistoryDTO {
   points: HistoryPoint[]
+  usd_to_ars: number | null
   change_pct_24h: number | null
   change_pct_30d: number | null
 }

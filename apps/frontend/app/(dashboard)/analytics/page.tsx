@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { Card } from '@/components/ds/Card'
 import { Button } from '@/components/ds/Button'
 import { Delta } from '@/components/ds/Delta'
-import { useAllocation, useROI, useBenchmark } from '@/hooks/usePortfolio'
-import { formatMoney } from '@/components/ds/Stat'
+import { useAllocation, useROI, useBenchmark, usePortfolio } from '@/hooks/usePortfolio'
+import { formatMoneyDual } from '@/components/ds/Stat'
 import { api } from '@/lib/api'
 
 const CHART_COLORS = ['#63B8F4','#E8C268','#3DD993','#9D8CFF','#45D4C8','#F08FB7','#F4626E','#B5D85A']
@@ -52,6 +52,7 @@ const pillStyle = (active: boolean): React.CSSProperties => ({
 
 function AllocationSection() {
   const { data, isLoading } = useAllocation()
+  const { data: portfolio } = usePortfolio()
   const [view, setView] = useState<AllocationView>('by_asset')
 
   if (isLoading) return <div style={{ height: 260, background: 'var(--surface-card)', borderRadius: 'var(--radius-lg)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />
@@ -81,7 +82,7 @@ function AllocationSection() {
                 <span style={{ color: 'var(--text-2)', fontWeight: 'var(--weight-medium)' }}>{item.label}</span>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
-                <span className="aa-num" style={{ color: 'var(--text-1)', fontWeight: 'var(--weight-medium)' }}>{formatMoney(item.usd_value)}</span>
+                <span className="aa-num" style={{ color: 'var(--text-1)', fontWeight: 'var(--weight-medium)' }}>{formatMoneyDual(item.usd_value, portfolio?.usd_to_ars)}</span>
                 <span style={{ color: 'var(--text-3)', width: 36, textAlign: 'right' }}>{item.percentage.toFixed(1)}%</span>
               </div>
             </div>
@@ -94,6 +95,7 @@ function AllocationSection() {
 
 function ROISection() {
   const { data, isLoading } = useROI()
+  const { data: portfolio } = usePortfolio()
 
   if (isLoading) return <div style={{ height: 140, background: 'var(--surface-card)', borderRadius: 'var(--radius-lg)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />
   if (!data || data.length === 0) return null
@@ -107,7 +109,7 @@ function ROISection() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
           <thead>
             <tr>
-              {['Activo', 'Broker', 'Valor USD', '24h', '30d'].map((h, i) => (
+              {['Activo', 'Broker', 'Valor', '24h', '30d'].map((h, i) => (
                 <th key={h} style={{ padding: '10px 16px', textAlign: i >= 2 ? 'right' : 'left', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', borderBottom: '1px solid var(--border-1)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -120,7 +122,7 @@ function ROISection() {
                   <span style={{ color: 'var(--text-3)', marginLeft: 6, fontSize: 'var(--text-xs)' }}>{item.asset_name}</span>
                 </td>
                 <td style={{ padding: '12px 16px', color: 'var(--text-2)', textTransform: 'capitalize' }}>{item.provider}</td>
-                <td className="aa-num" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'var(--weight-medium)', color: 'var(--text-1)' }}>{formatMoney(item.current_value_usd)}</td>
+                <td className="aa-num" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'var(--weight-medium)', color: 'var(--text-1)' }}>{formatMoneyDual(item.current_value_usd, portfolio?.usd_to_ars)}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>{item.performance_24h !== null ? <Delta value={item.performance_24h} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right' }}>{item.performance_30d !== null ? <Delta value={item.performance_30d} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
               </tr>

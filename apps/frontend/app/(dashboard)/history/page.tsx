@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card } from '@/components/ds/Card'
 import { Delta } from '@/components/ds/Delta'
 import { usePortfolioHistory, usePortfolio } from '@/hooks/usePortfolio'
-import { formatMoney } from '@/components/ds/Stat'
+import { formatMoneyDual } from '@/components/ds/Stat'
 
 type Range = '7d' | '30d' | '90d' | '1y'
 
@@ -30,7 +30,7 @@ const LINE_COLOR = '#63B8F4'
 const GRID_COLOR = 'rgba(255,255,255,0.06)'
 const AREA_FILL = 'rgba(99,184,244,0.08)'
 
-function LineChart({ points }: { points: { date: string; usd: number }[] }) {
+function LineChart({ points, rate }: { points: { date: string; usd: number }[]; rate?: number | null }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [tooltip, setTooltip] = useState<{ x: number; y: number; point: typeof points[0] } | null>(null)
 
@@ -101,7 +101,7 @@ function LineChart({ points }: { points: { date: string; usd: number }[] }) {
       {tooltip && (
         <div style={{ position: 'absolute', left: `${(tooltip.x / W) * 100}%`, top: `${(tooltip.y / H) * 100}%`, transform: 'translate(-50%,-110%)', pointerEvents: 'none', background: 'var(--surface-elevated)', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-md)', padding: '6px 10px', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
           <div style={{ color: 'var(--text-3)' }}>{formatDate(tooltip.point.date)}</div>
-          <div className="aa-num" style={{ color: 'var(--text-1)', fontWeight: 'var(--weight-bold)' }}>{formatMoney(tooltip.point.usd)}</div>
+          <div className="aa-num" style={{ color: 'var(--text-1)', fontWeight: 'var(--weight-bold)' }}>{formatMoneyDual(tooltip.point.usd, rate)}</div>
         </div>
       )}
     </div>
@@ -151,7 +151,7 @@ export default function HistoryPage() {
       <Card padding="md">
         {isLoading
           ? <div style={{ height: 280, background: 'var(--surface-hover)', borderRadius: 'var(--radius-md)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />
-          : <LineChart points={points} />}
+          : <LineChart points={points} rate={data?.usd_to_ars} />}
       </Card>
 
       {data && (
