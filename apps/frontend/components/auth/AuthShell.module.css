@@ -1,0 +1,66 @@
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  position: relative;
+}
+
+/* Panel de marca (izquierda) */
+.brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: clamp(40px, 6vw, 88px);
+  color: #fff;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(65, 164, 239, 0.30), transparent 55%),
+    radial-gradient(120% 120% at 100% 100%, rgba(61, 217, 147, 0.22), transparent 55%),
+    linear-gradient(150deg, #0B0E14 0%, #111A33 55%, #0A0F1E 100%);
+}
+.brandInner { position: relative; z-index: 1; max-width: 440px; }
+.brandLogo {
+  display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: #fff;
+  margin-bottom: clamp(32px, 6vw, 64px);
+}
+.brandLogo span {
+  font-family: var(--font-display); font-weight: var(--weight-bold);
+  font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 24px;
+}
+.brandInner h2 {
+  margin: 0; font-family: var(--font-display); font-weight: var(--weight-bold);
+  letter-spacing: -0.02em; line-height: 1.08; font-size: clamp(30px, 3.4vw, 46px);
+}
+.brandInner p {
+  margin: var(--space-5) 0 0; font-size: var(--text-lg); line-height: var(--leading-body);
+  color: rgba(255, 255, 255, 0.78); max-width: 38ch;
+}
+
+/* Panel de formulario (derecha) */
+.formPane {
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(28px, 5vw, 64px); background: var(--surface-canvas);
+}
+.formCard { width: 100%; max-width: 400px; }
+.formHead { margin-bottom: var(--space-6); }
+.formHead h1 {
+  margin: 0 0 6px; font-family: var(--font-display); font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); color: var(--text-1);
+}
+.formHead p { margin: 0; font-size: var(--text-sm); color: var(--text-2); }
+
+/* Botón volver */
+.back {
+  position: fixed; top: 20px; left: 20px; z-index: 10;
+  width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-md); color: #fff; text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.back:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+@media (max-width: 880px) {
+  .wrap { grid-template-columns: 1fr; }
+  .brand { display: none; }
+  .formPane { min-height: 100vh; }
+}

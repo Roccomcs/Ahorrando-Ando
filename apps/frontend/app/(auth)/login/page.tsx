@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ds/Button'
 import { Input } from '@/components/ds/Input'
-import { Card } from '@/components/ds/Card'
-import { AppLogo } from '@/components/ds/AppLogo'
+import { AuthShell } from '@/components/auth/AuthShell'
 
 function GoogleIcon() {
   return (
@@ -22,7 +21,7 @@ function GoogleIcon() {
 
 function Divider() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
       <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>o</span>
       <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
@@ -72,94 +71,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <Link href="/" style={{
-        position: 'fixed', top: 20, left: 20,
-        width: 40, height: 40,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--surface-card)', border: '1px solid var(--border-2)',
-        borderRadius: 'var(--radius-md)', color: 'var(--text-2)',
-        textDecoration: 'none', transition: 'background 130ms, color 130ms, border-color 130ms',
-      }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-card)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5"/><path d="m12 5-7 7 7 7"/>
-        </svg>
+    <AuthShell
+      title="Entrá a tu portfolio"
+      subtitle="Todo tu patrimonio, en un solo lugar."
+      brandTitle="Toda tu plata, en una única aplicación."
+      brandText="Exchanges, brokers y billeteras virtuales, juntas en pesos y dólares."
+      footer={
+        <>
+          <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
+            ¿No tenés cuenta?{' '}
+            <Link href="/register" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Registrate</Link>
+          </p>
+          <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 16, display: 'flex', justifyContent: 'center', gap: 16 }}>
+            <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Privacidad</Link>
+            <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Términos</Link>
+          </p>
+        </>
+      }
+    >
+      <Link href="/api/auth/google" style={{ textDecoration: 'none', display: 'block' }}>
+        <button style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '11px 16px', borderRadius: 'var(--radius-md)',
+          background: 'var(--surface-raised)', border: '1px solid var(--border-2)',
+          color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
+          cursor: 'pointer', transition: 'background 130ms', fontFamily: 'var(--font-ui)',
+        }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-raised)')}
+        >
+          <GoogleIcon />
+          Continuar con Google
+        </button>
       </Link>
 
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 28, textDecoration: 'none', color: 'inherit' }}>
-          <AppLogo size={32} />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', fontSize: 22 }}>
-            Ahorrando <span style={{ color: 'var(--text-3)' }}>Ando</span>
-          </span>
-        </Link>
+      <Divider />
 
-        <Card padding="lg" raised>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px' }}>
-            Entrá a tu portfolio
-          </h1>
-          <p style={{ margin: '0 0 20px', fontSize: 'var(--text-sm)', color: 'var(--text-2)' }}>
-            Todo tu patrimonio, en un solo lugar.
-          </p>
-
-          {/* Google OAuth */}
-          <Link href="/api/auth/google" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
-            <button style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              padding: '10px 16px', borderRadius: 'var(--radius-md)',
-              background: 'var(--surface-raised)', border: '1px solid var(--border-2)',
-              color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-              cursor: 'pointer', transition: 'background 130ms',
-              fontFamily: 'var(--font-ui)',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-raised)')}
-            >
-              <GoogleIcon />
-              Continuar con Google
-            </button>
-          </Link>
-
-          <Divider />
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
-            <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
-            <div>
-              <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
-              <div style={{ textAlign: 'right', marginTop: 6 }}>
-                <Link href="/forgot-password" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-accent)', textDecoration: 'none' }}>
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-            </div>
-            {error && (
-              <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
-                {error}
-                {showResend && !resendSent && (
-                  <button onClick={handleResend} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', color: 'var(--text-accent)', fontSize: 'var(--text-sm)', cursor: 'pointer', padding: 0, fontWeight: 'var(--weight-medium)' }}>
-                    Reenviar código de verificación →
-                  </button>
-                )}
-              </div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
+        <div>
+          <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+          <div style={{ textAlign: 'right', marginTop: 6 }}>
+            <Link href="/forgot-password" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-accent)', textDecoration: 'none' }}>
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+        </div>
+        {error && (
+          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
+            {error}
+            {showResend && !resendSent && (
+              <button onClick={handleResend} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', color: 'var(--text-accent)', fontSize: 'var(--text-sm)', cursor: 'pointer', padding: 0, fontWeight: 'var(--weight-medium)' }}>
+                Reenviar código de verificación →
+              </button>
             )}
-            <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
-              {loading ? 'Entrando…' : 'Entrar'}
-            </Button>
-          </form>
-        </Card>
-
-        <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
-          ¿No tenés cuenta?{' '}
-          <Link href="/register" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Registrate</Link>
-        </p>
-        <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 16, display: 'flex', justifyContent: 'center', gap: 16 }}>
-          <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Privacidad</Link>
-          <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Términos</Link>
-        </p>
-      </div>
-    </div>
+          </div>
+        )}
+        <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
+          {loading ? 'Entrando…' : 'Entrar'}
+        </Button>
+      </form>
+    </AuthShell>
   )
 }

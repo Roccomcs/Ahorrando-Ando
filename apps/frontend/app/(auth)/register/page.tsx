@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ds/Button'
 import { Input } from '@/components/ds/Input'
-import { AppLogo } from '@/components/ds/AppLogo'
-import { Card } from '@/components/ds/Card'
+import { AuthShell } from '@/components/auth/AuthShell'
 
 function GoogleIcon() {
   return (
@@ -22,7 +21,7 @@ function GoogleIcon() {
 
 function Divider() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
       <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>o</span>
       <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
@@ -51,7 +50,6 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await register(email, password)
-      // Después del registro, redirigir a verificación de email
       router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } catch {
       setErrors({ form: 'No se pudo crear la cuenta' })
@@ -61,85 +59,57 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <Link href="/" style={{
-        position: 'fixed', top: 20, left: 20,
-        width: 40, height: 40,
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--surface-card)', border: '1px solid var(--border-2)',
-        borderRadius: 'var(--radius-md)', color: 'var(--text-2)',
-        textDecoration: 'none', transition: 'background 130ms, color 130ms, border-color 130ms',
-      }}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-card)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5"/><path d="m12 5-7 7 7 7"/>
-        </svg>
+    <AuthShell
+      title="Creá tu cuenta"
+      subtitle="Gratis. Conectás tus cuentas y listo."
+      brandTitle="Empezá a ver toda tu plata junta."
+      brandText="Conectá tus aplicaciones de inversiones favoritas y mirá tu patrimonio en un solo lugar, en pesos y dólares."
+      footer={
+        <>
+          <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
+            ¿Ya tenés cuenta?{' '}
+            <Link href="/login" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Iniciá sesión</Link>
+          </p>
+          <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 10 }}>
+            Al registrarte aceptás los{' '}
+            <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'underline' }}>Términos de uso</Link>
+            {' '}y la{' '}
+            <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'underline' }}>Política de privacidad</Link>
+          </p>
+        </>
+      }
+    >
+      <Link href="/api/auth/google" style={{ textDecoration: 'none', display: 'block' }}>
+        <button style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '11px 16px', borderRadius: 'var(--radius-md)',
+          background: 'var(--surface-raised)', border: '1px solid var(--border-2)',
+          color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
+          cursor: 'pointer', transition: 'background 130ms', fontFamily: 'var(--font-ui)',
+        }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-raised)')}
+        >
+          <GoogleIcon />
+          Registrarse con Google
+        </button>
       </Link>
 
-      <div style={{ width: '100%', maxWidth: 400 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center', marginBottom: 28, textDecoration: 'none', color: 'inherit' }}>
-          <AppLogo size={32} />
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', fontSize: 22 }}>
-            Ahorrando <span style={{ color: 'var(--text-3)' }}>Ando</span>
-          </span>
-        </Link>
+      <Divider />
 
-        <Card padding="lg" raised>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-xl)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px' }}>
-            Creá tu cuenta
-          </h1>
-          <p style={{ margin: '0 0 20px', fontSize: 'var(--text-sm)', color: 'var(--text-2)' }}>
-            Gratis. Conectás tus cuentas y listo.
-          </p>
-
-          {/* Google OAuth */}
-          <Link href="/api/auth/google" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
-            <button style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              padding: '10px 16px', borderRadius: 'var(--radius-md)',
-              background: 'var(--surface-raised)', border: '1px solid var(--border-2)',
-              color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-              cursor: 'pointer', transition: 'background 130ms',
-              fontFamily: 'var(--font-ui)',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-raised)')}
-            >
-              <GoogleIcon />
-              Registrarse con Google
-            </button>
-          </Link>
-
-          <Divider />
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
-            <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} error={errors.email} autoComplete="email" required />
-            <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} error={errors.password} hint={!errors.password ? 'Mínimo 12 caracteres, con letras y números' : undefined} autoComplete="new-password" required />
-            <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2} onChange={e => setPassword2(e.target.value)} error={errors.password2} autoComplete="new-password" required />
-            {errors.form && (
-              <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
-                {errors.form}
-              </div>
-            )}
-            <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
-              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
-            </Button>
-          </form>
-        </Card>
-
-        <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
-          ¿Ya tenés cuenta?{' '}
-          <Link href="/login" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Iniciá sesión</Link>
-        </p>
-        <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 10 }}>
-          Al registrarte aceptás los{' '}
-          <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'underline' }}>Términos de uso</Link>
-          {' '}y la{' '}
-          <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'underline' }}>Política de privacidad</Link>
-        </p>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} error={errors.email} autoComplete="email" required />
+        <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} error={errors.password} hint={!errors.password ? 'Mínimo 12 caracteres, con letras y números' : undefined} autoComplete="new-password" required />
+        <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2} onChange={e => setPassword2(e.target.value)} error={errors.password2} autoComplete="new-password" required />
+        {errors.form && (
+          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
+            {errors.form}
+          </div>
+        )}
+        <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
+          {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+        </Button>
+      </form>
+    </AuthShell>
   )
 }
