@@ -42,7 +42,19 @@
 .back:hover { background: var(--surface-hover); color: var(--text-1); }
 
 /* Columna central */
-.shell { position: relative; z-index: 2; width: 100%; max-width: 420px; padding: var(--space-6); }
+.shell { position: relative; z-index: 2; width: 100%; max-width: 420px; padding: var(--space-4); }
+
+/* Tarjeta glass que aloja la animación de entrada (panel que crece) */
+.card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-xl);
+  padding: clamp(28px, 5vw, 40px) clamp(22px, 4vw, 32px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-overlay);
+  transform-origin: center center;
+}
 
 .brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: var(--space-8); text-decoration: none; }
 .wm { font-family: var(--font-display); font-weight: var(--weight-bold); font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 19px; color: var(--text-1); }
@@ -94,18 +106,6 @@
 .legal a { font-size: var(--text-xs); color: var(--text-3); text-decoration: none; }
 .legal a:hover { color: var(--text-2); }
 
-/* Animación de entrada (loader) — stagger fade-up, a prueba de fallos */
-@keyframes aaAuthUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-.shell > * { animation: aaAuthUp 0.5s var(--ease-out) both; }
-.shell > *:nth-child(1) { animation-delay: 0.05s; }
-.shell > *:nth-child(2) { animation-delay: 0.13s; }
-.shell > *:nth-child(3) { animation-delay: 0.21s; }
-.shell > *:nth-child(4) { animation-delay: 0.29s; }
-.shell > *:nth-child(5) { animation-delay: 0.37s; }
-.shell > *:nth-child(6) { animation-delay: 0.45s; }
-.shell > *:nth-child(7) { animation-delay: 0.53s; }
-.shell > *:nth-child(8) { animation-delay: 0.61s; }
-
 @media (prefers-reduced-motion: reduce) {
-  .blob, .shell > * { animation: none; }
+  .blob { animation: none; }
 }
