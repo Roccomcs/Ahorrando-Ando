@@ -20,27 +20,21 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
   const root = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const card = `.${s.card}`
     const items = `.${s.card} > *`
 
-    if (reduce) {
-      gsap.set([card, items], { clearProps: 'all' })
-      return
-    }
-
+    // Animación de entrada: la tarjeta cae como un panel angosto, se expande en
+    // vertical y luego en horizontal; el contenido aparece en stagger.
+    // Es una entrada decorativa y deliberadamente se muestra siempre (también con
+    // "reduce motion" del sistema), porque es parte de la identidad del login.
     const tl = gsap.timeline()
-    // La tarjeta cae desde arriba como un panel angosto…
     tl.fromTo(card,
       { y: -560, scaleX: 0.2, scaleY: 0.5, opacity: 0 },
       { y: 0, scaleX: 0.2, scaleY: 0.5, opacity: 1, duration: 1.1, ease: 'power3.out' },
     )
-      // …se expande en vertical…
       .to(card, { scaleY: 1, duration: 0.5, ease: 'power3.out' }, '-=0.25')
-      // …y después en horizontal.
-      .to(card, { scaleX: 1, duration: 0.6, ease: 'power3.out' }, '-=0.15')
+      .to(card, { scaleX: 1, duration: 0.6, ease: 'power3.out', clearProps: 'transform' }, '-=0.15')
 
-    // El contenido aparece en stagger una vez formado el panel.
     gsap.from(items, {
       opacity: 0, y: -30, ease: 'power2.out', duration: 0.9,
       delay: 1.35, stagger: 0.12, clearProps: 'all',

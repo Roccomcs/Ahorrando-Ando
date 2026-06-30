@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "apps/landing", "-p", "5500", "--no-clipboard"],
       "port": 5500
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "apps/frontend", "--", "-p", "3000"],
+      "port": 3000
     }
   ]
 }
