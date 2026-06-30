@@ -222,9 +222,10 @@
 
 /* ── Paleta landing/login (estilo Revolut, dark fijo) ───────── */
 :root {
-  --ll-black:  #000000;   /* header + primera sección */
-  --ll-gray:   #14171A;   /* secciones alternas */
-  --ll-footer: #1B2530;   /* footer azul-grisáceo */
+  --ll-black:   #000000;  /* header + hero (presentación) */
+  --ll-section: #191C1F;  /* secciones full-screen */
+  --ll-gray:    #14171A;  /* footer */
+  --ll-footer:  #1B2530;  /* (legacy) */
   --ll-text-1: #FFFFFF;
   --ll-text-2: #A8B0BA;
   --ll-text-3: #6B7480;

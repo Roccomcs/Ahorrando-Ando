@@ -48,9 +48,14 @@
 }
 .navCta { display: flex; align-items: center; gap: var(--space-6); }
 
-/* Hero — fondo negro */
-.hero { background: var(--ll-black); padding: calc(104px + clamp(48px, 8vw, 96px)) 0 96px; }
-.heroGrid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--space-16); align-items: center; }
+/* Hero — fondo negro, pantalla completa */
+.hero {
+  background: var(--ll-black);
+  min-height: 100vh;
+  display: flex; align-items: center;
+  padding: calc(104px + clamp(24px, 5vw, 64px)) 0 clamp(48px, 8vw, 96px);
+}
+.heroGrid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--space-16); align-items: center; width: 100%; }
 .title {
   margin: 0; font-family: var(--font-display); font-weight: var(--weight-bold);
   font-stretch: 120%; letter-spacing: -0.025em; line-height: 1.02;
@@ -106,11 +111,30 @@
   font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em;
 }
 
-/* Secciones — alternancia de color sin líneas */
-.section { padding: clamp(72px, 9vw, 120px) 0; }
-.secBlack { background: var(--ll-black); }
-.secGray { background: var(--ll-gray); }
+/* Secciones — cada una a pantalla completa, color #191c1f con bordes que
+   se funden a negro arriba y abajo (transición suave entre secciones) */
+.section {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: clamp(72px, 9vw, 120px) 0;
+  background: linear-gradient(
+    180deg,
+    var(--ll-black) 0%,
+    var(--ll-section) 15%,
+    var(--ll-section) 85%,
+    var(--ll-black) 100%
+  );
+}
 .secHead { max-width: 860px; margin-bottom: var(--space-12); }
+
+/* Reveal al entrar en viewport — fade + subida suave */
+.reveal {
+  opacity: 0;
+  transform: translateY(34px);
+  transition: opacity 0.8s var(--ease-out), transform 0.8s var(--ease-out);
+  will-change: opacity, transform;
+}
+.revealed { opacity: 1; transform: none; }
 .secOverline { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--cielo-400); }
 .secTitle { margin: var(--space-4) 0 0; font-family: var(--font-display); font-weight: var(--weight-bold); font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: clamp(30px, 4vw, 44px); line-height: 1.08; color: var(--ll-text-1); }
 .secSub { margin: var(--space-4) 0 0; font-size: var(--text-md); color: var(--ll-text-2); max-width: 52ch; }
@@ -156,8 +180,8 @@
 .assetLogo { width: 30px; height: 30px; object-fit: contain; flex: none; }
 .assetDot { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,0.06); border: 1px solid var(--ll-border); flex: none; }
 
-/* Footer — azul-grisáceo, sin línea superior */
-.footer { background: var(--ll-footer); padding: var(--space-12) 0; }
+/* Footer — usa el color que antes tenían las secciones (#14171A) */
+.footer { background: var(--ll-gray); padding: var(--space-16) 0 var(--space-12); }
 .footInner { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; }
 .footNote { font-size: var(--text-sm); color: var(--ll-text-3); max-width: 42ch; margin-top: var(--space-4); line-height: var(--leading-body); }
 .footCols { display: flex; gap: var(--space-16); }

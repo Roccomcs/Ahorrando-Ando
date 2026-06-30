@@ -48,8 +48,29 @@ function Check() {
   )
 }
 
+function useScrollReveal() {
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>(`.${s.reveal}`))
+    if (!els.length) return
+    const io = new IntersectionObserver(
+      entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add(s.revealed)
+            io.unobserve(e.target)
+          }
+        })
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -12% 0px' },
+    )
+    els.forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+}
+
 export default function LandingPage() {
   const hidden = useHideOnScroll()
+  useScrollReveal()
 
   return (
     <div className={s.page}>
@@ -122,8 +143,8 @@ export default function LandingPage() {
       </section>
 
       {/* QUÉ HACEMOS */}
-      <section id="features" className={`${s.section} ${s.secGray}`}>
-        <div className={s.wrap}>
+      <section id="features" className={`${s.section}`}>
+        <div className={`${s.wrap} ${s.reveal}`}>
           <div className={s.secHead}>
             <div className={s.secOverline}>Como trabajamos</div>
             <h2 className={s.secTitle}>Tu portafolio en un único lugar</h2>
@@ -149,8 +170,8 @@ export default function LandingPage() {
       </section>
 
       {/* CONEXIONES */}
-      <section id="providers" className={`${s.section} ${s.secBlack}`}>
-        <div className={s.wrap}>
+      <section id="providers" className={`${s.section}`}>
+        <div className={`${s.wrap} ${s.reveal}`}>
           <div className={s.secHead}>
             <div className={s.secOverline}>Conexiones</div>
             <h2 className={s.secTitle}>Conectá lo que ya usás</h2>
@@ -175,8 +196,8 @@ export default function LandingPage() {
       </section>
 
       {/* PERFORMANCE */}
-      <section id="performance" className={`${s.section} ${s.secGray}`}>
-        <div className={`${s.wrap} ${s.featureRow}`}>
+      <section id="performance" className={`${s.section}`}>
+        <div className={`${s.wrap} ${s.featureRow} ${s.reveal}`}>
           <div className={s.featureCopy}>
             <div className={s.secOverline}>Performance</div>
             <h2 className={s.secTitle}>Cuánto rinde cada cuenta</h2>
@@ -214,8 +235,8 @@ export default function LandingPage() {
       </section>
 
       {/* HISTORIAL */}
-      <section id="history" className={`${s.section} ${s.secBlack}`}>
-        <div className={`${s.wrap} ${s.featureRow} ${s.featureRowReverse}`}>
+      <section id="history" className={`${s.section}`}>
+        <div className={`${s.wrap} ${s.featureRow} ${s.featureRowReverse} ${s.reveal}`}>
           <div className={s.featureCopy}>
             <div className={s.secOverline}>Historial</div>
             <h2 className={s.secTitle}>Cómo evolucionó tu plata</h2>
@@ -242,8 +263,8 @@ export default function LandingPage() {
       </section>
 
       {/* ANALYTICS */}
-      <section id="analytics" className={`${s.section} ${s.secGray}`}>
-        <div className={`${s.wrap} ${s.featureRow}`}>
+      <section id="analytics" className={`${s.section}`}>
+        <div className={`${s.wrap} ${s.featureRow} ${s.reveal}`}>
           <div className={s.featureCopy}>
             <div className={s.secOverline}>Analytics</div>
             <h2 className={s.secTitle}>Entendé en qué estás parado</h2>
@@ -288,7 +309,7 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer className={s.footer}>
-        <div className={s.wrap}>
+        <div className={`${s.wrap} ${s.reveal}`}>
           <div className={s.footInner}>
             <div>
               <a href="#top" className={s.lockup}>
