@@ -4,9 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Button } from '@/components/ds/Button'
-import { Input } from '@/components/ds/Input'
 import { AuthShell } from '@/components/auth/AuthShell'
+import { PillInput } from '@/components/auth/PillInput'
+import a from '@/components/auth/AuthShell.module.css'
 
 function GoogleIcon() {
   return (
@@ -19,14 +19,12 @@ function GoogleIcon() {
   )
 }
 
-function Divider() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
-      <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>o</span>
-      <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-    </div>
-  )
+function MailIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+}
+
+function LockIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
 }
 
 export default function LoginPage() {
@@ -74,62 +72,40 @@ export default function LoginPage() {
     <AuthShell
       title="Entrá a tu portfolio"
       subtitle="Todo tu patrimonio, en un solo lugar."
-      brandTitle="Toda tu plata, en una única aplicación."
-      brandText="Exchanges, brokers y billeteras virtuales, juntas en pesos y dólares."
       footer={
         <>
-          <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
-            ¿No tenés cuenta?{' '}
-            <Link href="/register" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Registrate</Link>
-          </p>
-          <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 16, display: 'flex', justifyContent: 'center', gap: 16 }}>
-            <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Privacidad</Link>
-            <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'none' }}>Términos</Link>
-          </p>
+          <p className={a.signup}>¿No tenés cuenta? <Link href="/register">Registrate</Link></p>
+          <div className={a.legal}>
+            <Link href="/privacy">Privacidad</Link>
+            <Link href="/terms">Términos</Link>
+          </div>
         </>
       }
     >
-      <Link href="/api/auth/google" style={{ textDecoration: 'none', display: 'block' }}>
-        <button style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          padding: '11px 16px', borderRadius: 'var(--radius-md)',
-          background: 'var(--surface-raised)', border: '1px solid var(--border-2)',
-          color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-          cursor: 'pointer', transition: 'background 130ms', fontFamily: 'var(--font-ui)',
-        }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-raised)')}
-        >
+      <Link href="/api/auth/google" style={{ textDecoration: 'none' }}>
+        <button type="button" className={a.gbtn}>
           <GoogleIcon />
           Continuar con Google
         </button>
       </Link>
 
-      <Divider />
+      <div className={a.sep}><span>o</span></div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
-        <div>
-          <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
-          <div style={{ textAlign: 'right', marginTop: 6 }}>
-            <Link href="/forgot-password" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-accent)', textDecoration: 'none' }}>
-              ¿Olvidaste tu contraseña?
-            </Link>
-          </div>
-        </div>
+      <form onSubmit={handleSubmit}>
+        <PillInput leftIcon={<MailIcon />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
+        <PillInput leftIcon={<LockIcon />} type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+        <div className={a.forgot}><Link href="/forgot-password">¿Olvidaste tu contraseña?</Link></div>
         {error && (
-          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
+          <div className={a.errorBox}>
             {error}
             {showResend && !resendSent && (
-              <button onClick={handleResend} style={{ display: 'block', marginTop: 6, background: 'none', border: 'none', color: 'var(--text-accent)', fontSize: 'var(--text-sm)', cursor: 'pointer', padding: 0, fontWeight: 'var(--weight-medium)' }}>
-                Reenviar código de verificación →
-              </button>
+              <button type="button" onClick={handleResend}>Reenviar código de verificación →</button>
             )}
           </div>
         )}
-        <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
+        <button type="submit" className={a.submit} disabled={loading}>
           {loading ? 'Entrando…' : 'Entrar'}
-        </Button>
+        </button>
       </form>
     </AuthShell>
   )

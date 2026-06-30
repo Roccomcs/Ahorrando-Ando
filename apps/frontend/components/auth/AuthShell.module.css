@@ -1,87 +1,111 @@
 .wrap {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  position: relative;
-}
-
-/* Panel de marca (izquierda) */
-.brand {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  padding: clamp(40px, 6vw, 88px);
-  color: #fff;
-  background:
-    radial-gradient(120% 120% at 0% 0%, rgba(65, 164, 239, 0.30), transparent 55%),
-    radial-gradient(120% 120% at 100% 100%, rgba(61, 217, 147, 0.22), transparent 55%),
-    linear-gradient(150deg, #0B0E14 0%, #111A33 55%, #0A0F1E 100%);
-}
-.brandInner { position: relative; z-index: 1; max-width: 440px; }
-.brandLogo {
-  display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: #fff;
-  margin-bottom: clamp(32px, 6vw, 64px);
-}
-.brandLogo span {
-  font-family: var(--font-display); font-weight: var(--weight-bold);
-  font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 24px;
-}
-.brandInner h2 {
-  margin: 0; font-family: var(--font-display); font-weight: var(--weight-bold);
-  letter-spacing: -0.02em; line-height: 1.08; font-size: clamp(30px, 3.4vw, 46px);
-}
-.brandInner p {
-  margin: var(--space-5) 0 0; font-size: var(--text-lg); line-height: var(--leading-body);
-  color: rgba(255, 255, 255, 0.78); max-width: 38ch;
-}
-
-/* Panel de formulario (derecha) */
-.formPane {
   display: flex; align-items: center; justify-content: center;
-  padding: clamp(28px, 5vw, 64px); background: var(--surface-canvas);
+  position: relative; overflow: hidden;
+  background: var(--surface-canvas);
 }
-.formCard { width: 100%; max-width: 400px; }
-.formHead { margin-bottom: var(--space-6); }
-.formHead h1 {
-  margin: 0 0 6px; font-family: var(--font-display); font-size: var(--text-2xl);
-  font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); color: var(--text-1);
+
+/* Fondo aurora — glow azul que se desplaza lento (estilo Revolut) */
+.aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.blob { position: absolute; border-radius: 50%; filter: blur(80px); will-change: transform; }
+.b1 {
+  width: 660px; height: 660px; top: -280px; left: -220px; opacity: 0.7;
+  background: radial-gradient(circle at 50% 50%, #1c4f86 0%, #0d2747 40%, rgba(11,14,20,0) 72%);
+  animation: aaDrift1 14s ease-in-out infinite;
 }
-.formHead p { margin: 0; font-size: var(--text-sm); color: var(--text-2); }
+.b2 {
+  width: 480px; height: 480px; top: -140px; left: 20px; opacity: 0.5;
+  background: radial-gradient(circle at 50% 50%, #2563a3 0%, #0f2d52 42%, rgba(11,14,20,0) 70%);
+  animation: aaDrift2 18s ease-in-out infinite;
+}
+@keyframes aaDrift1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(170px, 110px) scale(1.18); }
+  66%  { transform: translate(90px, 220px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes aaDrift2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(240px, 160px) scale(1.22); }
+  100% { transform: translate(0, 0) scale(1); }
+}
 
 /* Botón volver */
 .back {
-  position: fixed; top: 20px; left: 20px; z-index: 10;
-  width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius-md); color: #fff; text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out);
+  position: fixed; top: 22px; left: 22px; z-index: 3;
+  width: 44px; height: 44px; border-radius: var(--radius-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-card); border: 1px solid var(--border-1);
+  color: var(--text-2); cursor: pointer; text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-.back:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.back:hover { background: var(--surface-hover); color: var(--text-1); }
 
-/* Animación de entrada (CSS, a prueba de fallos) */
-@keyframes aaAuthSlide { from { opacity: 0; transform: translateX(-3%); } to { opacity: 1; transform: none; } }
-@keyframes aaAuthUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+/* Columna central */
+.shell { position: relative; z-index: 2; width: 100%; max-width: 420px; padding: var(--space-6); }
 
-.brand { animation: aaAuthSlide 0.7s var(--ease-out) both; }
-.brandInner > * { animation: aaAuthUp 0.55s var(--ease-out) both; }
-.brandInner > *:nth-child(1) { animation-delay: 0.15s; }
-.brandInner > *:nth-child(2) { animation-delay: 0.27s; }
-.brandInner > *:nth-child(3) { animation-delay: 0.39s; }
+.brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: var(--space-8); text-decoration: none; }
+.wm { font-family: var(--font-display); font-weight: var(--weight-bold); font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 19px; color: var(--text-1); }
+.mut { color: var(--text-3); font-weight: var(--weight-semibold); }
 
-.formCard > * { animation: aaAuthUp 0.5s var(--ease-out) both; }
-.formCard > *:nth-child(1) { animation-delay: 0.20s; }
-.formCard > *:nth-child(2) { animation-delay: 0.30s; }
-.formCard > *:nth-child(3) { animation-delay: 0.40s; }
-.formCard > *:nth-child(4) { animation-delay: 0.50s; }
-.formCard > *:nth-child(5) { animation-delay: 0.60s; }
+.head { text-align: center; margin-bottom: var(--space-8); }
+.head h1 { margin: 0; font-family: var(--font-display); font-weight: var(--weight-bold); font-stretch: 118%; letter-spacing: -0.02em; font-size: clamp(26px, 5vw, 32px); color: var(--text-1); line-height: 1.1; }
+.head p { margin: var(--space-3) 0 0; font-size: var(--text-md); color: var(--text-2); }
+
+/* Google */
+.gbtn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 52px; border-radius: var(--radius-full);
+  background: var(--surface-card); border: 1px solid var(--border-2); cursor: pointer;
+  color: var(--text-1); font-family: var(--font-ui); font-weight: var(--weight-semibold); font-size: var(--text-md);
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.gbtn:hover { background: var(--surface-hover); border-color: var(--carbon-500); }
+
+.sep { display: flex; align-items: center; gap: var(--space-4); margin: var(--space-6) 0; }
+.sep::before, .sep::after { content: ""; flex: 1; height: 1px; background: var(--border-1); }
+.sep span { font-size: var(--text-xs); color: var(--text-3); white-space: nowrap; }
+
+.forgot { text-align: right; margin: 2px 0 var(--space-5); }
+.forgot a { font-size: var(--text-sm); color: var(--text-accent); font-weight: var(--weight-medium); text-decoration: none; }
+.forgot a:hover { color: var(--cielo-300); }
+
+.submit {
+  width: 100%; height: 54px; border: 0; border-radius: var(--radius-full); cursor: pointer;
+  background: var(--action-primary); color: var(--text-inverse);
+  font-family: var(--font-ui); font-weight: var(--weight-bold); font-size: var(--text-md); letter-spacing: var(--tracking-tight);
+  transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.submit:hover { background: var(--action-primary-hover); }
+.submit:active { transform: translateY(1px); }
+.submit:disabled { opacity: 0.6; cursor: default; }
+
+.errorBox {
+  background: var(--down-bg); border: 1px solid rgba(244,98,110,0.25); border-radius: var(--radius-md);
+  padding: 10px 14px; font-size: var(--text-sm); color: var(--down); margin-bottom: var(--space-4);
+}
+.errorBox button { display: block; margin-top: 6px; background: none; border: none; color: var(--text-accent); font-size: var(--text-sm); cursor: pointer; padding: 0; font-weight: var(--weight-medium); }
+
+.signup { text-align: center; margin-top: var(--space-8); font-size: var(--text-base); color: var(--text-2); }
+.signup a { color: var(--text-1); font-weight: var(--weight-bold); text-decoration: none; }
+.signup a:hover { color: var(--cielo-300); }
+
+.legal { text-align: center; margin-top: var(--space-6); display: flex; gap: var(--space-5); justify-content: center; }
+.legal a { font-size: var(--text-xs); color: var(--text-3); text-decoration: none; }
+.legal a:hover { color: var(--text-2); }
+
+/* Animación de entrada (loader) — stagger fade-up, a prueba de fallos */
+@keyframes aaAuthUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.shell > * { animation: aaAuthUp 0.5s var(--ease-out) both; }
+.shell > *:nth-child(1) { animation-delay: 0.05s; }
+.shell > *:nth-child(2) { animation-delay: 0.13s; }
+.shell > *:nth-child(3) { animation-delay: 0.21s; }
+.shell > *:nth-child(4) { animation-delay: 0.29s; }
+.shell > *:nth-child(5) { animation-delay: 0.37s; }
+.shell > *:nth-child(6) { animation-delay: 0.45s; }
+.shell > *:nth-child(7) { animation-delay: 0.53s; }
+.shell > *:nth-child(8) { animation-delay: 0.61s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand, .brandInner > *, .formCard > * { animation: none; }
-}
-
-@media (max-width: 880px) {
-  .wrap { grid-template-columns: 1fr; }
-  .brand { display: none; }
-  .formPane { min-height: 100vh; }
+  .blob, .shell > * { animation: none; }
 }

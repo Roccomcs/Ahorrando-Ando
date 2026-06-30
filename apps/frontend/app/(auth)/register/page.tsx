@@ -4,9 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Button } from '@/components/ds/Button'
-import { Input } from '@/components/ds/Input'
 import { AuthShell } from '@/components/auth/AuthShell'
+import { PillInput } from '@/components/auth/PillInput'
+import a from '@/components/auth/AuthShell.module.css'
 
 function GoogleIcon() {
   return (
@@ -19,14 +19,12 @@ function GoogleIcon() {
   )
 }
 
-function Divider() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
-      <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>o</span>
-      <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-    </div>
-  )
+function MailIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+}
+
+function LockIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
 }
 
 export default function RegisterPage() {
@@ -62,53 +60,33 @@ export default function RegisterPage() {
     <AuthShell
       title="Creá tu cuenta"
       subtitle="Gratis. Conectás tus cuentas y listo."
-      brandTitle="Empezá a ver toda tu plata junta."
-      brandText="Conectá tus aplicaciones de inversiones favoritas y mirá tu patrimonio en un solo lugar, en pesos y dólares."
       footer={
         <>
-          <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-2)', marginTop: 18 }}>
-            ¿Ya tenés cuenta?{' '}
-            <Link href="/login" style={{ color: 'var(--text-accent)', fontWeight: 'var(--weight-medium)' }}>Iniciá sesión</Link>
-          </p>
-          <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginTop: 10 }}>
-            Al registrarte aceptás los{' '}
-            <Link href="/terms" style={{ color: 'var(--text-3)', textDecoration: 'underline' }}>Términos de uso</Link>
-            {' '}y la{' '}
-            <Link href="/privacy" style={{ color: 'var(--text-3)', textDecoration: 'underline' }}>Política de privacidad</Link>
-          </p>
+          <p className={a.signup}>¿Ya tenés cuenta? <Link href="/login">Iniciá sesión</Link></p>
+          <div className={a.legal}>
+            <Link href="/terms">Términos</Link>
+            <Link href="/privacy">Privacidad</Link>
+          </div>
         </>
       }
     >
-      <Link href="/api/auth/google" style={{ textDecoration: 'none', display: 'block' }}>
-        <button style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          padding: '11px 16px', borderRadius: 'var(--radius-md)',
-          background: 'var(--surface-raised)', border: '1px solid var(--border-2)',
-          color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-          cursor: 'pointer', transition: 'background 130ms', fontFamily: 'var(--font-ui)',
-        }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-raised)')}
-        >
+      <Link href="/api/auth/google" style={{ textDecoration: 'none' }}>
+        <button type="button" className={a.gbtn}>
           <GoogleIcon />
           Registrarse con Google
         </button>
       </Link>
 
-      <Divider />
+      <div className={a.sep}><span>o</span></div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} error={errors.email} autoComplete="email" required />
-        <Input label="Contraseña" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} error={errors.password} hint={!errors.password ? 'Mínimo 12 caracteres, con letras y números' : undefined} autoComplete="new-password" required />
-        <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2} onChange={e => setPassword2(e.target.value)} error={errors.password2} autoComplete="new-password" required />
-        {errors.form && (
-          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
-            {errors.form}
-          </div>
-        )}
-        <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
+      <form onSubmit={handleSubmit}>
+        <PillInput leftIcon={<MailIcon />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required error={errors.email} />
+        <PillInput leftIcon={<LockIcon />} type="password" placeholder="Contraseña (mín. 12 caracteres)" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required error={errors.password} />
+        <PillInput leftIcon={<LockIcon />} type="password" placeholder="Repetir contraseña" value={password2} onChange={e => setPassword2(e.target.value)} autoComplete="new-password" required error={errors.password2} />
+        {errors.form && <div className={a.errorBox}>{errors.form}</div>}
+        <button type="submit" className={a.submit} disabled={loading}>
           {loading ? 'Creando cuenta…' : 'Crear cuenta'}
-        </Button>
+        </button>
       </form>
     </AuthShell>
   )
