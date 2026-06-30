@@ -59,7 +59,7 @@ export default function LandingPage() {
       <header className={`${s.nav} ${hidden ? s.navHidden : ''}`}>
         <div className={`${s.wrap} ${s.navInner}`}>
           <a href="#top" className={s.lockup}>
-            <AppLogo size={40} />
+            <AppLogo size={52} />
             <span className={s.wm}>Ahorrando Ando</span>
           </a>
           <div className={s.navCta}>
@@ -74,34 +74,15 @@ export default function LandingPage() {
       <section className={`${s.hero}`}>
         <div className={`${s.wrap} ${s.heroGrid}`}>
           <div>
-            <div className={s.eyebrow}>
-              <i className={s.dot} />
-              <span className={s.eyebrowText}>Agregador de portfolios · Argentina</span>
-            </div>
-            <h1 className={s.title}>Toda tu plata,<br />en <em>una sola</em> pantalla.</h1>
-            <p className={s.tagline}>Exchanges, brokers y billeteras, juntos y en dólares.</p>
+            <h1 className={s.title}>Toda tu plata,<br />en <em>una única</em> aplicación.</h1>
+            <p className={s.tagline}>Exchanges, brokers y billeteras virtuales, juntas en pesos y dólares.</p>
             <p className={s.lede}>
-              Conectá Binance, IOL, Lemon, Mercado Pago y tus wallets on-chain.
-              Ahorrando Ando centraliza tu patrimonio en USD, con gráficos, historial y alertas.
-              Vos mirás; nosotros nunca tocamos.
+              Conectá tus aplicaciones de inversiones financieras favoritas.
+              Ahorrando Ando centraliza tu patrimonio con gráficos, historial y alertas.
             </p>
             <div className={s.ctaRow}>
               <Link href="/register" className={`${s.btn} ${s.btnPill}`}>Crear cuenta gratis</Link>
               <Link href="/login" className={`${s.btn} ${s.btnSecondary}`}>Iniciar sesión</Link>
-            </div>
-            <div className={s.trust}>
-              <span className={s.ti}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                Solo lectura
-              </span>
-              <span className={s.ti}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/></svg>
-                Claves API, nunca tu contraseña
-              </span>
-              <span className={s.ti}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                Pensado para Argentina
-              </span>
             </div>
           </div>
 
@@ -145,9 +126,9 @@ export default function LandingPage() {
       <section id="features" className={`${s.section} ${s.secGray}`}>
         <div className={s.wrap}>
           <div className={s.secHead}>
-            <div className={s.secOverline}>Qué hacemos</div>
-            <h2 className={s.secTitle}>Una terminal para todo tu patrimonio</h2>
-            <p className={s.secSub}>Lo que tenés repartido en seis apps, leído en un solo lugar y en dólares. Sin planillas, sin captura de pantalla.</p>
+            <div className={s.secOverline}>Como trabajamos</div>
+            <h2 className={s.secTitle}>Tu portafolio en un único lugar</h2>
+            <p className={s.secSub}>Todas tus aplicaciones de inversión favoritas en un único lugar, con gráficos para entender de manera práctica y sencilla cómo te está yendo.</p>
           </div>
           <div className={s.featGrid}>
             {[
@@ -233,12 +214,7 @@ export default function LandingPage() {
           <div className={s.featureCopy}>
             <div className={s.secOverline}>Historial</div>
             <h2 className={s.secTitle}>Cómo evolucionó tu plata</h2>
-            <p className={s.secSub}>Cada snapshot de tu patrimonio, fechado y trazable. Mirá la curva completa y entendé cómo crecés en el tiempo, sin planillas.</p>
-            <ul className={s.featureList}>
-              <li><Check /> Evolución del patrimonio total en USD</li>
-              <li><Check /> Snapshots automáticos por proveedor</li>
-              <li><Check /> Exportá tu historial a CSV</li>
-            </ul>
+            <p className={s.secSub}>Gráficos en tiempo real de tu patrimonio, para que veas cómo crece tu dinero de manera simple.</p>
           </div>
           <div className={s.featureVisual}>
             <div className={s.mockup} aria-hidden="true">
@@ -265,12 +241,12 @@ export default function LandingPage() {
         <div className={`${s.wrap} ${s.featureRow}`}>
           <div className={s.featureCopy}>
             <div className={s.secOverline}>Analytics</div>
-            <h2 className={s.secTitle}>Los números que importan</h2>
-            <p className={s.secSub}>Distribución por activo, ROI y comparación contra BTC y ETH. Entendé tu exposición real de un vistazo y tomá mejores decisiones.</p>
+            <h2 className={s.secTitle}>Entendé en qué estás parado</h2>
+            <p className={s.secSub}>Mirá cómo se reparte tu plata entre tus activos y cuánto pesa cada uno, sin tecnicismos.</p>
             <ul className={s.featureList}>
-              <li><Check /> Distribución (allocation) por activo y proveedor</li>
-              <li><Check /> ROI por holding</li>
-              <li><Check /> Benchmark contra BTC y ETH</li>
+              <li><Check /> Cómo se reparte tu plata entre tus activos</li>
+              <li><Check /> Cuánto ganaste o perdiste con cada uno</li>
+              <li><Check /> Cómo te fue comparado con el Bitcoin</li>
             </ul>
           </div>
           <div className={s.featureVisual}>
