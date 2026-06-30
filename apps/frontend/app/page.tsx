@@ -28,11 +28,11 @@ function useHideOnScroll() {
 const PROVIDERS: { name: string; chartVar: string; initials: string; logo?: string }[] = [
   { name: 'Binance',      chartVar: '--chart-1', initials: 'BI', logo: '/providers/binance.svg' },
   { name: 'Mercado Pago', chartVar: '--chart-2', initials: 'MP', logo: '/providers/mercado-pago.svg' },
-  { name: 'Lemon',        chartVar: '--chart-5', initials: 'L'  },
-  { name: 'IOL',          chartVar: '--chart-3', initials: 'I'  },
-  { name: 'Bull Market',  chartVar: '--chart-4', initials: 'BM' },
-  { name: 'Balanz',       chartVar: '--chart-8', initials: 'B'  },
-  { name: 'Wallets EVM',  chartVar: '--chart-6', initials: 'WE' },
+  { name: 'Lemon',        chartVar: '--chart-5', initials: 'L',  logo: '/providers/lemon.svg' },
+  { name: 'IOL',          chartVar: '--chart-3', initials: 'I',  logo: '/providers/iol.svg' },
+  { name: 'Bull Market',  chartVar: '--chart-4', initials: 'BM', logo: '/providers/bullmarket.png' },
+  { name: 'Balanz',       chartVar: '--chart-8', initials: 'B',  logo: '/providers/balanz.svg' },
+  { name: 'Wallets EVM',  chartVar: '--chart-6', initials: 'WE', logo: '/providers/ethereum.svg' },
 ]
 
 const MOCK_ROWS = [
@@ -263,15 +263,18 @@ export default function LandingPage() {
               <div className={s.mkBody}>
                 <div className={s.mkOverline}>Distribución por activo</div>
                 <div className={s.mkRows}>
-                  {[
-                    { name: 'BTC',  pct: '38%', chart: '--chart-1' },
-                    { name: 'ETH',  pct: '24%', chart: '--chart-3' },
-                    { name: 'USDT', pct: '18%', chart: '--chart-2' },
-                    { name: 'CEDEARs', pct: '12%', chart: '--chart-6' },
-                    { name: 'Otros', pct: '8%', chart: '--chart-9' },
-                  ].map(a => (
+                  {([
+                    { name: 'BTC',  pct: '38%', logo: '/crypto/btc.svg' },
+                    { name: 'ETH',  pct: '24%', logo: '/crypto/eth.svg' },
+                    { name: 'USDT', pct: '18%', logo: '/crypto/usdt.svg' },
+                    { name: 'CEDEARs', pct: '12%' },
+                    { name: 'Otros', pct: '8%' },
+                  ] as { name: string; pct: string; logo?: string }[]).map(a => (
                     <div key={a.name} className={s.mkRow}>
-                      <span className={s.pmark} style={{ width: 30, height: 30, borderRadius: 9, background: `color-mix(in srgb,var(${a.chart}) 16%,transparent)`, color: `var(${a.chart})`, border: `1px solid color-mix(in srgb,var(${a.chart}) 35%,transparent)`, fontSize: 10 }}>{a.name.slice(0, 2)}</span>
+                      {a.logo
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={a.logo} alt={a.name} className={s.assetLogo} />
+                        : <span className={s.assetDot} />}
                       <span className={s.nm}>{a.name}</span>
                       <span className={s.vl}>{a.pct}</span>
                     </div>
