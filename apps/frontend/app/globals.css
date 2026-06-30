@@ -223,8 +223,8 @@
 /* ── Paleta landing/login (estilo Revolut, dark fijo) ───────── */
 :root {
   --ll-black:   #000000;  /* header + hero (presentación) */
-  --ll-section: #191C1F;  /* secciones full-screen */
-  --ll-gray:    #14171A;  /* footer */
+  --ll-section: #1C1C1E;  /* secciones full-screen */
+  --ll-gray:    #1D1D1F;  /* footer */
   --ll-footer:  #1B2530;  /* (legacy) */
   --ll-text-1: #FFFFFF;
   --ll-text-2: #A8B0BA;

@@ -312,10 +312,10 @@ export default function LandingPage() {
                     { name: 'Otros', pct: '8%' },
                   ] as { name: string; pct: string; logo?: string }[]).map(a => (
                     <div key={a.name} className={s.mkRow}>
-                      {a.logo
+                      {a.logo && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={a.logo} alt={a.name} className={s.assetLogo} />
-                        : <span className={s.assetDot} />}
+                        <img src={a.logo} alt={a.name} className={s.assetLogo} />
+                      )}
                       <span className={s.nm}>{a.name}</span>
                       <span className={s.vl} data-count={parseInt(a.pct, 10)} data-suffix="%" data-decimals="0">{a.pct}</span>
                     </div>
