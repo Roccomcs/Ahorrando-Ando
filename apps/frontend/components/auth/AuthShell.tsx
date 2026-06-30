@@ -4,6 +4,8 @@ import { ReactNode, useRef } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 import { AppLogo } from '@/components/ds/AppLogo'
 import s from './AuthShell.module.css'
 
