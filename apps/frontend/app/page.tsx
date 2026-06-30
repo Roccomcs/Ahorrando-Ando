@@ -25,14 +25,14 @@ function useHideOnScroll() {
   return hidden
 }
 
-const PROVIDERS = [
-  { initials: 'BI', name: 'Binance',       chartVar: '--chart-1' },
-  { initials: 'L',  name: 'Lemon',         chartVar: '--chart-5' },
-  { initials: 'I',  name: 'IOL',           chartVar: '--chart-3' },
-  { initials: 'BM', name: 'Bull Market',   chartVar: '--chart-4' },
-  { initials: 'B',  name: 'Balanz',        chartVar: '--chart-8' },
-  { initials: 'MP', name: 'Mercado Pago',  chartVar: '--chart-2' },
-  { initials: 'WE', name: 'Wallets EVM',   chartVar: '--chart-6' },
+const PROVIDERS: { name: string; chartVar: string; initials: string; logo?: string }[] = [
+  { name: 'Binance',      chartVar: '--chart-1', initials: 'BI', logo: '/providers/binance.svg' },
+  { name: 'Mercado Pago', chartVar: '--chart-2', initials: 'MP', logo: '/providers/mercado-pago.svg' },
+  { name: 'Lemon',        chartVar: '--chart-5', initials: 'L'  },
+  { name: 'IOL',          chartVar: '--chart-3', initials: 'I'  },
+  { name: 'Bull Market',  chartVar: '--chart-4', initials: 'BM' },
+  { name: 'Balanz',       chartVar: '--chart-8', initials: 'B'  },
+  { name: 'Wallets EVM',  chartVar: '--chart-6', initials: 'WE' },
 ]
 
 const MOCK_ROWS = [
@@ -160,9 +160,14 @@ export default function LandingPage() {
           <div className={s.provGrid}>
             {PROVIDERS.map(p => (
               <div key={p.name} className={s.provTile}>
-                <span className={s.pmark} style={{ width: 48, height: 48, borderRadius: 14, background: `color-mix(in srgb,var(${p.chartVar}) 16%,transparent)`, color: `var(${p.chartVar})`, border: `1px solid color-mix(in srgb,var(${p.chartVar}) 35%,transparent)`, fontSize: 18 }}>
-                  {p.initials}
-                </span>
+                {p.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.logo} alt={p.name} className={s.provLogo} />
+                ) : (
+                  <span className={s.pmark} style={{ width: 48, height: 48, borderRadius: 14, background: `color-mix(in srgb,var(${p.chartVar}) 16%,transparent)`, color: `var(${p.chartVar})`, border: `1px solid color-mix(in srgb,var(${p.chartVar}) 35%,transparent)`, fontSize: 18 }}>
+                    {p.initials}
+                  </span>
+                )}
                 <span className={s.nm}>{p.name}</span>
               </div>
             ))}
