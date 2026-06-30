@@ -135,6 +135,54 @@
   will-change: opacity, transform;
 }
 .revealed { opacity: 1; transform: none; }
+
+/* ── Animaciones dentro de las secciones ───────────────────────── */
+
+/* 1) Cascada: tarjetas, tiles y filas entran en secuencia al revelarse.
+   El prefijo .page sube la especificidad para ganarle a .feat/.provTile
+   (definidos más abajo y con su propia transición). */
+.page .featGrid > *, .page .provGrid > *, .page .mkRows > .mkRow {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+}
+.revealed .featGrid > *, .revealed .provGrid > *, .revealed .mkRows > .mkRow {
+  opacity: 1; transform: none;
+}
+.revealed .featGrid > *:nth-child(1),
+.revealed .provGrid > *:nth-child(1),
+.revealed .mkRows > .mkRow:nth-child(1) { transition-delay: 0.06s; }
+.revealed .featGrid > *:nth-child(2),
+.revealed .provGrid > *:nth-child(2),
+.revealed .mkRows > .mkRow:nth-child(2) { transition-delay: 0.12s; }
+.revealed .featGrid > *:nth-child(3),
+.revealed .provGrid > *:nth-child(3),
+.revealed .mkRows > .mkRow:nth-child(3) { transition-delay: 0.18s; }
+.revealed .featGrid > *:nth-child(4),
+.revealed .provGrid > *:nth-child(4),
+.revealed .mkRows > .mkRow:nth-child(4) { transition-delay: 0.24s; }
+.revealed .featGrid > *:nth-child(5),
+.revealed .provGrid > *:nth-child(5) { transition-delay: 0.30s; }
+.revealed .featGrid > *:nth-child(6),
+.revealed .provGrid > *:nth-child(6) { transition-delay: 0.36s; }
+.revealed .provGrid > *:nth-child(7) { transition-delay: 0.42s; }
+
+/* 2) Sparkline que se dibuja sola (usa pathLength=1 normalizado) */
+.sparkLine {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.5s var(--ease-out);
+  transition-delay: 0.25s;
+}
+.revealed .sparkLine { stroke-dashoffset: 0; }
+
+/* 4) Mockups que flotan suavemente */
+@keyframes aaFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+.mockup { animation: aaFloat 6.5s ease-in-out infinite; }
+
 .secOverline { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--cielo-400); }
 .secTitle { margin: var(--space-4) 0 0; font-family: var(--font-display); font-weight: var(--weight-bold); font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: clamp(30px, 4vw, 44px); line-height: 1.08; color: var(--ll-text-1); }
 .secSub { margin: var(--space-4) 0 0; font-size: var(--text-md); color: var(--ll-text-2); max-width: 52ch; }

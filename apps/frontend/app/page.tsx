@@ -48,6 +48,25 @@ function Check() {
   )
 }
 
+function countUp(el: HTMLElement) {
+  const target = parseFloat(el.dataset.count ?? '')
+  if (Number.isNaN(target)) return
+  const decimals = parseInt(el.dataset.decimals ?? '0', 10)
+  const prefix = el.dataset.prefix ?? ''
+  const suffix = el.dataset.suffix ?? ''
+  const fmt = new Intl.NumberFormat('es-AR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+  const duration = 1100
+  const t0 = performance.now()
+  function frame(now: number) {
+    const t = Math.min(1, (now - t0) / duration)
+    const eased = 1 - Math.pow(1 - t, 3) // easeOutCubic
+    el.textContent = prefix + fmt.format(target * eased) + suffix
+    if (t < 1) requestAnimationFrame(frame)
+    else el.textContent = prefix + fmt.format(target) + suffix
+  }
+  requestAnimationFrame(frame)
+}
+
 function useScrollReveal() {
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>(`.${s.reveal}`))
@@ -57,6 +76,7 @@ function useScrollReveal() {
         entries.forEach(e => {
           if (e.isIntersecting) {
             e.target.classList.add(s.revealed)
+            e.target.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp)
             io.unobserve(e.target)
           }
         })
@@ -93,7 +113,7 @@ export default function LandingPage() {
       {/* HERO */}
       <a id="top" />
       <section className={`${s.hero}`}>
-        <div className={`${s.wrap} ${s.heroGrid}`}>
+        <div className={`${s.wrap} ${s.heroGrid} ${s.reveal}`}>
           <div>
             <h1 className={s.title}>Toda tu plata,<br />en <em>una única</em> aplicación.</h1>
             <p className={s.tagline}>Exchanges, brokers y billeteras virtuales, juntas en pesos y dólares.</p>
@@ -117,13 +137,13 @@ export default function LandingPage() {
             </div>
             <div className={s.mkBody}>
               <div className={s.mkOverline}>Patrimonio total</div>
-              <div className={s.mkTotal}>US$ 48.230,57</div>
+              <div className={s.mkTotal} data-count="48230.57" data-prefix="US$ " data-decimals="2">US$ 48.230,57</div>
               <div className={s.mkDelta}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
                 +2,41% · +US$ 1.134,80
               </div>
               <svg className={s.spark} viewBox="0 0 320 64" preserveAspectRatio="none" fill="none">
-                <path d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16" stroke="#41A4EF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path className={s.sparkLine} pathLength={1} d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16" stroke="#41A4EF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16 L320,64 L0,64 Z" fill="rgba(65,164,239,0.10)"/>
               </svg>
               <div className={s.mkRows}>
@@ -216,7 +236,7 @@ export default function LandingPage() {
               </div>
               <div className={s.mkBody}>
                 <div className={s.mkOverline}>Rendimiento 30 días</div>
-                <div className={s.mkTotal}>+8,7%</div>
+                <div className={s.mkTotal} data-count="8.7" data-prefix="+" data-suffix="%" data-decimals="1">+8,7%</div>
                 <div className={s.mkDelta}>+US$ 3.860,40</div>
                 <div className={s.mkRows}>
                   {MOCK_ROWS.map(r => (
@@ -250,10 +270,10 @@ export default function LandingPage() {
               </div>
               <div className={s.mkBody}>
                 <div className={s.mkOverline}>Patrimonio · último año</div>
-                <div className={s.mkTotal}>US$ 48.230</div>
+                <div className={s.mkTotal} data-count="48230" data-prefix="US$ " data-decimals="0">US$ 48.230</div>
                 <div className={s.mkDelta}>+34,2% · +US$ 12.290</div>
                 <svg className={s.spark} viewBox="0 0 320 64" preserveAspectRatio="none" fill="none">
-                  <path d="M0,56 L40,52 L80,54 L120,44 L160,46 L200,32 L240,30 L280,18 L320,10" stroke="#3DD993" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path className={s.sparkLine} pathLength={1} d="M0,56 L40,52 L80,54 L120,44 L160,46 L200,32 L240,30 L280,18 L320,10" stroke="#3DD993" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M0,56 L40,52 L80,54 L120,44 L160,46 L200,32 L240,30 L280,18 L320,10 L320,64 L0,64 Z" fill="rgba(61,217,147,0.10)"/>
                 </svg>
               </div>
@@ -297,7 +317,7 @@ export default function LandingPage() {
                         ? <img src={a.logo} alt={a.name} className={s.assetLogo} />
                         : <span className={s.assetDot} />}
                       <span className={s.nm}>{a.name}</span>
-                      <span className={s.vl}>{a.pct}</span>
+                      <span className={s.vl} data-count={parseInt(a.pct, 10)} data-suffix="%" data-decimals="0">{a.pct}</span>
                     </div>
                   ))}
                 </div>
