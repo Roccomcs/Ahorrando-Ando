@@ -59,6 +59,27 @@
 }
 .back:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
 
+/* Animación de entrada (CSS, a prueba de fallos) */
+@keyframes aaAuthSlide { from { opacity: 0; transform: translateX(-3%); } to { opacity: 1; transform: none; } }
+@keyframes aaAuthUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+.brand { animation: aaAuthSlide 0.7s var(--ease-out) both; }
+.brandInner > * { animation: aaAuthUp 0.55s var(--ease-out) both; }
+.brandInner > *:nth-child(1) { animation-delay: 0.15s; }
+.brandInner > *:nth-child(2) { animation-delay: 0.27s; }
+.brandInner > *:nth-child(3) { animation-delay: 0.39s; }
+
+.formCard > * { animation: aaAuthUp 0.5s var(--ease-out) both; }
+.formCard > *:nth-child(1) { animation-delay: 0.20s; }
+.formCard > *:nth-child(2) { animation-delay: 0.30s; }
+.formCard > *:nth-child(3) { animation-delay: 0.40s; }
+.formCard > *:nth-child(4) { animation-delay: 0.50s; }
+.formCard > *:nth-child(5) { animation-delay: 0.60s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand, .brandInner > *, .formCard > * { animation: none; }
+}
+
 @media (max-width: 880px) {
   .wrap { grid-template-columns: 1fr; }
   .brand { display: none; }

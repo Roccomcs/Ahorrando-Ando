@@ -36,10 +36,10 @@ const PROVIDERS: { name: string; chartVar: string; initials: string; logo?: stri
 ]
 
 const MOCK_ROWS = [
-  { initials: 'BI', name: 'Binance',       amount: 'US$ 21.940,12', pct: '+1,8%', dir: 'up', chart: '--chart-1' },
-  { initials: 'I',  name: 'IOL',           amount: 'US$ 14.875,40', pct: '+3,2%', dir: 'up', chart: '--chart-3' },
-  { initials: 'MP', name: 'Mercado Pago',  amount: 'US$  6.281,05', pct: '−0,4%', dir: 'dn', chart: '--chart-2' },
-  { initials: 'WE', name: 'Wallets EVM',   amount: 'US$  5.134,00', pct: '+0,9%', dir: 'up', chart: '--chart-6' },
+  { name: 'Binance',      logo: '/providers/binance.svg',      amount: 'US$ 21.940,12', pct: '+1,8%', dir: 'up' },
+  { name: 'IOL',          logo: '/providers/iol.svg',          amount: 'US$ 14.875,40', pct: '+3,2%', dir: 'up' },
+  { name: 'Mercado Pago', logo: '/providers/mercado-pago.svg', amount: 'US$  6.281,05', pct: '−0,4%', dir: 'dn' },
+  { name: 'Wallets EVM',  logo: '/providers/ethereum.svg',     amount: 'US$  5.134,00', pct: '+0,9%', dir: 'up' },
 ]
 
 function Check() {
@@ -108,9 +108,8 @@ export default function LandingPage() {
               <div className={s.mkRows}>
                 {MOCK_ROWS.map(r => (
                   <div key={r.name} className={s.mkRow}>
-                    <span className={s.pmark} style={{ width: 30, height: 30, borderRadius: 9, background: `color-mix(in srgb,var(${r.chart}) 16%,transparent)`, color: `var(${r.chart})`, border: `1px solid color-mix(in srgb,var(${r.chart}) 35%,transparent)`, fontSize: 11 }}>
-                      {r.initials}
-                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={r.logo} alt={r.name} className={s.assetLogo} />
                     <span className={s.nm}>{r.name}</span>
                     <span className={s.vl}>{r.amount}</span>
                     <span className={`${s.pc} ${r.dir === 'up' ? s.up : s.dn}`}>{r.pct}</span>
@@ -201,7 +200,8 @@ export default function LandingPage() {
                 <div className={s.mkRows}>
                   {MOCK_ROWS.map(r => (
                     <div key={r.name} className={s.mkRow}>
-                      <span className={s.pmark} style={{ width: 30, height: 30, borderRadius: 9, background: `color-mix(in srgb,var(${r.chart}) 16%,transparent)`, color: `var(${r.chart})`, border: `1px solid color-mix(in srgb,var(${r.chart}) 35%,transparent)`, fontSize: 11 }}>{r.initials}</span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.logo} alt={r.name} className={s.assetLogo} />
                       <span className={s.nm}>{r.name}</span>
                       <span className={`${s.pc} ${r.dir === 'up' ? s.up : s.dn}`}>{r.pct}</span>
                     </div>
