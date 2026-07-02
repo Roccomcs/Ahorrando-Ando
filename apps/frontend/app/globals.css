@@ -87,7 +87,7 @@
   /* Tipografía */
   --font-display: var(--ff-display), 'Helvetica Neue', Arial, sans-serif;
   --font-serif:   var(--ff-serif), Georgia, serif;
-  --font-ui:      var(--ff-body), 'Helvetica Neue', Arial, sans-serif;
+  --font-ui:      var(--ff-body), Georgia, 'Times New Roman', serif;
   --font-mono:    var(--ff-mono), 'SFMono-Regular', Menlo, monospace;
   --display-stretch: 115%;
   --text-2xs: 11px;

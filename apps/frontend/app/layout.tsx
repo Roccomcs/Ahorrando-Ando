@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
-import { Stack_Sans_Headline, Noto_Serif, Cantarell, JetBrains_Mono } from 'next/font/google'
+import { Stack_Sans_Headline, Noto_Serif, Gelasio, JetBrains_Mono } from 'next/font/google'
 
 const stackSans = Stack_Sans_Headline({
   weight: ['400', '500', '600', '700'],
@@ -15,8 +15,8 @@ const notoSerif = Noto_Serif({
   variable: '--ff-serif',
 })
 
-const cantarell = Cantarell({
-  weight: ['400', '700'],
+const gelasio = Gelasio({
+  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   variable: '--ff-body',
 })
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="es"
       data-theme="dark"
-      className={`${stackSans.variable} ${notoSerif.variable} ${cantarell.variable} ${jetbrainsMono.variable}`}
+      className={`${stackSans.variable} ${notoSerif.variable} ${gelasio.variable} ${jetbrainsMono.variable}`}
     >
       <body>
         <Providers>{children}</Providers>
