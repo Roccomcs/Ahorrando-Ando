@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import s from './page.module.css'
 import { AppLogo } from '@/components/ds/AppLogo'
 import { ForceDarkTheme } from '@/lib/theme-context'
+
+const HeroScene = dynamic(() => import('@/components/landing/HeroScene').then(m => m.HeroScene), {
+  ssr: false,
+  loading: () => <div className={s.heroSceneFallback} aria-hidden="true" />,
+})
 
 function useHideOnScroll() {
   const [hidden, setHidden] = useState(false)
@@ -127,38 +133,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mockup */}
-          <div className={s.mockup} aria-hidden="true">
-            <div className={s.mkTop}>
-              <div className={s.dots}><i /><i /><i /></div>
-              <div className={s.seg}>
-                <b className={s.on}>24h</b><b>7d</b><b>30d</b><b>Total</b>
-              </div>
-            </div>
-            <div className={s.mkBody}>
-              <div className={s.mkOverline}>Patrimonio total</div>
-              <div className={s.mkTotal} data-count="48230.57" data-prefix="US$ " data-decimals="2">US$ 48.230,57</div>
-              <div className={s.mkDelta}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                +2,41% · +US$ 1.134,80
-              </div>
-              <svg className={s.spark} viewBox="0 0 320 64" preserveAspectRatio="none" fill="none">
-                <path className={s.sparkLine} pathLength={1} d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16" stroke="#41A4EF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M0,48 L32,44 L64,50 L96,38 L128,42 L160,30 L192,34 L224,20 L256,26 L288,12 L320,16 L320,64 L0,64 Z" fill="rgba(65,164,239,0.10)"/>
-              </svg>
-              <div className={s.mkRows}>
-                {MOCK_ROWS.map(r => (
-                  <div key={r.name} className={s.mkRow}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.logo} alt={r.name} className={s.assetLogo} />
-                    <span className={s.nm}>{r.name}</span>
-                    <span className={s.vl}>{r.amount}</span>
-                    <span className={`${s.pc} ${r.dir === 'up' ? s.up : s.dn}`}>{r.pct}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <HeroScene />
         </div>
       </section>
 

@@ -56,6 +56,7 @@
   padding: calc(104px + clamp(24px, 5vw, 64px)) 0 clamp(48px, 8vw, 96px);
 }
 .heroGrid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: var(--space-16); align-items: center; width: 100%; }
+.heroSceneFallback { width: 100%; height: 70vh; min-height: 420px; max-height: 640px; }
 .title {
   margin: 0; font-family: var(--font-display); font-weight: var(--weight-bold);
   font-stretch: 120%; letter-spacing: -0.025em; line-height: 1.02;
