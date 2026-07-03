@@ -10,8 +10,8 @@ import { useGSAP } from '@gsap/react'
 import * as THREE from 'three'
 import { CoinModel } from './CoinModel'
 import { OrbitRing } from './OrbitRing'
-import { CoinGlow } from './CoinGlow'
 import { SparkField } from './SparkField'
+import { Floor } from './Floor'
 import s from './HeroScene.module.css'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
@@ -26,7 +26,8 @@ useGLTF.preload(MODELS.bitcoin)
 useGLTF.preload(MODELS.binance)
 useGLTF.preload(MODELS.mercadoPago)
 
-const COIN_Y = 2.2
+const COIN_Y = 2.35
+const COIN_SIZE = 1.3
 
 function Parallax({ children }: { children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null)
@@ -92,11 +93,10 @@ function Scene() {
   return (
     <Parallax>
       <group ref={bitcoinRef} position={[0.25, COIN_Y, 0]}>
-        <CoinGlow color="#f7931a" radius={1.35} opacity={0.09} />
         <CoinModel
           url={MODELS.bitcoin}
           position={[0, 0, 0]}
-          size={1.15}
+          size={COIN_SIZE}
           paint={{
             base: '#f2a01f',
             relief: '#ffdf8a',
@@ -111,11 +111,10 @@ function Scene() {
         />
       </group>
       <group ref={binanceRef} position={[-0.2, 0, 0]}>
-        <CoinGlow color="#F0B90B" radius={1.35} opacity={0.05} />
         <CoinModel
           url={MODELS.binance}
           position={[0, 0, 0]}
-          size={1.15}
+          size={COIN_SIZE}
           paint={{
             base: '#191a1e',
             relief: '#F0B90B',
@@ -131,11 +130,10 @@ function Scene() {
         />
       </group>
       <group ref={mpRef} position={[0.25, -COIN_Y, 0]}>
-        <CoinGlow color="#41A4EF" radius={1.35} opacity={0.1} />
         <CoinModel
           url={MODELS.mercadoPago}
           position={[0, 0, 0]}
-          size={1.15}
+          size={COIN_SIZE}
           paint={{
             base: '#0a85d9',
             relief: '#f4f8ff',
@@ -156,7 +154,19 @@ function Scene() {
       <OrbitRing position={[-0.2, 0, 0]} radius={2.2} color="#f0b90b" speed={-0.14} tilt={1.32} />
       <OrbitRing position={[0.25, -COIN_Y, 0]} radius={2.1} color="#3fa9ff" speed={0.16} tilt={1.22} />
 
-      <SparkField count={70} spread={[4, 4.8, 2.5]} colors={['#ffcf7a', '#fff2cf', '#6fc3ff']} />
+      {/* Chispas con los colores de cada marca, alrededor de su moneda */}
+      <SparkField center={[0.25, COIN_Y, 0]} colors={['#f7931a', '#ffd27a']} seed={1} />
+      <SparkField center={[-0.2, 0, 0]} colors={['#F0B90B', '#e9edf2']} seed={2} driftSpeed={-0.035} />
+      <SparkField center={[0.25, -COIN_Y, 0]} colors={['#41A4EF', '#9ad2ff']} seed={3} driftSpeed={0.045} />
+    </Parallax>
+  )
+}
+
+/** Luces, piso y postprocesado — fijos, fuera del parallax del mouse. */
+function Stage() {
+  return (
+    <>
+      <Floor />
 
       <ambientLight intensity={0.4} />
       <directionalLight position={[4, 6, 5]} intensity={2} color="#ffdca6" />
@@ -169,7 +179,7 @@ function Scene() {
       <EffectComposer multisampling={0}>
         <Bloom mipmapBlur intensity={0.9} luminanceThreshold={0.5} luminanceSmoothing={0.25} radius={0.75} />
       </EffectComposer>
-    </Parallax>
+    </>
   )
 }
 
@@ -204,10 +214,11 @@ export function HeroScene() {
         aria-hidden="true"
         gl={{ alpha: true, antialias: true }}
         dpr={[1, 2]}
-        camera={{ fov: 45, position: [0, 0, 10.5] }}
+        camera={{ fov: 45, position: [0, 0.7, 11] }}
         style={{ background: 'transparent' }}
       >
         <Scene />
+        <Stage />
       </Canvas>
 
       <div className={`${s.chipCol} ${s.chipColLeft}`} aria-hidden="true">
