@@ -42,6 +42,15 @@
   backdrop-filter: blur(6px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   white-space: nowrap;
+  /* Respiración muy lenta; arranca después de la entrada escalonada */
+  animation: chipBreath 7s ease-in-out infinite;
+  animation-delay: 3.2s;
+}
+.chipCol .chip:nth-child(2) { animation-delay: 4.1s; }
+.chipCol .chip:nth-child(3) { animation-delay: 5s; }
+
+@keyframes chipBreath {
+  50% { transform: scale(1.02); }
 }
 
 .chipIcon { width: 22px; height: 22px; object-fit: contain; flex: none; }

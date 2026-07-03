@@ -28,6 +28,8 @@ interface Props {
   paint: Paint
   /** Radio final de la moneda en unidades de escena. */
   size?: number
+  /** Inclinación fija en X (radianes) — cada moneda con la suya para variedad. */
+  tilt?: number
 }
 
 export function CoinModel({
@@ -39,6 +41,7 @@ export function CoinModel({
   phase = 0,
   paint,
   size = 1.25,
+  tilt = 0,
 }: Props) {
   const { scene } = useGLTF(url)
   const group = useRef<THREE.Group>(null)
@@ -104,13 +107,15 @@ export function CoinModel({
     if (!group.current) return
     const t = clock.getElapsedTime()
     group.current.position.y = position[1] + Math.sin(t * floatSpeed + phase) * floatAmplitude
-    // Oscila de frente en vez de girar 360° para que el logo quede legible.
-    group.current.rotation.y = Math.sin(t * spinSpeed + phase) * THREE.MathUtils.degToRad(18)
+    // Rotación continua muy lenta — natural, sin sincronía entre monedas.
+    group.current.rotation.y = t * spinSpeed + phase
   })
 
   return (
-    <group ref={group} position={position}>
-      <group scale={scale}>{content}</group>
+    <group rotation={[tilt, 0, 0]}>
+      <group ref={group} position={position}>
+        <group scale={scale}>{content}</group>
+      </group>
     </group>
   )
 }
