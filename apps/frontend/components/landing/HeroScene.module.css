@@ -1,8 +1,45 @@
 .canvasWrap {
+  position: relative;
   width: 100%;
   height: 70vh;
   min-height: 420px;
   max-height: 640px;
+}
+
+.chipCol {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  pointer-events: none;
+}
+.chipColLeft { left: -2%; }
+.chipColRight { right: -2%; }
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(15, 18, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+.chipIcon { width: 22px; height: 22px; object-fit: contain; flex: none; }
+
+.chipText { display: flex; flex-direction: column; line-height: 1.25; }
+.chipValue { font-size: 13px; font-weight: 600; color: #fff; }
+.chipLabel { font-size: 11px; color: #9aa4b2; }
+
+@media (max-width: 1180px) {
+  .chipColLeft { left: 0; }
+  .chipColRight { right: 0; }
 }
 
 @media (max-width: 860px) {
@@ -10,4 +47,5 @@
     height: 46vh;
     min-height: 320px;
   }
+  .chipCol { display: none; }
 }

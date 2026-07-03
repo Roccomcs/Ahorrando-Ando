@@ -16,7 +16,7 @@ interface Props {
 export function OrbitRing({ position, radius, color, tilt = 0.4, speed, particleCount = 6 }: Props) {
   const ring = useRef<THREE.Group>(null)
 
-  const ringGeometry = useMemo(() => new THREE.TorusGeometry(radius, 0.006, 8, 96), [radius])
+  const ringGeometry = useMemo(() => new THREE.TorusGeometry(radius, 0.008, 8, 96), [radius])
 
   const particlePositions = useMemo(() => {
     const arr = new Float32Array(particleCount * 3)
@@ -38,13 +38,27 @@ export function OrbitRing({ position, radius, color, tilt = 0.4, speed, particle
     <group position={position} rotation={[tilt, 0, 0]}>
       <group ref={ring}>
         <mesh geometry={ringGeometry}>
-          <meshBasicMaterial color={color} transparent opacity={0.22} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={0.55}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
         </mesh>
         <points>
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[particlePositions, 3]} />
           </bufferGeometry>
-          <pointsMaterial color={color} size={0.05} transparent opacity={0.85} sizeAttenuation />
+          <pointsMaterial
+            color={color}
+            size={0.06}
+            transparent
+            opacity={0.9}
+            sizeAttenuation
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
         </points>
       </group>
     </group>

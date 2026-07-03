@@ -93,7 +93,8 @@ export function CoinModel({
     if (!group.current) return
     const t = clock.getElapsedTime()
     group.current.position.y = position[1] + Math.sin(t * floatSpeed + phase) * floatAmplitude
-    group.current.rotation.y = t * spinSpeed
+    // Oscila de frente en vez de girar 360° para que el logo quede legible.
+    group.current.rotation.y = Math.sin(t * spinSpeed + phase) * THREE.MathUtils.degToRad(18)
   })
 
   if (!content) return null
