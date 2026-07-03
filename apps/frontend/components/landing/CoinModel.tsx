@@ -5,12 +5,17 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-interface FlatMaterial {
-  color: string
-  emissive?: string
-  emissiveIntensity?: number
+interface Paint {
+  /** Color del cuerpo de la moneda. */
+  base: string
+  /** Color del relieve (logo). Se detecta por la altura en Z local del vértice. */
+  relief?: string
+  /** Fracción del semiespesor a partir de la cual un vértice cuenta como relieve (0-1). */
+  reliefCut?: number
   metalness?: number
   roughness?: number
+  emissive?: string
+  emissiveIntensity?: number
 }
 
 interface Props {
@@ -20,9 +25,9 @@ interface Props {
   floatAmplitude: number
   spinSpeed: number
   phase?: number
-  /** Modelo texturizado: se preservan los materiales originales del glb, solo se ajusta metalness/roughness. */
-  flatMaterial?: FlatMaterial
-  metalBoost?: { metalness: number; roughness: number }
+  paint: Paint
+  /** Radio final de la moneda en unidades de escena. */
+  size?: number
 }
 
 export function CoinModel({
@@ -32,62 +37,68 @@ export function CoinModel({
   floatAmplitude,
   spinSpeed,
   phase = 0,
-  flatMaterial,
-  metalBoost,
+  paint,
+  size = 1.25,
 }: Props) {
   const { scene } = useGLTF(url)
   const group = useRef<THREE.Group>(null)
 
   const { content, scale } = useMemo(() => {
-    if (flatMaterial) {
-      let found: THREE.BufferGeometry | undefined
-      scene.traverse(child => {
-        if (!found && (child as THREE.Mesh).isMesh) {
-          found = (child as THREE.Mesh).geometry
-        }
-      })
-      if (!found) return { content: null, scale: 1 }
-      const geo = (found as THREE.BufferGeometry).clone()
-      geo.computeVertexNormals()
-      geo.center()
-      geo.computeBoundingSphere()
-      const radius = geo.boundingSphere?.radius ?? 1
-      return {
-        content: (
-          <mesh geometry={geo} castShadow receiveShadow>
-            <meshStandardMaterial
-              color={flatMaterial.color}
-              emissive={flatMaterial.emissive ?? '#000000'}
-              emissiveIntensity={flatMaterial.emissiveIntensity ?? 0}
-              metalness={flatMaterial.metalness ?? 0.85}
-              roughness={flatMaterial.roughness ?? 0.3}
-            />
-          </mesh>
-        ),
-        scale: radius > 0 ? 1.1 / radius : 1,
-      }
-    }
-
+    // Se clona la escena entera para conservar la transformación del nodo que
+    // decodifica las posiciones cuantizadas de gltfpack (KHR_mesh_quantization).
     const cloned = scene.clone(true)
+
+    cloned.traverse(child => {
+      const mesh = child as THREE.Mesh
+      if (!mesh.isMesh) return
+
+      const geo = mesh.geometry
+      let colors: THREE.BufferAttribute | undefined
+
+      if (paint.relief) {
+        // El relieve del logo sobresale del plano de la cara en Z local.
+        // Se trabaja centrado porque las posiciones cuantizadas traen offset.
+        const pos = geo.getAttribute('position')
+        let minZ = Infinity
+        let maxZ = -Infinity
+        for (let i = 0; i < pos.count; i++) {
+          const z = pos.getZ(i)
+          if (z < minZ) minZ = z
+          if (z > maxZ) maxZ = z
+        }
+        const center = (minZ + maxZ) / 2
+        const half = (maxZ - minZ) / 2 || 1
+        const cut = half * (paint.reliefCut ?? 0.9)
+        const base = new THREE.Color(paint.base)
+        const relief = new THREE.Color(paint.relief)
+        const arr = new Float32Array(pos.count * 3)
+        for (let i = 0; i < pos.count; i++) {
+          const c = Math.abs(pos.getZ(i) - center) > cut ? relief : base
+          arr[i * 3] = c.r
+          arr[i * 3 + 1] = c.g
+          arr[i * 3 + 2] = c.b
+        }
+        colors = new THREE.BufferAttribute(arr, 3)
+        geo.setAttribute('color', colors)
+      }
+
+      mesh.material = new THREE.MeshStandardMaterial({
+        color: paint.relief ? '#ffffff' : paint.base,
+        vertexColors: !!paint.relief,
+        metalness: paint.metalness ?? 0.85,
+        roughness: paint.roughness ?? 0.25,
+        emissive: new THREE.Color(paint.emissive ?? '#000000'),
+        emissiveIntensity: paint.emissiveIntensity ?? 0,
+      })
+    })
+
     const box = new THREE.Box3().setFromObject(cloned)
     const center = box.getCenter(new THREE.Vector3())
     const sphere = box.getBoundingSphere(new THREE.Sphere())
-    cloned.traverse(child => {
-      const mesh = child as THREE.Mesh
-      if (mesh.isMesh) {
-        mesh.castShadow = true
-        mesh.receiveShadow = true
-        const mat = mesh.material as THREE.MeshStandardMaterial | undefined
-        if (mat && metalBoost) {
-          mat.metalness = metalBoost.metalness
-          mat.roughness = metalBoost.roughness
-        }
-      }
-    })
     cloned.position.sub(center)
     const radius = sphere.radius || 1
-    return { content: <primitive object={cloned} />, scale: radius > 0 ? 0.85 / radius : 1 }
-  }, [scene, flatMaterial, metalBoost])
+    return { content: <primitive object={cloned} />, scale: size / radius }
+  }, [scene, paint, size])
 
   useFrame(({ clock }) => {
     if (!group.current) return
@@ -96,8 +107,6 @@ export function CoinModel({
     // Oscila de frente en vez de girar 360° para que el logo quede legible.
     group.current.rotation.y = Math.sin(t * spinSpeed + phase) * THREE.MathUtils.degToRad(18)
   })
-
-  if (!content) return null
 
   return (
     <group ref={group} position={position}>

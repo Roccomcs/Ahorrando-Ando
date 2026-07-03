@@ -6,6 +6,19 @@
   max-height: 640px;
 }
 
+/* Resplandor azul difuso en la base, como el reflejo de piso de la referencia */
+.canvasWrap::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6%;
+  width: 80%;
+  height: 34%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(30, 120, 210, 0.35), rgba(30, 120, 210, 0) 70%);
+  pointer-events: none;
+}
+
 .chipCol {
   position: absolute;
   top: 50%;
@@ -36,6 +49,7 @@
 .chipText { display: flex; flex-direction: column; line-height: 1.25; }
 .chipValue { font-size: 13px; font-weight: 600; color: #fff; }
 .chipLabel { font-size: 11px; color: #9aa4b2; }
+.green { color: #3dd993; }
 
 @media (max-width: 1180px) {
   .chipColLeft { left: 0; }
