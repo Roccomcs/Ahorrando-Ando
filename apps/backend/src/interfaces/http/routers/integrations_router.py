@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from application.dtos.integration.add_integration_dto import AddIntegrationDTO
 from application.dtos.integration.integration_summary_dto import IntegrationSummaryDTO
+from application.dtos.integration.update_integration_dto import UpdateIntegrationDTO
 from interfaces.http.controllers.integrations_controller import IntegrationsController
 from interfaces.http.dependencies.get_current_user import get_current_user
 
@@ -76,6 +77,36 @@ async def import_bullmarket_csv(
 
     try:
         return await controller.import_bullmarket_csv(user_id=current_user.id, csv_bytes=content)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/{integration_id}/manual")
+async def get_manual_holdings(
+    integration_id: str,
+    current_user=Depends(get_current_user),
+    controller: IntegrationsController = Depends(),
+):
+    """Devuelve las posiciones de una integración manual (solo el dueño) para editarlas."""
+    try:
+        return await controller.get_manual_holdings(
+            user_id=current_user.id, integration_id=integration_id
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.patch("/{integration_id}", response_model=IntegrationSummaryDTO)
+async def update_integration(
+    integration_id: str,
+    dto: UpdateIntegrationDTO,
+    current_user=Depends(get_current_user),
+    controller: IntegrationsController = Depends(),
+):
+    try:
+        return await controller.update_integration(
+            user_id=current_user.id, integration_id=integration_id, dto=dto
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

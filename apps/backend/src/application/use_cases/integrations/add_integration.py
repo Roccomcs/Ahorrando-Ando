@@ -6,6 +6,7 @@ from application.dtos.integration.integration_summary_dto import IntegrationSumm
 from application.ports.i_encryption_service import IEncryptionService
 from domain.entities.integration import Integration
 from domain.repositories.i_integration_repository import IIntegrationRepository
+from infrastructure.providers._base.errors import ProviderAuthError
 from infrastructure.providers.registry import ProviderRegistry
 
 
@@ -24,6 +25,9 @@ class AddIntegration:
         provider = self._registry.get(dto.provider_type, dto.credentials)
         try:
             valid = await provider.authenticate()
+        except ProviderAuthError as e:
+            # El provider ya devolvió un mensaje claro para el usuario.
+            raise ValueError(str(e)) from e
         except Exception as e:
             raise ValueError(f"No se pudo verificar las credenciales: {e}") from e
         if not valid:

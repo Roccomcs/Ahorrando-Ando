@@ -9,7 +9,24 @@ import type {
   ROIItem,
   BenchmarkResult,
   ProviderPerformanceResponse,
+  AssetSearchResult,
+  AssetCategory,
 } from '@/lib/types'
+
+// Buscador de activos (tipo TradingView) para el ingreso manual.
+export async function searchAssets(query: string): Promise<AssetSearchResult[]> {
+  if (!query.trim()) return []
+  const r = await api.get<AssetSearchResult[]>(`/api/v1/assets/search?q=${encodeURIComponent(query)}`)
+  return r.data
+}
+
+// Cotiza un activo ya elegido (por category + ref) → precio USD actual.
+export async function quoteAsset(category: AssetCategory, ref: string): Promise<number> {
+  const r = await api.get<{ price_usd: number }>(
+    `/api/v1/assets/quote?category=${encodeURIComponent(category)}&ref=${encodeURIComponent(ref)}`
+  )
+  return r.data.price_usd ?? 0
+}
 
 export function usePortfolio() {
   return useQuery<PortfolioSummaryDTO>({
@@ -50,6 +67,18 @@ export function useAddIntegration() {
   return useMutation({
     mutationFn: (data: { provider_type: string; credentials: Record<string, unknown> }) =>
       api.post('/api/v1/integrations/', data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['integrations'] })
+      qc.invalidateQueries({ queryKey: ['portfolio'] })
+    },
+  })
+}
+
+export function useUpdateIntegration() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, credentials }: { id: string; credentials: Record<string, unknown> }) =>
+      api.patch(`/api/v1/integrations/${id}`, { credentials }).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['integrations'] })
       qc.invalidateQueries({ queryKey: ['portfolio'] })

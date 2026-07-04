@@ -14,3 +14,25 @@ class CoinGeckoPriceService(IPriceService, BaseHttpClient):
         ids = ",".join(s.lower() for s in symbols)
         data = await self.get(f"/simple/price?ids={ids}&vs_currencies=usd")
         return {k: v["usd"] for k, v in data.items()}
+
+    async def search(self, query: str, limit: int = 10) -> list[dict]:
+        """Busca criptos por nombre/símbolo. Devuelve id (coingecko), símbolo y nombre.
+
+        El `id` de CoinGecko se usa luego como `ref` para cotizar el activo.
+        """
+        q = query.strip()
+        if not q:
+            return []
+        try:
+            data = await self.get(f"/search?query={q}")
+        except Exception:
+            return []
+        coins = data.get("coins", []) if isinstance(data, dict) else []
+        out = []
+        for c in coins[:limit]:
+            out.append({
+                "id": c.get("id", ""),
+                "symbol": str(c.get("symbol", "")).upper(),
+                "name": c.get("name", ""),
+            })
+        return out

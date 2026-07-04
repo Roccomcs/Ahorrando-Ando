@@ -1,18 +1,20 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card } from '@/components/ds/Card'
 import { Button } from '@/components/ds/Button'
 import { Input } from '@/components/ds/Input'
 import {
   useIntegrations, useAddIntegration, useDeleteIntegration,
   useSyncIntegration, useImportBalanzCSV, useImportBullMarketCSV,
+  useUpdateIntegration, searchAssets, quoteAsset,
 } from '@/hooks/usePortfolio'
-import type { ProviderType } from '@/lib/types'
+import { api } from '@/lib/api'
+import type { ProviderType, AssetSearchResult, AssetCategory } from '@/lib/types'
 
 // ── Types & config ────────────────────────────────────────────────────────────
 
-type FieldDef = { key: string; label: string; placeholder: string; secret?: boolean }
+type FieldDef = { key: string; label: string; placeholder: string; secret?: boolean; note?: string }
 
 type ProviderConfig = {
   value: ProviderType
@@ -20,6 +22,7 @@ type ProviderConfig = {
   tagline: string
   color: string
   type: 'fields' | 'csv' | 'manual'
+  group: 'api' | 'manual'
   fields?: FieldDef[]
   instructions: {
     description: string
@@ -32,21 +35,21 @@ type ProviderConfig = {
 
 const PROVIDERS: ProviderConfig[] = [
   {
-    value: 'binance', label: 'Binance', tagline: 'Exchange de cripto mundial', color: '#E8C268', type: 'fields',
+    value: 'binance', label: 'Binance', tagline: 'Exchange de cripto mundial', color: '#E8C268', type: 'fields', group: 'api',
     fields: [
       { key: 'api_key', label: 'API Key', placeholder: 'Tu Binance API Key' },
-      { key: 'api_secret', label: 'API Secret', placeholder: 'Tu Binance API Secret', secret: true },
+      { key: 'api_secret', label: 'API Secret', placeholder: 'Solo visible al crear la clave', secret: true, note: 'El Secret solo se muestra UNA vez, al crear la clave. Si ya la creaste y no lo copiaste, no lo vas a poder ver de nuevo: generá una clave nueva.' },
     ],
     instructions: {
       description: 'Binance es el exchange de criptomonedas más grande del mundo. Conectamos usando una API Key de solo lectura.',
-      steps: ['Iniciá sesión en binance.com', 'Perfil → Administración de API → Crear API', 'Elegí "Clave API generada por el sistema"', 'Activá solo "Habilitar lectura" — nunca transferencias ni retiros', 'Copiá la API Key y el Secret antes de cerrar'],
+      steps: ['Iniciá sesión en binance.com', 'Perfil → Administración de API → Crear API', 'Elegí "Clave API generada por el sistema"', 'Activá solo "Habilitar lectura" — nunca transferencias ni retiros', 'Copiá la API Key y el Secret ANTES de cerrar (el Secret no se vuelve a mostrar)'],
       credentialUrl: 'https://www.binance.com/en/my/settings/api-management',
       credentialUrlLabel: 'Ir a Administración de API →',
       securityNote: 'Solo usamos permisos de lectura. Nunca podemos ejecutar retiros o transferencias.',
     },
   },
   {
-    value: 'mercadopago', label: 'MercadoPago', tagline: 'Billetera digital argentina', color: '#63B8F4', type: 'fields',
+    value: 'mercadopago', label: 'MercadoPago', tagline: 'Billetera digital argentina', color: '#63B8F4', type: 'fields', group: 'api',
     fields: [{ key: 'access_token', label: 'Access Token', placeholder: 'APP_USR-...', secret: true }],
     instructions: {
       description: 'MercadoPago permite acceder al saldo mediante un Access Token de producción.',
@@ -57,7 +60,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'iol', label: 'InvertirOnline', tagline: 'Broker argentino (IOL)', color: '#9D8CFF', type: 'fields',
+    value: 'iol', label: 'InvertirOnline', tagline: 'Broker argentino (IOL)', color: '#9D8CFF', type: 'fields', group: 'api',
     fields: [{ key: 'username', label: 'Usuario', placeholder: 'Tu email de IOL' }, { key: 'password', label: 'Contraseña', placeholder: '••••••••', secret: true }],
     instructions: {
       description: 'InvertirOnline (IOL) es un broker argentino de acciones, bonos y FCI.',
@@ -67,7 +70,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'bullmarket_csv', label: 'Bull Market', tagline: 'Importar portfolio via CSV', color: '#3DD993', type: 'csv',
+    value: 'bullmarket_csv', label: 'Bull Market', tagline: 'Importar portfolio via CSV', color: '#3DD993', type: 'csv', group: 'api',
     instructions: {
       description: 'Bull Market no tiene API pública estable. Importá tu portfolio exportando un CSV desde su plataforma web.',
       steps: [
@@ -82,7 +85,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'lemoncash', label: 'Lemon Cash', tagline: 'Exchange cripto argentino', color: '#45D4C8', type: 'fields',
+    value: 'lemoncash', label: 'Lemon Cash', tagline: 'Exchange cripto argentino', color: '#45D4C8', type: 'fields', group: 'api',
     fields: [{ key: 'api_key', label: 'API Key', placeholder: 'Tu Lemon Cash API Key', secret: true }],
     instructions: {
       description: 'Lemon Cash es un exchange de criptomonedas argentino.',
@@ -91,7 +94,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'onchain', label: 'Wallet EVM', tagline: 'Ethereum, Polygon o BSC', color: '#F08FB7', type: 'fields',
+    value: 'onchain', label: 'Wallet EVM', tagline: 'Ethereum, Polygon o BSC', color: '#F08FB7', type: 'fields', group: 'api',
     fields: [
       { key: 'address', label: 'Dirección de wallet', placeholder: '0x...' },
       { key: 'chain', label: 'Red', placeholder: 'ethereum · polygon · bsc' },
@@ -105,7 +108,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'solana', label: 'Wallet Solana', tagline: 'SOL + SPL tokens', color: '#B5D85A', type: 'fields',
+    value: 'solana', label: 'Wallet Solana', tagline: 'SOL + SPL tokens', color: '#B5D85A', type: 'fields', group: 'api',
     fields: [{ key: 'address', label: 'Dirección Solana', placeholder: 'Ej: 4Nd1mBQtrMJVYVfKf2PX98...' }],
     instructions: {
       description: 'Conectá una wallet Solana para ver SOL y tokens SPL.',
@@ -114,7 +117,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'balanz_csv', label: 'Balanz', tagline: 'Importar portfolio via CSV', color: '#F4626E', type: 'csv',
+    value: 'balanz_csv', label: 'Balanz', tagline: 'Importar portfolio via CSV', color: '#F4626E', type: 'csv', group: 'api',
     instructions: {
       description: 'Balanz no tiene API pública. Importá tu portfolio exportando un CSV desde su plataforma.',
       steps: ['Iniciá sesión en balanz.com', 'Mi Cuenta → Mi Cartera o Posiciones', 'Buscá "Exportar" o "Descargar CSV"', 'Guardá el archivo .csv', 'Subilo en el formulario de la siguiente pantalla'],
@@ -123,17 +126,32 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'manual', label: 'Manual', tagline: 'Cocos, Naranja X, Ualá y más', color: '#8A97AB', type: 'manual',
+    value: 'manual', label: 'Ingreso manual', tagline: 'Bull Market, Cocos, Naranja X, Ualá y más', color: '#8A97AB', type: 'manual', group: 'manual',
     instructions: {
-      description: 'Para cuentas sin API ni CSV: ingresá los valores manualmente. Ideal para Cocos Capital, Naranja X, Ualá, etc.',
-      steps: ['Ingresá el nombre de la institución', 'Agregá cada activo con símbolo, cantidad y precio USD', 'Para actualizar, eliminá y creá una nueva integración'],
-      securityNote: 'Los valores se guardan en tu cuenta y solo son visibles para vos.',
+      description: 'Para brokers sin API ni CSV (como Bull Market) o billeteras: buscá cada activo y cargá tu cantidad. Los precios de cripto, acciones y CEDEARs se actualizan solos.',
+      steps: ['Ingresá el nombre de la institución (ej: Bull Market)', 'Buscá cada activo (BTC, AAPL, GGAL, USD…) y elegilo', 'Cargá la cantidad que tenés — el precio se actualiza automáticamente', 'Podés editar tus posiciones cuando quieras sin borrar la cuenta'],
+      securityNote: 'Los valores se guardan cifrados en tu cuenta y solo son visibles para vos.',
     },
   },
 ]
 
-type ManualHolding = { name: string; symbol: string; amount: string; price_usd: string }
-const emptyHolding = (): ManualHolding => ({ name: '', symbol: '', amount: '', price_usd: '' })
+type ManualHolding = {
+  symbol: string
+  name: string
+  amount: string
+  category: AssetCategory
+  ref: string
+  price_usd: number   // último precio USD conocido (fallback)
+}
+
+const CATEGORY_LABEL: Record<AssetCategory, string> = {
+  crypto: 'Cripto', stock: 'Acción', cedear: 'CEDEAR', bond: 'Bono', fx: 'Efectivo',
+}
+
+function fmtUsd(n: number): string {
+  if (!n) return '—'
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: n < 1 ? 6 : 2 })
+}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -141,14 +159,13 @@ function CheckIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fi
 function XCircleIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> }
 function RefreshIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> }
 function TrashIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> }
+function EditIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> }
 function ChevRight() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg> }
 function ChevLeft() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg> }
 function ShieldIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> }
 function UploadIcon() { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg> }
 function AlertIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> }
 function ExtLinkIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg> }
-function PlusIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> }
-function MinusIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg> }
 
 // ── StepDot ───────────────────────────────────────────────────────────────────
 
@@ -189,21 +206,170 @@ function ProviderPickerCard({ config, connected, onClick }: { config: ProviderCo
   )
 }
 
+function SearchIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> }
+
+// ── Manual entry (buscador tipo TradingView + posiciones) ──────────────────────
+
+function ManualEntry({ institutionName, setInstitutionName, holdings, setHoldings }: {
+  institutionName: string
+  setInstitutionName: (v: string) => void
+  holdings: ManualHolding[]
+  setHoldings: (updater: (arr: ManualHolding[]) => ManualHolding[]) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<AssetSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  // Buscar con debounce (todos los setState van dentro del timeout para no
+  // disparar renders en cascada dentro del cuerpo del efecto).
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 1) {
+      const clear = setTimeout(() => { setResults([]); setOpen(false); setSearching(false) }, 0)
+      return () => clearTimeout(clear)
+    }
+    const t = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await searchAssets(q)
+        setResults(res)
+        setOpen(true)
+      } catch {
+        setResults([])
+      } finally {
+        setSearching(false)
+      }
+    }, 280)
+    return () => clearTimeout(t)
+  }, [query])
+
+  async function selectAsset(a: AssetSearchResult) {
+    setQuery('')
+    setResults([])
+    setOpen(false)
+    if (holdings.some(h => h.ref === a.ref && h.category === a.category)) return
+    // Cripto viene con precio 0 en la búsqueda → cotizar ahora
+    let price = a.price_usd
+    if (!price) {
+      try { price = await quoteAsset(a.category, a.ref) } catch { price = 0 }
+    }
+    setHoldings(arr => [...arr, {
+      symbol: a.symbol, name: a.name, amount: '', category: a.category, ref: a.ref, price_usd: price,
+    }])
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <Input label="Nombre de la institución" placeholder="Ej: Bull Market, Cocos Capital, Naranja X…" value={institutionName} onChange={e => setInstitutionName(e.target.value)} />
+
+      <div style={{ position: 'relative' }}>
+        <span className="aa-overline" style={{ display: 'block', marginBottom: 8 }}>Buscar activo</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', padding: '0 12px', background: 'var(--surface-inset)' }}>
+          <span style={{ color: 'var(--text-3)', flexShrink: 0 }}><SearchIcon /></span>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onFocus={() => results.length && setOpen(true)}
+            placeholder="BTC, ETH, AAPL, GGAL, USD…"
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 'var(--text-sm)', padding: '10px 0' }}
+          />
+          {searching && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', flexShrink: 0 }}>…</span>}
+        </div>
+
+        {open && results.length > 0 && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: 4, maxHeight: 260, overflowY: 'auto', background: 'var(--surface-elevated)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)' }}>
+            {results.map((a) => (
+              <button key={`${a.category}:${a.ref}`} onClick={() => selectAsset(a)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', textAlign: 'left', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-1)', cursor: 'pointer' }}>
+                <div style={{ minWidth: 0 }}>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{a.symbol}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginLeft: 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{CATEGORY_LABEL[a.category]}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {holdings.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="aa-overline">Tus posiciones</span>
+          {holdings.map((h, idx) => {
+            const value = (parseFloat(h.amount) || 0) * h.price_usd
+            return (
+              <div key={`${h.category}:${h.ref}:${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-md)', background: 'var(--surface-card)' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{h.symbol}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase' }}>{CATEGORY_LABEL[h.category]}</span>
+                  </div>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>
+                    {h.price_usd ? `${fmtUsd(h.price_usd)} c/u` : 'Precio manual'}
+                    {value > 0 && ` · ${fmtUsd(value)}`}
+                  </span>
+                </div>
+                <input
+                  value={h.amount}
+                  onChange={e => setHoldings(arr => arr.map((x, i) => i === idx ? { ...x, amount: e.target.value } : x))}
+                  placeholder="Cantidad"
+                  inputMode="decimal"
+                  style={{ width: 96, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', background: 'var(--surface-inset)', color: 'var(--text-1)', fontSize: 'var(--text-sm)', padding: '7px 10px', textAlign: 'right' }}
+                />
+                {h.category === 'fx' && h.ref === 'ARS' ? null : !h.price_usd && (
+                  <input
+                    value={h.price_usd ? String(h.price_usd) : ''}
+                    onChange={e => setHoldings(arr => arr.map((x, i) => i === idx ? { ...x, price_usd: parseFloat(e.target.value) || 0 } : x))}
+                    placeholder="US$"
+                    inputMode="decimal"
+                    title="Precio USD (solo si no se pudo cotizar automáticamente)"
+                    style={{ width: 72, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-sm)', background: 'var(--surface-inset)', color: 'var(--text-1)', fontSize: 'var(--text-sm)', padding: '7px 10px', textAlign: 'right' }}
+                  />
+                )}
+                <button onClick={() => setHoldings(arr => arr.filter((_, i) => i !== idx))} title="Quitar"
+                  style={{ padding: 6, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--down)', display: 'flex', flexShrink: 0 }}>
+                  <TrashIcon />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, background: 'rgba(99,184,244,0.08)', border: '1px solid rgba(99,184,244,0.25)', borderRadius: 'var(--radius-md)', padding: '9px 12px' }}>
+        <span style={{ color: '#63B8F4', flexShrink: 0 }}><ShieldIcon /></span>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>
+          Los precios de cripto, acciones y CEDEARs se actualizan automáticamente en cada sincronización. Solo cargá la cantidad.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── Wizard modal ──────────────────────────────────────────────────────────────
 
-function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; onClose: () => void; onSuccess: () => void }) {
+function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
+  config: ProviderConfig
+  editId?: string
+  initialManual?: { institution_name: string; holdings: ManualHolding[] }
+  onClose: () => void
+  onSuccess: () => void
+}) {
   const addMutation = useAddIntegration()
+  const updateMutation = useUpdateIntegration()
   const importBalanzCSV = useImportBalanzCSV()
   const importBullMarketCSV = useImportBullMarketCSV()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [step, setStep] = useState<1 | 2>(1)
+  const isEdit = !!editId
+  const [step, setStep] = useState<1 | 2>(isEdit ? 2 : 1)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [csvFile, setCsvFile] = useState<File | null>(null)
-  const [institutionName, setInstitutionName] = useState('')
-  const [manualHoldings, setManualHoldings] = useState<ManualHolding[]>([emptyHolding()])
+  const [institutionName, setInstitutionName] = useState(initialManual?.institution_name ?? '')
+  const [manualHoldings, setManualHoldings] = useState<ManualHolding[]>(initialManual?.holdings ?? [])
   const [error, setError] = useState('')
-  const isSubmitting = addMutation.isPending || importBalanzCSV.isPending || importBullMarketCSV.isPending
+  const isSubmitting = addMutation.isPending || updateMutation.isPending || importBalanzCSV.isPending || importBullMarketCSV.isPending
 
   async function handleConnect() {
     setError('')
@@ -217,11 +383,19 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
         }
       } else if (config.type === 'manual') {
         if (!institutionName.trim()) { setError('Ingresá el nombre de la institución.'); return }
-        const holdings = manualHoldings.filter(h => h.symbol.trim() && parseFloat(h.amount) > 0).map(h => ({ symbol: h.symbol.toUpperCase(), name: h.name || h.symbol.toUpperCase(), amount: parseFloat(h.amount), price_usd: parseFloat(h.price_usd) || 0 }))
+        const holdings = manualHoldings
+          .filter(h => h.symbol.trim() && parseFloat(h.amount) > 0)
+          .map(h => ({ symbol: h.symbol.toUpperCase(), name: h.name || h.symbol.toUpperCase(), amount: parseFloat(h.amount), category: h.category, ref: h.ref, price_usd: h.price_usd || 0 }))
         if (!holdings.length) { setError('Agregá al menos un activo con cantidad > 0.'); return }
-        await addMutation.mutateAsync({ provider_type: 'manual', credentials: { institution_name: institutionName, holdings } })
+        const creds = { institution_name: institutionName, holdings }
+        if (isEdit) {
+          await updateMutation.mutateAsync({ id: editId!, credentials: creds })
+        } else {
+          await addMutation.mutateAsync({ provider_type: 'manual', credentials: creds })
+        }
       } else {
-        await addMutation.mutateAsync({ provider_type: config.value, credentials })
+        const trimmed = Object.fromEntries(Object.entries(credentials).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]))
+        await addMutation.mutateAsync({ provider_type: config.value, credentials: trimmed })
       }
       onSuccess()
     } catch (err: unknown) {
@@ -240,18 +414,20 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
             {config.label.charAt(0)}
           </div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--text-1)', margin: 0 }}>{config.label}</h2>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>{config.tagline}</p>
+            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--text-1)', margin: 0 }}>{isEdit ? 'Editar posiciones' : config.label}</h2>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>{isEdit ? (initialManual?.institution_name || config.label) : config.tagline}</p>
           </div>
           <button onClick={onClose} style={{ padding: 6, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         {/* Step indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', background: 'var(--surface-inset)', borderBottom: '1px solid var(--border-1)' }}>
-          <StepDot n={1} active={step === 1} done={step === 2} label="Instrucciones" />
-          <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-          <StepDot n={2} active={step === 2} done={false} label="Conectar" />
-        </div>
+        {!isEdit && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', background: 'var(--surface-inset)', borderBottom: '1px solid var(--border-1)' }}>
+            <StepDot n={1} active={step === 1} done={step === 2} label="Instrucciones" />
+            <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
+            <StepDot n={2} active={step === 2} done={false} label="Conectar" />
+          </div>
+        )}
 
         {/* Body */}
         <div style={{ padding: '20px 24px' }}>
@@ -285,7 +461,12 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {config.type === 'fields' && config.fields && config.fields.map(field => (
-                <Input key={field.key} label={field.label} type={field.secret ? 'password' : 'text'} placeholder={field.placeholder} value={credentials[field.key] ?? ''} onChange={e => setCredentials(c => ({ ...c, [field.key]: e.target.value }))} />
+                <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <Input label={field.label} type={field.secret ? 'password' : 'text'} placeholder={field.placeholder} value={credentials[field.key] ?? ''} onChange={e => setCredentials(c => ({ ...c, [field.key]: e.target.value }))} />
+                  {field.note && (
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>{field.note}</p>
+                  )}
+                </div>
               ))}
 
               {config.type === 'csv' && (
@@ -312,28 +493,12 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
               )}
 
               {config.type === 'manual' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <Input label="Nombre de la institución" placeholder="Ej: Cocos Capital, Naranja X, Ualá..." value={institutionName} onChange={e => setInstitutionName(e.target.value)} />
-                  <span className="aa-overline">Activos / posiciones</span>
-                  {manualHoldings.map((h, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
-                      <Input label="Símbolo" placeholder="USD" value={h.symbol} onChange={e => setManualHoldings(arr => arr.map((x, i) => i === idx ? { ...x, symbol: e.target.value } : x))} />
-                      <Input label="Nombre" placeholder="Dólar" value={h.name} onChange={e => setManualHoldings(arr => arr.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
-                      <Input label="Cantidad" placeholder="100" value={h.amount} onChange={e => setManualHoldings(arr => arr.map((x, i) => i === idx ? { ...x, amount: e.target.value } : x))} />
-                      <Input label="Precio USD" placeholder="1.00" value={h.price_usd} onChange={e => setManualHoldings(arr => arr.map((x, i) => i === idx ? { ...x, price_usd: e.target.value } : x))} />
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <button onClick={() => setManualHoldings(arr => [...arr, emptyHolding()])} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', color: 'var(--text-accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                      <PlusIcon /> Agregar activo
-                    </button>
-                    {manualHoldings.length > 1 && (
-                      <button onClick={() => setManualHoldings(arr => arr.slice(0, -1))} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', color: 'var(--down)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <MinusIcon /> Quitar último
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <ManualEntry
+                  institutionName={institutionName}
+                  setInstitutionName={setInstitutionName}
+                  holdings={manualHoldings}
+                  setHoldings={setManualHoldings}
+                />
               )}
 
               {error && (
@@ -348,13 +513,13 @@ function WizardModal({ config, onClose, onSuccess }: { config: ProviderConfig; o
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid var(--border-1)' }}>
-          <button onClick={step === 1 ? onClose : () => setStep(1)}
+          <button onClick={(step === 1 || isEdit) ? onClose : () => setStep(1)}
             style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-sm)', color: 'var(--text-2)', background: 'none', border: 'none', cursor: 'pointer' }}>
-            <ChevLeft />{step === 1 ? 'Cancelar' : 'Volver'}
+            <ChevLeft />{(step === 1 || isEdit) ? 'Cancelar' : 'Volver'}
           </button>
-          {step === 1
+          {step === 1 && !isEdit
             ? <Button onClick={() => setStep(2)} icon={<ChevRight />}>Siguiente</Button>
-            : <Button onClick={handleConnect} disabled={isSubmitting}>{isSubmitting ? 'Conectando…' : 'Conectar'}</Button>}
+            : <Button onClick={handleConnect} disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : (isEdit ? 'Guardar' : 'Conectar')}</Button>}
         </div>
       </div>
     </div>
@@ -368,9 +533,30 @@ export default function IntegrationsPage() {
   const deleteMutation = useDeleteIntegration()
   const syncMutation = useSyncIntegration()
   const [activeWizard, setActiveWizard] = useState<ProviderConfig | null>(null)
+  const [editWizard, setEditWizard] = useState<{ config: ProviderConfig; editId: string; initialManual: { institution_name: string; holdings: ManualHolding[] } } | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const connectedTypes = new Set(integrations?.map(i => i.provider_type) ?? [])
+  const manualConfig = PROVIDERS.find(p => p.value === 'manual')!
+  const apiProviders = PROVIDERS.filter(p => p.group === 'api')
+  const manualProviders = PROVIDERS.filter(p => p.group === 'manual')
+
+  async function handleEditManual(integrationId: string) {
+    try {
+      const { data } = await api.get<{ institution_name: string; holdings: Array<{ symbol: string; name?: string; amount: number; category?: AssetCategory; ref?: string; price_usd?: number }> }>(`/api/v1/integrations/${integrationId}/manual`)
+      const holdings: ManualHolding[] = (data.holdings ?? []).map(h => ({
+        symbol: h.symbol,
+        name: h.name ?? h.symbol,
+        amount: String(h.amount ?? ''),
+        category: (h.category as AssetCategory) ?? 'fx',
+        ref: h.ref ?? h.symbol,
+        price_usd: h.price_usd ?? 0,
+      }))
+      setEditWizard({ config: manualConfig, editId: integrationId, initialManual: { institution_name: data.institution_name, holdings } })
+    } catch {
+      // si falla, no abrimos el editor
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -408,10 +594,16 @@ export default function IntegrationsPage() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      {item.provider_type !== 'balanz_csv' && item.provider_type !== 'bullmarket_csv' && item.provider_type !== 'manual' && (
-                        <button onClick={() => syncMutation.mutate(item.id)} title="Sincronizar ahora"
+                      {item.provider_type !== 'balanz_csv' && item.provider_type !== 'bullmarket_csv' && (
+                        <button onClick={() => syncMutation.mutate(item.id)} title="Actualizar precios ahora"
                           style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-accent)', display: 'flex' }}>
                           <RefreshIcon />
+                        </button>
+                      )}
+                      {item.provider_type === 'manual' && (
+                        <button onClick={() => handleEditManual(item.id)} title="Editar posiciones"
+                          style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-2)', display: 'flex' }}>
+                          <EditIcon />
                         </button>
                       )}
                       <button onClick={() => setConfirmDeleteId(item.id)}
@@ -447,14 +639,17 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Add new */}
+      {/* Add new — grupo API/CSV */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span className="aa-overline">Agregar cuenta</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span className="aa-overline">Conectar por API o CSV</span>
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>Hacé click en cualquier provider para conectar</span>
         </div>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 10px' }}>
+          Exchanges, brokers y billeteras con API o exportación de CSV. Se sincronizan automáticamente.
+        </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
-          {PROVIDERS.map(p => (
+          {apiProviders.map(p => (
             <ProviderPickerCard key={p.value} config={p} connected={connectedTypes.has(p.value)} onClick={() => setActiveWizard(p)} />
           ))}
         </div>
@@ -463,7 +658,21 @@ export default function IntegrationsPage() {
         </div>
       </div>
 
+      {/* Add new — grupo manual */}
+      <div>
+        <span className="aa-overline" style={{ display: 'block', marginBottom: 4 }}>Ingreso manual</span>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 10px' }}>
+          Para brokers sin API ni CSV (como Bull Market). Buscá cada activo y cargá tu cantidad; los precios se actualizan solos.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+          {manualProviders.map(p => (
+            <ProviderPickerCard key={p.value} config={p} connected={false} onClick={() => setActiveWizard(p)} />
+          ))}
+        </div>
+      </div>
+
       {activeWizard && <WizardModal config={activeWizard} onClose={() => setActiveWizard(null)} onSuccess={() => setActiveWizard(null)} />}
+      {editWizard && <WizardModal config={editWizard.config} editId={editWizard.editId} initialManual={editWizard.initialManual} onClose={() => setEditWizard(null)} onSuccess={() => setEditWizard(null)} />}
 
       {confirmDeleteId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', padding: 24 }}>

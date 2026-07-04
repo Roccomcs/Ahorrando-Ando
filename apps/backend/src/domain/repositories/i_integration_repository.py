@@ -21,3 +21,8 @@ class IIntegrationRepository(ABC):
     async def update_sync_status(
         self, integration_id: str, error: str | None, synced_at: datetime | None
     ) -> None: ...
+
+    @abstractmethod
+    async def update_credentials(
+        self, integration_id: str, encrypted_credentials: str
+    ) -> None: ...

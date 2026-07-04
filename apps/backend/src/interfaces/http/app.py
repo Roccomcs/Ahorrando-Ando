@@ -32,6 +32,7 @@ import infrastructure.database.postgres.models  # noqa: F401 — registra todos 
 from infrastructure.scheduler.alert_scheduler import start_scheduler, stop_scheduler
 from interfaces.http.middlewares.error_handler import add_error_handlers
 from interfaces.http.routers.alerts_router import router as alerts_router
+from interfaces.http.routers.assets_router import router as assets_router
 from interfaces.http.routers.auth_router import router as auth_router
 from interfaces.http.routers.dashboard_router import router as dashboard_router
 from interfaces.http.routers.health_router import router as health_router
@@ -116,6 +117,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router, prefix="/api/v1")
     app.include_router(integrations_router, prefix="/api/v1")
     app.include_router(alerts_router, prefix="/api/v1")
+    app.include_router(assets_router, prefix="/api/v1")
 
     return app
 

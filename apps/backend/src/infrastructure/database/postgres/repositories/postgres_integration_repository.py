@@ -62,6 +62,19 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             model.is_active = error is None
             await self._session.commit()
 
+    async def update_credentials(
+        self, integration_id: str, encrypted_credentials: str
+    ) -> None:
+        result = await self._session.execute(
+            select(IntegrationModel).where(IntegrationModel.id == integration_id)
+        )
+        model = result.scalar_one_or_none()
+        if model:
+            model.encrypted_credentials = encrypted_credentials
+            model.last_error = None
+            model.is_active = True
+            await self._session.commit()
+
     def _to_entity(self, model: IntegrationModel) -> Integration:
         return Integration(
             id=model.id,

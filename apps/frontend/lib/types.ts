@@ -67,6 +67,16 @@ export type ProviderType =
   | 'bullmarket_csv'
   | 'manual'
 
+export type AssetCategory = 'crypto' | 'stock' | 'cedear' | 'bond' | 'fx'
+
+export interface AssetSearchResult {
+  symbol: string
+  name: string
+  category: AssetCategory
+  ref: string
+  price_usd: number
+}
+
 export interface AllocationItem {
   label: string
   usd_value: number

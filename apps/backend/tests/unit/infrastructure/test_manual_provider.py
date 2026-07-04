@@ -33,6 +33,42 @@ async def test_filters_zero_amount():
 
 
 @pytest.mark.asyncio
+async def test_live_price_used_when_available(monkeypatch):
+    provider = ManualProvider(
+        institution_name="Bull Market",
+        holdings=[
+            {"symbol": "BTC", "name": "Bitcoin", "amount": 2, "category": "crypto", "ref": "bitcoin", "price_usd": 100.0},
+        ],
+    )
+
+    async def fake_prices(symbols):
+        return {"bitcoin": 70000.0}
+
+    monkeypatch.setattr(provider._coingecko, "get_prices_usd", fake_prices)
+    holdings = await provider.get_holdings()
+    # usa el precio en vivo (70000), no el fallback (100)
+    assert holdings[0].current_value.amount == 140000.0
+
+
+@pytest.mark.asyncio
+async def test_falls_back_to_stored_price_on_failure(monkeypatch):
+    provider = ManualProvider(
+        institution_name="Bull Market",
+        holdings=[
+            {"symbol": "AAPL", "name": "Apple", "amount": 10, "category": "cedear", "ref": "AAPL", "price_usd": 25.0},
+        ],
+    )
+
+    async def boom(symbols):
+        raise RuntimeError("data912 caída")
+
+    monkeypatch.setattr(provider._data912, "get_prices_usd", boom)
+    holdings = await provider.get_holdings()
+    # cae al price_usd guardado (25) → 250
+    assert holdings[0].current_value.amount == 250.0
+
+
+@pytest.mark.asyncio
 async def test_name_and_type():
     provider = ManualProvider(institution_name="Naranja X", holdings=[])
     assert provider.name == "Naranja X"
