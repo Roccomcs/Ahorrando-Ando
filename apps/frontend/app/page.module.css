@@ -112,12 +112,12 @@
   font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em;
 }
 
-/* Secciones — cada una a pantalla completa, color sólido (sin degradado).
-   El corte entre el hero negro y las secciones queda como una línea recta. */
+/* Secciones — color sólido (sin degradado), altura según el contenido para
+   que no quede aire de más entre una y otra. El corte con el hero negro
+   sigue siendo una línea recta. */
 .section {
-  min-height: 100vh;
   display: flex; flex-direction: column; justify-content: center;
-  padding: clamp(72px, 9vw, 120px) 0;
+  padding: clamp(56px, 6vw, 88px) 0;
   background: var(--ll-section);
 }
 .secHead { max-width: 860px; margin-bottom: var(--space-12); }

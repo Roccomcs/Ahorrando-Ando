@@ -11,7 +11,6 @@ import * as THREE from 'three'
 import { CoinModel } from './CoinModel'
 import { GravityField } from './GravityField'
 import { RadarWaves } from './RadarWaves'
-import { Flare } from './Flare'
 import { EnergyStream } from './EnergyStream'
 import { SparkField } from './SparkField'
 import { Floor } from './Floor'
@@ -30,7 +29,7 @@ useGLTF.preload(MODELS.binance)
 useGLTF.preload(MODELS.mercadoPago)
 
 const COIN_Y = 2.35
-const COIN_SIZE = 1.3
+const COIN_SIZE = 1.5
 
 // Profundidad real: cada moneda vive en su propio plano Z.
 const BTC_POS: [number, number, number] = [0.25, COIN_Y, 1.1]
@@ -101,9 +100,8 @@ function Scene() {
 
   return (
     <Parallax>
-      {/* BTC: halo volumétrico + campo gravitacional de partículas doradas */}
+      {/* BTC: campo gravitacional de partículas doradas */}
       <group ref={bitcoinRef} position={BTC_POS}>
-        <Flare color="#f7b23b" scale={3.8} opacity={0.34} />
         <CoinModel
           url={MODELS.bitcoin}
           position={[0, 0, 0]}
@@ -126,7 +124,6 @@ function Scene() {
 
       {/* BNB: intercambio — ondas que deforman el aire + partículas doradas */}
       <group ref={binanceRef} position={BNB_POS}>
-        <Flare color="#F0B90B" scale={3} opacity={0.18} />
         <CoinModel
           url={MODELS.binance}
           position={[0, 0, 0]}
@@ -151,7 +148,6 @@ function Scene() {
 
       {/* MP: conexión — ondas azules tipo radar que pulsan, sin girar */}
       <group ref={mpRef} position={MP_POS}>
-        <Flare color="#41A4EF" scale={3.6} opacity={0.4} pulseSpeed={1.4} />
         <CoinModel
           url={MODELS.mercadoPago}
           position={[0, 0, 0]}
