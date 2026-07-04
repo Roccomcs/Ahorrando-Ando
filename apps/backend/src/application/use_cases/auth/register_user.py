@@ -12,8 +12,27 @@ class RegisterUser:
 
     async def execute(self, dto: RegisterDTO, hashed_password: str) -> User:
         existing = await self._repo.find_by_email(dto.email)
+
         if existing:
-            raise ValueError("No se pudo crear la cuenta. Verificá los datos ingresados.")
+            if existing.email_verified:
+                raise ValueError("Este email ya está registrado. Iniciá sesión.")
+
+            # Cuenta creada pero nunca verificada: permitir reintentar el registro.
+            # Se actualiza la contraseña y el controller reenvía el código, para
+            # que la cuenta no quede trabada si el primer email nunca llegó.
+            if existing.hashed_password is not None:
+                await self._repo.update_password(existing.id, hashed_password)
+                return User(
+                    id=existing.id,
+                    email=existing.email,
+                    hashed_password=hashed_password,
+                    created_at=existing.created_at,
+                    email_verified=False,
+                    google_id=existing.google_id,
+                )
+
+            # Cuenta creada con Google pero sin verificar (caso anómalo)
+            raise ValueError("Este email está asociado a una cuenta de Google. Usá 'Continuar con Google'.")
 
         user = User(
             id=str(uuid.uuid4()),

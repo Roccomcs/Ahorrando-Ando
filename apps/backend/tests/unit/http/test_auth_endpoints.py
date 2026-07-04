@@ -10,8 +10,18 @@ from domain.entities.user import User
 from interfaces.http.dependencies.get_db_session import get_db_session
 
 
-def _make_user(user_id="u1", email="test@test.com"):
-    return User(id=user_id, email=email, hashed_password="$2b$12$hashed", created_at=datetime.now(timezone.utc))
+# La política de contraseñas exige 12+ caracteres (ver RegisterDTO)
+_VALID_PASSWORD = "SuperSegura123!"
+
+
+def _make_user(user_id="u1", email="test@test.com", verified=False):
+    return User(
+        id=user_id,
+        email=email,
+        hashed_password="$2b$12$hashed",
+        created_at=datetime.now(timezone.utc),
+        email_verified=verified,
+    )
 
 
 @pytest.fixture
@@ -40,7 +50,7 @@ async def test_register_returns_201(app_with_mocks):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             resp = await c.post("/api/v1/auth/register", json={
                 "email": "new@test.com",
-                "password": "pass1234",
+                "password": _VALID_PASSWORD,
             })
 
     assert resp.status_code == 200
@@ -51,13 +61,15 @@ async def test_register_duplicate_email_returns_400(app_with_mocks):
     app, session = app_with_mocks
 
     from infrastructure.database.postgres.repositories.postgres_user_repository import PostgresUserRepository
-    with patch.object(PostgresUserRepository, "find_by_email", return_value=_make_user(email="dup@test.com")):
+    # Solo una cuenta ya verificada rechaza el re-registro (las no verificadas
+    # pueden reintentar para no quedar trabadas)
+    with patch.object(PostgresUserRepository, "find_by_email", return_value=_make_user(email="dup@test.com", verified=True)):
 
         from httpx import ASGITransport, AsyncClient
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             resp = await c.post("/api/v1/auth/register", json={
                 "email": "dup@test.com",
-                "password": "pass1234",
+                "password": _VALID_PASSWORD,
             })
 
     assert resp.status_code in (400, 422)
@@ -83,7 +95,7 @@ async def test_login_unknown_user_returns_401(app_with_mocks):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             resp = await c.post("/api/v1/auth/login", json={
                 "email": "noexiste@test.com",
-                "password": "pass1234",
+                "password": _VALID_PASSWORD,
             })
 
     assert resp.status_code == 401

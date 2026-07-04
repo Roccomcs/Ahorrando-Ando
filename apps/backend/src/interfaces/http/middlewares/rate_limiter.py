@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 
@@ -13,13 +14,19 @@ AUTHED_MAX = 120      # 120 req/min para usuarios autenticados
 WINDOW_SECONDS = 60
 
 _redis: Redis | None = None
+_redis_loop: asyncio.AbstractEventLoop | None = None
 
 
 def _get_redis() -> Redis:
-    global _redis
-    if _redis is None:
+    # El cliente queda atado al event loop en el que se creó; si cambió
+    # (tests, reinicios de worker) hay que recrearlo o explota con
+    # "Event loop is closed".
+    global _redis, _redis_loop
+    loop = asyncio.get_running_loop()
+    if _redis is None or _redis_loop is not loop:
         url = os.getenv("REDIS_URL", "redis://localhost:6379")
         _redis = Redis.from_url(url, decode_responses=True)
+        _redis_loop = loop
     return _redis
 
 

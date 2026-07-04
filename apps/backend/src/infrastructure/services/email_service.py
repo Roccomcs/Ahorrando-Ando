@@ -39,7 +39,14 @@ class EmailService:
             logger.error("Error enviando email a %s: %s", to, exc)
             raise
 
+    def _log_code_fallback(self, to: str, code: str, kind: str) -> None:
+        """Sin SMTP configurado (desarrollo), dejar el código en los logs para
+        poder verificar cuentas igual. En producción SMTP debe estar configurado."""
+        if not self._host or not self._user:
+            logger.warning("SMTP no configurado — código de %s para %s: %s", kind, to, code)
+
     async def send_password_reset_code(self, to: str, code: str) -> None:
+        self._log_code_fallback(to, code, "reset")
         html = f"""
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
           <h2 style="color:#1a1a2e;margin:0 0 8px">Resetear contraseña</h2>
@@ -53,6 +60,7 @@ class EmailService:
         await self.send(to, "Resetear contraseña — Ahorrando Ando", html)
 
     async def send_verification_code(self, to: str, code: str) -> None:
+        self._log_code_fallback(to, code, "verificación")
         html = f"""
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
           <h2 style="color:#1a1a2e;margin:0 0 8px">Tu código de verificación</h2>

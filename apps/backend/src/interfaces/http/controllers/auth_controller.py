@@ -173,6 +173,11 @@ class AuthController:
         return _make_token_pair(user.id)
 
     async def google_start(self, request: Request) -> RedirectResponse:
+        # Sin credenciales configuradas, mandar a Google rompería con un error
+        # críptico: volver al login con un mensaje claro.
+        if not os.getenv("GOOGLE_CLIENT_ID") or not os.getenv("GOOGLE_REDIRECT_URI"):
+            logger.error("Google OAuth no configurado: faltan GOOGLE_CLIENT_ID/GOOGLE_REDIRECT_URI en .env")
+            return RedirectResponse(f"{FRONTEND_URL}/login?error=oauth_unconfigured")
         state = secrets.token_urlsafe(16)
         url = build_google_auth_url(state)
         return RedirectResponse(url)
