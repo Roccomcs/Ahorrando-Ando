@@ -37,7 +37,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem(STORAGE_KEY)
     const active = isTheme(saved) ? saved : DEFAULT_THEME
     setThemeState(active)
-    document.documentElement.setAttribute('data-theme', active)
+    // Los efectos corren de hijo a padre: si una página ya forzó dark
+    // (landing/login), no pisarla con el tema guardado.
+    if (!document.documentElement.hasAttribute('data-force-dark')) {
+      document.documentElement.setAttribute('data-theme', active)
+    }
   }, [])
 
   function setTheme(next: Theme) {
@@ -66,8 +70,10 @@ export function useTheme() {
 export function ForceDarkTheme() {
   useEffect(() => {
     const root = document.documentElement
+    root.setAttribute('data-force-dark', '')
     root.setAttribute('data-theme', 'dark')
     return () => {
+      root.removeAttribute('data-force-dark')
       const saved = localStorage.getItem(STORAGE_KEY)
       root.setAttribute('data-theme', isTheme(saved) ? saved : DEFAULT_THEME)
     }

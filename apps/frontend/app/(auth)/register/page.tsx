@@ -49,8 +49,9 @@ export default function RegisterPage() {
     try {
       await register(email, password)
       router.push(`/verify-email?email=${encodeURIComponent(email)}`)
-    } catch {
-      setErrors({ form: 'No se pudo crear la cuenta' })
+    } catch (err) {
+      // El backend devuelve mensajes claros (ej: "Este email ya está registrado")
+      setErrors({ form: (err as Error).message || 'No se pudo crear la cuenta' })
     } finally {
       setLoading(false)
     }

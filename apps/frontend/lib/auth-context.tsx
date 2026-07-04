@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { api } from './api'
+import { refreshAccessToken } from './refresh'
 import { tokenStore } from './token-store'
 import type { User, TokenPair } from './types'
 
@@ -30,11 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
 
-    fetch('/api/auth/refresh', { method: 'POST' })
-      .then(async (res) => {
-        if (!res.ok) return
-        const data = await res.json()
-        tokenStore.set(data.access_token)
+    // refreshAccessToken deduplica llamadas concurrentes (ver lib/refresh.ts):
+    // si un request de datos dispara el refresh del interceptor al mismo
+    // tiempo, ambos comparten la misma promesa y la rotación no rompe sesión.
+    refreshAccessToken()
+      .then(async (token) => {
+        if (!token) return
         const me = await api.get<User>('/api/v1/auth/me')
         setUser(me.data)
       })

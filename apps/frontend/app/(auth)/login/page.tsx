@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
@@ -36,6 +36,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [showResend, setShowResend] = useState(false)
   const [resendSent, setResendSent] = useState(false)
+
+  // Errores que llegan por query param desde el flujo de OAuth
+  useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get('error')
+    if (err === 'oauth_unconfigured') {
+      setError('El inicio de sesión con Google no está disponible por ahora. Usá email y contraseña.')
+    } else if (err === 'oauth_failed') {
+      setError('No se pudo iniciar sesión con Google. Probá de nuevo.')
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

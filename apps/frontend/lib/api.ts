@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { refreshAccessToken } from './refresh'
 import { tokenStore } from './token-store'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -42,12 +43,11 @@ api.interceptors.response.use(
     original._retry = true
     isRefreshing = true
     try {
-      // Llama a la ruta de Next.js (que lee el refresh_token httpOnly del cookie)
-      const res = await fetch('/api/auth/refresh', { method: 'POST' })
-      if (!res.ok) throw new Error('refresh_failed')
-      const data = await res.json()
-      const newToken: string = data.access_token
-      tokenStore.set(newToken)
+      // refreshAccessToken deduplica: si el bootstrap de AuthProvider ya está
+      // refrescando, se comparte esa promesa (la rotación invalida el token
+      // viejo, dos refresh paralelos matarían la sesión).
+      const newToken = await refreshAccessToken()
+      if (!newToken) throw new Error('refresh_failed')
       processQueue(null, newToken)
       original.headers.Authorization = `Bearer ${newToken}`
       return api(original)
