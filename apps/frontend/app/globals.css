@@ -485,14 +485,14 @@ h2, h3 { font-family: var(--font-serif); }
   /* ======================================================================
      Alias: tokens legacy de la app → nuevos tokens del DS
      ==================================================================== */
-  /* Sidebar/header NEGROS, área de contenido azul oscuro (carbón), como en
-     el diseño de referencia. */
-  --surface-canvas: #0B0E14;
-  --surface-raised: #050608;
-  --surface-card:   #10151E;
-  --surface-hover:  #161C27;
-  --surface-inset:  #07090D;
-  --surface-elevated: #161C27;
+  /* Sidebar/header NEGROS, área de contenido en el gris oscuro de la marca
+     (el mismo #1C1C1E de la landing), con cards un paso más claras. */
+  --surface-canvas: #1C1C1E;
+  --surface-raised: #050505;
+  --surface-card:   #242427;
+  --surface-hover:  #2C2C30;
+  --surface-inset:  #151517;
+  --surface-elevated: #2C2C30;
 
   --text-1: var(--text-primary);
   --text-2: var(--text-secondary);
@@ -541,8 +541,8 @@ h2, h3 { font-family: var(--font-serif); }
   --shadow-overlay: var(--elev-5);
   --ring-focus: 0 0 0 3px rgba(65,164,239,0.35);
 
-  /* Landing/login (que sigan en dark, alineados al nuevo canvas) */
-  --ll-black: var(--bg); --ll-section: var(--surface); --ll-gray: var(--surface-1);
+  /* Landing/login: conservan su paleta original (negro #000 + grises
+     #1C1C1E/#1D1D1F definidos arriba) — acá solo alineamos texto y bordes. */
   --ll-text-1: var(--text-primary); --ll-text-2: var(--text-secondary); --ll-text-3: var(--text-tertiary);
   --ll-border: var(--ds-border);
 }
