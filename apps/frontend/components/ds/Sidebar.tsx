@@ -84,6 +84,7 @@ export function Sidebar() {
               >
                 <NavIcon name={item.icon} size={18} />
                 {item.label}
+                {pathname.startsWith(item.href) && <span className="aa-side__dot" aria-hidden />}
               </button>
             </Link>
           ))}

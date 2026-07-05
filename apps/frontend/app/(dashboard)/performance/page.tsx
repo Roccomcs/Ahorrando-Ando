@@ -12,7 +12,7 @@ const PROVIDER_COLORS: Record<string, string> = {
   lemoncash: '#45D4C8', iol: '#9D8CFF', onchain: '#F08FB7',
   solana: '#B5D85A', balanz_csv: '#F4626E', manual: '#8A97AB',
 }
-const FALLBACK = ['#63B8F4','#E8C268','#3DD993','#9D8CFF','#45D4C8','#F08FB7']
+const FALLBACK = ['#41A4EF','#63B8F4','#00B1EA','#00C896','#FFB454','#8FC8F6']
 function pColor(name: string, idx: number) { return PROVIDER_COLORS[name] ?? FALLBACK[idx % FALLBACK.length] }
 
 const PERIODS = [

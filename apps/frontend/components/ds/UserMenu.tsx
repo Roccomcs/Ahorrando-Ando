@@ -9,11 +9,8 @@ function getInitial(email: string | undefined) {
   return email[0].toUpperCase()
 }
 
-function getColor(email: string | undefined) {
-  const colors = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777']
-  if (!email) return colors[0]
-  return colors[email.charCodeAt(0) % colors.length]
-}
+// Avatar neutro (círculo oscuro con borde), coherente con el diseño.
+const AVATAR_BG = 'var(--surface-3)'
 
 export function UserMenu() {
   const { user, logout } = useAuth()
@@ -29,7 +26,8 @@ export function UserMenu() {
   }, [open])
 
   const initial = getInitial(user?.email)
-  const color = getColor(user?.email)
+  const color = AVATAR_BG
+  const ring = 'rgba(65,164,239,0.30)'
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -38,14 +36,14 @@ export function UserMenu() {
         title={user?.email}
         style={{
           width: 36, height: 36, borderRadius: '50%',
-          background: color, border: '2px solid transparent',
+          background: color, border: '1px solid var(--border-2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: 700, fontSize: 14,
+          color: 'var(--text-1)', fontWeight: 700, fontSize: 14,
           fontFamily: 'var(--font-display)', cursor: 'pointer',
           transition: 'box-shadow 120ms',
-          boxShadow: open ? `0 0 0 3px color-mix(in srgb, ${color} 30%, transparent)` : 'none',
+          boxShadow: open ? `0 0 0 3px ${ring}` : 'none',
         }}
-        onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 0 3px color-mix(in srgb, ${color} 30%, transparent)`)}
+        onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 0 0 3px ${ring}`)}
         onMouseLeave={e => { if (!open) e.currentTarget.style.boxShadow = 'none' }}
         aria-label="Menú de usuario"
         aria-expanded={open}
@@ -69,8 +67,8 @@ export function UserMenu() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: '50%',
-                background: color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: 18, fontFamily: 'var(--font-display)', flex: 'none',
+                background: color, border: '1px solid var(--border-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--text-1)', fontWeight: 700, fontSize: 18, fontFamily: 'var(--font-display)', flex: 'none',
               }}>
                 {initial}
               </div>

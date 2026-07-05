@@ -8,7 +8,8 @@ import { useAllocation, useROI, useBenchmark, usePortfolio } from '@/hooks/usePo
 import { formatMoneyDual } from '@/components/ds/Stat'
 import { api } from '@/lib/api'
 
-const CHART_COLORS = ['#63B8F4','#E8C268','#3DD993','#9D8CFF','#45D4C8','#F08FB7','#F4626E','#B5D85A']
+// Paleta azul Cielo-led (verde/rojo reservados para gains/losses).
+const CHART_COLORS = ['#41A4EF','#63B8F4','#00B1EA','#00C896','#FFB454','#8FC8F6','#B6FF3C','#5DE9C4']
 
 type AllocationView = 'by_asset' | 'by_provider' | 'by_type'
 const VIEW_LABELS: Record<AllocationView, string> = {

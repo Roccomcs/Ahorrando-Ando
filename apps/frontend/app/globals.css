@@ -260,16 +260,17 @@ h2, h3 { font-family: var(--font-serif); }
 .aa-overline { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-3); }
 
 /* ── Button ─────────────────────────────────────────────────── */
-.aa-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; cursor: pointer; font-family: var(--font-ui); font-weight: var(--weight-semibold); border-radius: var(--radius-md); transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); white-space: nowrap; }
+.aa-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; cursor: pointer; font-family: var(--font-ui); font-weight: var(--weight-semibold); letter-spacing: 0.01em; border-radius: var(--radius-full); transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); white-space: nowrap; }
+.aa-btn:active:not(:disabled) { transform: scale(0.97); }
 .aa-btn:focus-visible { outline: none; box-shadow: var(--ring-focus); }
 .aa-btn:active:not(:disabled) { transform: translateY(1px); }
 .aa-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.aa-btn--sm { height: 32px; padding: 0 12px; font-size: var(--text-sm); border-radius: var(--radius-sm); }
-.aa-btn--md { height: 40px; padding: 0 16px; font-size: var(--text-base); }
-.aa-btn--lg { height: 48px; padding: 0 22px; font-size: var(--text-md); }
+.aa-btn--sm { height: 40px; padding: 0 16px; font-size: var(--text-sm); }
+.aa-btn--md { height: 52px; padding: 0 24px; font-size: var(--text-md); }
+.aa-btn--lg { height: 56px; padding: 0 26px; font-size: var(--text-md); }
 .aa-btn--full { width: 100%; }
-.aa-btn--primary { background: var(--action-primary); color: var(--text-inverse); }
-.aa-btn--primary:hover:not(:disabled) { background: var(--action-primary-hover); }
+.aa-btn--primary { background: #F2F3F5; color: #0A0A0F; }
+.aa-btn--primary:hover:not(:disabled) { background: #FFFFFF; }
 .aa-btn--secondary { background: transparent; color: var(--text-1); border-color: var(--border-2); }
 .aa-btn--secondary:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--carbon-500); }
 .aa-btn--ghost { background: transparent; color: var(--text-2); }
@@ -298,7 +299,7 @@ h2, h3 { font-family: var(--font-serif); }
 .aa-field { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-ui); }
 .aa-field__label { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-2); }
 .aa-field__wrap { position: relative; display: flex; align-items: center; }
-.aa-input { width: 100%; height: 42px; background: var(--surface-inset); border: 1px solid var(--border-2); border-radius: var(--radius-md); color: var(--text-1); font-family: var(--font-ui); font-size: var(--text-base); padding: 0 14px; transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); }
+.aa-input { width: 100%; height: 52px; background: var(--surface-2); border: 1px solid var(--border-1); border-radius: var(--radius-md); color: var(--text-1); font-family: var(--font-ui); font-size: var(--text-md); padding: 0 16px; transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); }
 .aa-input::placeholder { color: var(--text-3); }
 .aa-input:focus { outline: none; border-color: var(--border-focus); box-shadow: var(--ring-focus); }
 .aa-input--error { border-color: var(--rojo-500); }
@@ -325,9 +326,9 @@ h2, h3 { font-family: var(--font-serif); }
 .aa-switch__label { font-size: var(--text-sm); color: var(--text-2); }
 
 /* ── Segmented ──────────────────────────────────────────────── */
-.aa-seg { display: inline-flex; background: var(--surface-inset); border-radius: var(--radius-sm); padding: 3px; gap: 2px; }
-.aa-seg__opt { padding: 5px 12px; border-radius: var(--radius-xs); border: none; background: transparent; color: var(--text-3); font-family: var(--font-ui); font-size: var(--text-sm); font-weight: var(--weight-medium); cursor: pointer; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
-.aa-seg__opt--on { background: var(--surface-card); color: var(--text-1); }
+.aa-seg { display: inline-flex; background: var(--surface-1); border: 1px solid var(--border-1); border-radius: var(--radius-full); padding: 4px; gap: 2px; }
+.aa-seg__opt { height: 34px; padding: 0 16px; border-radius: var(--radius-full); border: none; background: transparent; color: var(--text-2); font-family: var(--font-ui); font-size: var(--text-sm); font-weight: var(--weight-semibold); letter-spacing: 0.02em; cursor: pointer; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+.aa-seg__opt--on { background: #F2F3F5; color: #0A0A0F; box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
 .aa-seg__opt:hover:not(.aa-seg__opt--on) { color: var(--text-2); }
 
 /* ── Badge ──────────────────────────────────────────────────── */
@@ -370,7 +371,9 @@ h2, h3 { font-family: var(--font-serif); }
 .aa-side__item { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: var(--radius-md); border: none; background: transparent; color: var(--text-2); font-family: var(--font-ui); font-size: var(--text-base); font-weight: var(--weight-medium); cursor: pointer; text-align: left; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); width: 100%; }
 .aa-side__item:hover { background: var(--flat-bg); color: var(--text-1); }
 .aa-side__item:focus-visible { outline: none; box-shadow: var(--ring-focus); }
-.aa-side__item--on { background: var(--accent-bg); color: var(--text-accent); }
+.aa-side__item--on { background: transparent; color: var(--text-1); font-weight: var(--weight-semibold); }
+.aa-side__item--on svg { color: var(--text-1); }
+.aa-side__dot { margin-left: auto; width: 6px; height: 6px; border-radius: 999px; background: var(--primary); flex: none; }
 .aa-side__user { border-top: 1px solid var(--border-1); padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
 .aa-side__email { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .aa-side__hamburger { display: none; }
@@ -411,3 +414,134 @@ h2, h3 { font-family: var(--font-serif); }
 /* Nota: a pedido del usuario NO se desactivan las animaciones con
    "reduce motion" del sistema — las animaciones de marca (login, landing)
    son parte de la identidad y deben mostrarse siempre. */
+
+/* ============================================================================
+   Design System v2 — Claude Design (violeta, dark fintech)
+   Este bloque va ÚLTIMO a propósito: define los tokens exactos del nuevo DS y
+   re-mapea los tokens legacy de la app a ellos, así toda la UI toma el look
+   nuevo sin reescribir cada componente. Space Grotesk + Manrope se cargan vía
+   next/font en layout.tsx (--ff-display / --ff-body).
+   ========================================================================== */
+:root,
+[data-theme="dark"],
+[data-theme="light"],
+[data-theme="midnight"],
+[data-theme="sepia"] {
+  /* ---- Ramp violeta (marca) --------------------------------------------- */
+  --violet-100: #EDE7FF; --violet-300: #C7B5FF; --violet-400: #AD93FF;
+  --violet-500: #8B6CFF; --violet-600: #6F4DF0; --violet-700: #4B2FB0;
+  --violet-900: #241B45;
+
+  /* ---- Superficies (MD3 dark) ------------------------------------------- */
+  --bg: #0A0A0F; --surface: #12121A; --surface-1: #16161F;
+  --surface-2: #1C1C28; --surface-3: #24242F; --surface-4: #2C2C38;
+  --scrim: rgba(6, 6, 10, 0.72);
+
+  /* ---- Primario (Cielo azul — acento de la app, NO violeta) ------------- */
+  /* El violeta del DS queda como color neutro de chrome; el acento visible
+     de la app es el azul Cielo, tal como está diseñada. */
+  --cielo-200: #BFE0FA; --cielo-300: #8FC8F6; --cielo-400: #63B8F4;
+  --cielo-500: #41A4EF; --cielo-600: #2A8BD9; --cielo-700: #1F6FB4;
+  --primary: var(--cielo-500);
+  --primary-hover: var(--cielo-400);
+  --primary-press: var(--cielo-600);
+  --on-primary: #04121E;
+  --primary-container: rgba(65,164,239,0.14);
+  --on-primary-container: var(--cielo-200);
+
+  /* ---- Semántico financiero (estricto) ---------------------------------- */
+  --positive: #00C896; --positive-dim: #0E8D6C; --positive-container: #06291F;
+  --on-positive-container: #5DE9C4;
+  --negative: #FF4D6D; --negative-dim: #C23A53; --negative-container: #2E0E16;
+  --on-negative-container: #FF9DAE;
+  --warning: #FFB454;
+
+  /* ---- Texto / bordes / glass ------------------------------------------- */
+  --text-primary: rgba(255,255,255,0.95);
+  --text-secondary: rgba(255,255,255,0.64);
+  --text-tertiary: rgba(255,255,255,0.40);
+  --ds-border: rgba(255,255,255,0.08);
+  --ds-border-strong: rgba(255,255,255,0.14);
+  --ds-divider: rgba(255,255,255,0.06);
+  --glass-fill: rgba(28,28,40,0.55);
+  --glass-border: rgba(255,255,255,0.10);
+  --glass-blur: 22px;
+
+  /* ---- Elevación -------------------------------------------------------- */
+  --elev-1: 0 1px 2px rgba(0,0,0,0.40);
+  --elev-2: 0 4px 12px rgba(0,0,0,0.36);
+  --elev-3: 0 8px 28px rgba(0,0,0,0.44);
+  --elev-4: 0 16px 48px rgba(0,0,0,0.52);
+  --elev-5: 0 28px 80px rgba(0,0,0,0.60);
+  --rim-top: inset 0 1px 0 rgba(255,255,255,0.07);
+  --shadow-card: 0 8px 28px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.06);
+  --glow-primary: 0 8px 32px rgba(65,164,239,0.32), 0 2px 8px rgba(65,164,239,0.26);
+
+  /* ---- Brand integraciones ---------------------------------------------- */
+  --brand-binance: #F0B90B; --brand-mercadopago: #00B1EA;
+  --brand-bullmarket: #E8483C; --brand-belo: #B6FF3C;
+  --brand-lemon: #00E36A; --brand-ripio: #1A45E0;
+
+  /* ======================================================================
+     Alias: tokens legacy de la app → nuevos tokens del DS
+     ==================================================================== */
+  --surface-canvas: var(--bg);
+  --surface-raised: var(--surface-1);
+  --surface-card:   var(--surface-2);
+  --surface-hover:  var(--surface-3);
+  --surface-inset:  var(--surface);
+  --surface-elevated: var(--surface-3);
+
+  --text-1: var(--text-primary);
+  --text-2: var(--text-secondary);
+  --text-3: var(--text-tertiary);
+  --text-inverse: var(--on-primary);
+  --text-accent: var(--primary);
+
+  --border-1: var(--ds-border);
+  --border-2: var(--ds-border-strong);
+  --border-focus: var(--primary);
+
+  --up: var(--positive);        --up-bg: var(--positive-container);
+  --down: var(--negative);      --down-bg: var(--negative-container);
+  --flat: var(--text-tertiary); --flat-bg: rgba(255,255,255,0.06);
+  --warn: var(--warning);       --warn-bg: rgba(255,180,84,0.12);
+
+  --action-primary: var(--primary);
+  --action-primary-hover: var(--primary-hover);
+  --accent-bg: var(--primary-container);
+  --gold-bg: rgba(255,180,84,0.14);
+
+  /* Ramps de marca vieja apuntadas al semantico (hay usos directos de verde y
+     rojo en page.module.css y componentes). Cielo ya está definido arriba. */
+  --verde-500: var(--positive);      --verde-400: var(--positive);
+  --verde-300: var(--on-positive-container);
+  --rojo-500: var(--negative);       --rojo-400: var(--negative);
+  --rojo-300: var(--on-negative-container);
+  --sol-500: var(--warning);         --sol-400: var(--warning); --sol-300: #F2D695;
+
+  /* Tipografía */
+  --font-display: var(--ff-display), 'Space Grotesk', system-ui, sans-serif;
+  --font-serif:   var(--ff-display), 'Space Grotesk', system-ui, sans-serif;
+  --font-ui:      var(--ff-body), 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--ff-display), 'Space Grotesk', ui-monospace, monospace;
+  --display-stretch: 100%;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700;
+  --tracking-tight: -0.02em; --tracking-num: -0.01em; --tracking-wide: 0.12em;
+
+  /* Radios (escala DS) */
+  --radius-xs: 8px; --radius-sm: 12px; --radius-md: 16px;
+  --radius-lg: 24px; --radius-xl: 32px; --radius-full: 999px;
+
+  /* Sombras compuestas usadas por la app */
+  --elev-card: var(--shadow-card);
+  --shadow-xl: var(--elev-5);
+  --shadow-lg: var(--elev-4);
+  --shadow-overlay: var(--elev-5);
+  --ring-focus: 0 0 0 3px rgba(65,164,239,0.35);
+
+  /* Landing/login (que sigan en dark, alineados al nuevo canvas) */
+  --ll-black: var(--bg); --ll-section: var(--surface); --ll-gray: var(--surface-1);
+  --ll-text-1: var(--text-primary); --ll-text-2: var(--text-secondary); --ll-text-3: var(--text-tertiary);
+  --ll-border: var(--ds-border);
+}

@@ -1,29 +1,20 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
-import { Stack_Sans_Headline, Noto_Serif, Gelasio, JetBrains_Mono } from 'next/font/google'
+import { Space_Grotesk, Manrope } from 'next/font/google'
 
-const stackSans = Stack_Sans_Headline({
+// Design System v2 (Claude Design): Space Grotesk para display + números
+// tabulares, Manrope para body/labels.
+const spaceGrotesk = Space_Grotesk({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   variable: '--ff-display',
 })
 
-const notoSerif = Noto_Serif({
-  weight: ['400', '600', '700'],
-  subsets: ['latin'],
-  variable: '--ff-serif',
-})
-
-const gelasio = Gelasio({
-  weight: ['400', '500', '600', '700'],
+const manrope = Manrope({
+  weight: ['400', '500', '600', '700', '800'],
   subsets: ['latin'],
   variable: '--ff-body',
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--ff-mono',
 })
 
 export const metadata: Metadata = {
@@ -36,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="es"
       data-theme="dark"
-      className={`${stackSans.variable} ${notoSerif.variable} ${gelasio.variable} ${jetbrainsMono.variable}`}
+      className={`${spaceGrotesk.variable} ${manrope.variable}`}
     >
       <body>
         <Providers>{children}</Providers>
