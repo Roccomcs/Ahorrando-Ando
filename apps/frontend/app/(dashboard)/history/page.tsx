@@ -1,175 +1,171 @@
 'use client'
 
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Card } from '@/components/ds/Card'
-import { Delta } from '@/components/ds/Delta'
-import { usePortfolioHistory, usePortfolio } from '@/hooks/usePortfolio'
-import { formatMoneyDual } from '@/components/ds/Stat'
+import { useTransactions } from '@/hooks/usePortfolio'
+import { Button } from '@/components/ds/Button'
+import type { TransactionDTO, TransactionType } from '@/lib/types'
 
-type Range = '7d' | '30d' | '90d' | '1y'
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
 
-const RANGES: { label: string; value: Range; days: number }[] = [
-  { label: '7 días', value: '7d', days: 7 },
-  { label: '30 días', value: '30d', days: 30 },
-  { label: '90 días', value: '90d', days: 90 },
-  { label: '1 año', value: '1y', days: 365 },
+const TABS: { label: string; value: TransactionType | null }[] = [
+  { label: 'Todos', value: null },
+  { label: 'Compras', value: 'buy' },
+  { label: 'Ventas', value: 'sell' },
+  { label: 'Depósitos', value: 'deposit' },
+  { label: 'Rendimientos', value: 'yield' },
 ]
 
-function isoFrom(days: number) {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  return d.toISOString()
+const TYPE_META: Record<TransactionType, { label: string; color: string }> = {
+  buy: { label: 'Compra', color: 'var(--primary)' },
+  sell: { label: 'Venta', color: 'var(--warning)' },
+  deposit: { label: 'Depósito', color: '#45D4C8' },
+  withdrawal: { label: 'Retiro', color: 'var(--negative)' },
+  yield: { label: 'Rendimiento', color: 'var(--positive)' },
 }
 
-function formatDate(iso: string, short = false) {
-  return new Date(iso).toLocaleDateString('es-AR', short ? { day: '2-digit', month: 'short' } : { dateStyle: 'medium' })
+function fmtMoney(v: number) {
+  return `US$ ${Math.abs(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+function fmtQty(v: number) {
+  return v.toLocaleString('es-AR', { maximumFractionDigits: 6 })
+}
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).replace('.', '')
 }
 
-const LINE_COLOR = '#63B8F4'
-const GRID_COLOR = 'rgba(255,255,255,0.06)'
-const AREA_FILL = 'rgba(99,184,244,0.08)'
-
-function LineChart({ points, rate }: { points: { date: string; usd: number }[]; rate?: number | null }) {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; point: typeof points[0] } | null>(null)
-
-  if (points.length < 2) {
-    return (
-      <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-3)', fontSize: 'var(--text-sm)' }}>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
-        <span>Sin suficientes datos para el gráfico</span>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>El historial se acumula con cada visita al dashboard.</span>
-      </div>
-    )
+function detail(t: TransactionDTO) {
+  if (t.note) return t.note
+  if (t.asset_symbol && t.quantity && t.price_usd) {
+    return `${t.asset_symbol} · ${fmtQty(t.quantity)} @ ${fmtMoney(t.price_usd)}`
   }
+  if (t.tx_type === 'deposit') return t.asset_symbol ? `Depósito de ${t.asset_symbol}` : 'Depósito'
+  if (t.tx_type === 'withdrawal') return t.asset_symbol ? `Retiro de ${t.asset_symbol}` : 'Retiro'
+  if (t.tx_type === 'yield') return 'Rendimiento'
+  return t.asset_symbol ?? '—'
+}
 
-  const W = 720, H = 240, PX = 52, PY = 16
-  const minY = Math.min(...points.map(p => p.usd))
-  const maxY = Math.max(...points.map(p => p.usd))
-  const rangeY = maxY - minY || 1
-  const xs = points.map((_, i) => PX + (i / (points.length - 1)) * (W - PX - 8))
-  const ys = points.map(p => PY + ((1 - (p.usd - minY) / rangeY)) * (H - PY - 28))
-
-  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x},${ys[i]}`).join(' ')
-  const area = `${path} L${xs[xs.length - 1]},${H - 28} L${xs[0]},${H - 28} Z`
-
-  const yTicks = [minY, minY + rangeY / 2, maxY]
-  const xStep = Math.ceil(points.length / 5)
-  const xTicks = points.filter((_, i) => i % xStep === 0 || i === points.length - 1)
-  const xTickIdxs = xTicks.map(t => points.indexOf(t))
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = svgRef.current!.getBoundingClientRect()
-    const mx = ((e.clientX - rect.left) / rect.width) * W
-    let closest = 0
-    let minDist = Infinity
-    xs.forEach((x, i) => { const d = Math.abs(x - mx); if (d < minDist) { minDist = d; closest = i } })
-    setTooltip({ x: xs[closest], y: ys[closest], point: points[closest] })
-  }, [xs, ys, points])
-
+function TypeBadge({ type }: { type: TransactionType }) {
+  const meta = TYPE_META[type]
   return (
-    <div style={{ position: 'relative' }}>
-      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
-        onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
-        {/* Grid lines */}
-        {yTicks.map((_, i) => {
-          const gy = PY + (1 - i / 2) * (H - PY - 28)
-          return <line key={i} x1={PX} y1={gy} x2={W - 8} y2={gy} stroke={GRID_COLOR} strokeWidth="1" />
-        })}
-        {/* Y axis labels */}
-        {yTicks.map((v, i) => {
-          const gy = PY + (1 - i / 2) * (H - PY - 28)
-          return <text key={i} x={PX - 6} y={gy + 4} textAnchor="end" fontSize="10" fill="var(--text-3)" fontFamily="var(--font-mono)">{v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v.toFixed(0)}`}</text>
-        })}
-        {/* Area fill */}
-        <path d={area} fill={AREA_FILL} />
-        {/* Line */}
-        <path d={path} fill="none" stroke={LINE_COLOR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {/* X axis labels */}
-        {xTickIdxs.map((idx, i) => (
-          <text key={i} x={xs[idx]} y={H - 8} textAnchor="middle" fontSize="10" fill="var(--text-3)" fontFamily="var(--font-mono)">
-            {formatDate(points[idx].date, true)}
-          </text>
-        ))}
-        {/* Tooltip dot */}
-        {tooltip && <>
-          <line x1={tooltip.x} y1={PY} x2={tooltip.x} y2={H - 28} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4 3" />
-          <circle cx={tooltip.x} cy={tooltip.y} r="4" fill={LINE_COLOR} stroke="var(--surface-card)" strokeWidth="2" />
-        </>}
-      </svg>
-      {tooltip && (
-        <div style={{ position: 'absolute', left: `${(tooltip.x / W) * 100}%`, top: `${(tooltip.y / H) * 100}%`, transform: 'translate(-50%,-110%)', pointerEvents: 'none', background: 'var(--surface-elevated)', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-md)', padding: '6px 10px', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
-          <div style={{ color: 'var(--text-3)' }}>{formatDate(tooltip.point.date)}</div>
-          <div className="aa-num" style={{ color: 'var(--text-1)', fontWeight: 'var(--weight-bold)' }}>{formatMoneyDual(tooltip.point.usd, rate)}</div>
-        </div>
-      )}
-    </div>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', padding: '3px 12px',
+      borderRadius: 999, border: `1px solid color-mix(in srgb, ${meta.color} 55%, transparent)`,
+      color: meta.color, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+    }}>{meta.label}</span>
   )
 }
 
-export default function HistoryPage() {
-  const [range, setRange] = useState<Range>('30d')
-  const rangeConfig = RANGES.find(r => r.value === range)!
-  // Memoizado: un "from" nuevo por render cambia la queryKey y provoca
-  // refetch infinito (429).
-  const fromIso = useMemo(() => isoFrom(rangeConfig.days), [rangeConfig.days])
-  const { data, isLoading } = usePortfolioHistory(fromIso)
-  const { data: portfolio } = usePortfolio()
+function exportCsv(rows: TransactionDTO[]) {
+  const head = 'fecha,tipo,detalle,cuenta,monto_usd'
+  const body = rows.map(t => [
+    new Date(t.occurred_at).toISOString().slice(0, 10),
+    TYPE_META[t.tx_type].label,
+    `"${detail(t).replace(/"/g, '""')}"`,
+    `"${t.account.replace(/"/g, '""')}"`,
+    t.amount_usd.toFixed(2),
+  ].join(',')).join('\n')
+  const blob = new Blob([head + '\n' + body], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'movimientos.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
-  const points = data?.points.map(p => ({ date: p.snapshot_at, usd: p.total_usd })) ?? []
-  const noIntegrations = !portfolio || portfolio.providers.length === 0
+export default function HistoryPage() {
+  const [tab, setTab] = useState<TransactionType | null>(null)
+  const [account, setAccount] = useState<string | null>(null)
+  const { data, isLoading } = useTransactions(30)
+
+  const all = useMemo(() => data ?? [], [data])
+  const accounts = useMemo(() => [...new Set(all.map(t => t.account))], [all])
+  const rows = all.filter(t =>
+    (tab === null || t.tx_type === tab) && (account === null || t.account === account)
+  )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px', color: 'var(--text-1)' }}>Historial</h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Evolución del valor total de tu portfolio</p>
+      {/* Header */}
+      <div className="aa-sec aa-sec--1">
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-1)' }}>Historial</span>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', color: 'var(--text-1)', margin: '6px 0 6px' }}>
+          Cada movimiento, a la vista
+        </h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Compras, ventas, depósitos y rendimientos de todas tus cuentas.</p>
       </div>
 
-      {/* Range selector */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        {RANGES.map(r => (
-          <button key={r.value} onClick={() => setRange(r.value)}
-            style={{ padding: '6px 14px', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', border: '1px solid', cursor: 'pointer', transition: 'all var(--dur-fast) var(--ease-out)',
-              background: range === r.value ? 'var(--action-primary)' : 'transparent',
-              borderColor: range === r.value ? 'var(--action-primary)' : 'var(--border-1)',
-              color: range === r.value ? '#fff' : 'var(--text-2)' }}>
-            {r.label}
-          </button>
-        ))}
+      {/* Filtros */}
+      <div className="aa-sec aa-sec--2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div className="aa-seg">
+          {TABS.map(t => (
+            <button key={t.label} className={`aa-seg__opt${tab === t.value ? ' aa-seg__opt--on' : ''}`} onClick={() => setTab(t.value)}>{t.label}</button>
+          ))}
+        </div>
+        {accounts.length > 1 && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[null, ...accounts].map(a => {
+              const on = account === a
+              return (
+                <button key={a ?? '__all'} onClick={() => setAccount(a)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                    fontFamily: 'var(--font-ui)', background: 'transparent',
+                    border: `1px solid ${on ? 'var(--primary)' : 'var(--border-2)'}`,
+                    color: on ? 'var(--primary)' : 'var(--text-2)',
+                    transition: 'all var(--dur-fast) var(--ease-out)',
+                  }}>
+                  {a ?? 'Todas las cuentas'}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
-      {noIntegrations && (
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>
-            El historial se empieza a acumular cuando tenés al menos una integración conectada.
-          </p>
-          <Link href="/integrations" style={{ textDecoration: 'none', whiteSpace: 'nowrap', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-accent)' }}>
-            Conectar cuenta →
-          </Link>
+      {/* Tabla */}
+      <section className="aa-sec aa-sec--3">
+        <div style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, padding: '0 4px 10px', borderBottom: '1px solid var(--border-1)' }}>
+          {['Fecha', 'Tipo', 'Detalle', 'Cuenta', 'Monto'].map((h, i) => (
+            <span key={h} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i === 4 ? 'right' : 'left' }}>{h}</span>
+          ))}
         </div>
-      )}
 
-      <Card padding="md">
-        {isLoading
-          ? <div style={{ height: 280, background: 'var(--surface-hover)', borderRadius: 'var(--radius-md)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />
-          : <LineChart points={points} rate={data?.usd_to_ars} />}
-      </Card>
+        {isLoading && [0, 1, 2, 3, 4].map(i => <div key={i} className="aa-skel" style={{ height: 46, marginTop: 8 }} />)}
 
-      {data && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Card padding="md">
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 6px' }}>Cambio 24h</p>
-            {data.change_pct_24h !== null ? <Delta value={data.change_pct_24h} /> : <span style={{ color: 'var(--text-3)', fontSize: 'var(--text-sm)' }}>Sin datos</span>}
-          </Card>
-          <Card padding="md">
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 6px' }}>Cambio 30d</p>
-            {data.change_pct_30d !== null ? <Delta value={data.change_pct_30d} /> : <span style={{ color: 'var(--text-3)', fontSize: 'var(--text-sm)' }}>Sin datos</span>}
-          </Card>
-        </div>
-      )}
-      <style>{`@keyframes aa-pulse { from { opacity: 0.4 } to { opacity: 0.9 } }`}</style>
+        {!isLoading && rows.length === 0 && (
+          <div style={{ padding: '36px 4px', color: 'var(--text-3)', fontSize: 13, lineHeight: 1.6 }}>
+            Sin movimientos en los últimos 30 días.<br />
+            Los movimientos se registran al cargar o editar posiciones manuales, y con los rendimientos de tus cuentas.{' '}
+            <Link href="/integrations" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Ir a Integraciones →</Link>
+          </div>
+        )}
+
+        {rows.map(t => {
+          const positive = t.amount_usd >= 0
+          return (
+            <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, alignItems: 'center', padding: '13px 4px', borderBottom: '1px solid var(--border-1)' }}>
+              <span style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>{fmtDate(t.occurred_at)}</span>
+              <span><TypeBadge type={t.tx_type} /></span>
+              <span style={{ fontSize: 14, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail(t)}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{t.account}</span>
+              <span style={{ ...MONO, fontSize: 13, fontWeight: 700, textAlign: 'right', color: positive ? 'var(--positive)' : 'var(--text-1)' }}>
+                {positive ? '+' : '−'}{fmtMoney(t.amount_usd)}
+              </span>
+            </div>
+          )
+        })}
+
+        {!isLoading && rows.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 18 }}>
+            <span style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>
+              {rows.length} movimiento{rows.length !== 1 ? 's' : ''} · últimos 30 días
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => exportCsv(rows)}>Exportar CSV</Button>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

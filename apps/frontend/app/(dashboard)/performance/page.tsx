@@ -192,7 +192,7 @@ export default function PerformancePage() {
       {/* Header */}
       <div className="aa-sec aa-sec--1" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <span style={OVERLINE}>Performance</span>
+          <span style={{ ...OVERLINE, color: 'var(--text-1)' }}>Performance</span>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', color: 'var(--text-1)', margin: '6px 0 6px' }}>
             Cuánto rinde cada cuenta
           </h1>

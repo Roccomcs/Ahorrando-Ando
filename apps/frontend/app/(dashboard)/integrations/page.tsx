@@ -7,8 +7,9 @@ import { Input } from '@/components/ds/Input'
 import {
   useIntegrations, useAddIntegration, useDeleteIntegration,
   useSyncIntegration, useImportBalanzCSV, useImportBullMarketCSV,
-  useUpdateIntegration, searchAssets, quoteAsset,
+  useUpdateIntegration, searchAssets, quoteAsset, usePortfolio,
 } from '@/hooks/usePortfolio'
+import { useCurrency } from '@/lib/currency-context'
 import { api } from '@/lib/api'
 import type { ProviderType, AssetSearchResult, AssetCategory } from '@/lib/types'
 
@@ -530,8 +531,13 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
 
 export default function IntegrationsPage() {
   const { data: integrations, isLoading } = useIntegrations()
+  const { data: portfolio } = usePortfolio()
+  const { format } = useCurrency()
   const deleteMutation = useDeleteIntegration()
   const syncMutation = useSyncIntegration()
+  // Balance actual por provider (para mostrar en cada cuenta conectada).
+  const balanceByProvider = new Map((portfolio?.providers ?? []).map(p => [p.provider, p.balance_usd]))
+  const rate = portfolio?.usd_to_ars
   const [activeWizard, setActiveWizard] = useState<ProviderConfig | null>(null)
   const [editWizard, setEditWizard] = useState<{ config: ProviderConfig; editId: string; initialManual: { institution_name: string; holdings: ManualHolding[] } } | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -560,55 +566,65 @@ export default function IntegrationsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px', color: 'var(--text-1)' }}>Integraciones</h1>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Conectá tus cuentas financieras</p>
+      <div className="aa-sec aa-sec--1">
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-1)' }}>Integraciones</span>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', margin: '6px 0 6px', color: 'var(--text-1)' }}>
+          Conectá lo que ya usás
+        </h1>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0, maxWidth: 460 }}>
+          Claves API de solo lectura, cifradas con AES-256. Leemos saldos; nunca movemos tu plata.
+        </p>
       </div>
 
       {/* Connected accounts */}
       {!isLoading && integrations && integrations.length > 0 && (
-        <div>
-          <span className="aa-overline" style={{ display: 'block', marginBottom: 10 }}>Cuentas conectadas ({integrations.length})</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <section className="aa-sec aa-sec--2">
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>
+            Conectadas · {integrations.length}
+          </span>
+          <div>
             {integrations.map(item => {
               const cfg = PROVIDERS.find(p => p.value === item.provider_type)
+              const balance = balanceByProvider.get(item.provider_type)
+              const syncAgo = item.last_sync_at
+                ? `hace ${Math.max(1, Math.round((Date.now() - new Date(item.last_sync_at).getTime()) / 60000))} min`
+                : 'conectada'
               return (
-                <Card key={item.id} padding="md">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: cfg?.color ?? 'var(--surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', color: '#fff', flexShrink: 0 }}>
-                        {(cfg?.label ?? item.provider_type).charAt(0).toUpperCase()}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-1)', margin: 0 }}>{cfg?.label ?? item.provider_type}</p>
-                          <span style={{ color: item.is_active ? 'var(--up)' : 'var(--down)' }}>
-                            {item.is_active ? <CheckIcon /> : <XCircleIcon />}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>
-                          {item.is_active
-                            ? item.last_sync_at ? `Sync: ${new Date(item.last_sync_at).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Conectada'
-                            : 'Inactiva'}
-                        </p>
-                      </div>
+                <div key={item.id} style={{ borderBottom: '1px solid var(--border-1)', padding: '15px 0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0, background: `color-mix(in srgb, ${cfg?.color ?? '#8A97AB'} 16%, transparent)`, color: cfg?.color ?? 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700 }}>
+                      {(cfg?.label ?? item.provider_type).slice(0, 3).toUpperCase()}
                     </div>
-                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{cfg?.label ?? item.provider_type}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{cfg?.tagline}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.is_active ? 'var(--positive)' : 'var(--negative)' }} />
+                      <span style={{ fontSize: 12, color: item.is_active ? 'var(--positive)' : 'var(--negative)' }}>{item.is_active ? syncAgo : 'inactiva'}</span>
+                    </div>
+                    {typeof balance === 'number' && (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 700, color: 'var(--text-1)', minWidth: 110, textAlign: 'right', flexShrink: 0 }}>
+                        {format(balance, rate)}
+                      </span>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       {item.provider_type !== 'balanz_csv' && item.provider_type !== 'bullmarket_csv' && (
-                        <button onClick={() => syncMutation.mutate(item.id)} title="Actualizar precios ahora"
-                          style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-accent)', display: 'flex' }}>
-                          <RefreshIcon />
-                        </button>
+                        <Button variant="secondary" size="sm" style={{ height: 34, padding: '0 16px', fontSize: 13 }} onClick={() => syncMutation.mutate(item.id)}>
+                          Sincronizar
+                        </Button>
                       )}
                       {item.provider_type === 'manual' && (
-                        <button onClick={() => handleEditManual(item.id)} title="Editar posiciones"
-                          style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-2)', display: 'flex' }}>
-                          <EditIcon />
+                        <button onClick={() => handleEditManual(item.id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                          Editar
                         </button>
                       )}
                       <button onClick={() => setConfirmDeleteId(item.id)}
-                        style={{ padding: 7, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--down)', display: 'flex' }}>
-                        <TrashIcon />
+                        style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--negative)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}>
+                        Quitar
                       </button>
                     </div>
                   </div>
@@ -626,11 +642,11 @@ export default function IntegrationsPage() {
                       <p style={{ fontSize: 'var(--text-xs)', color: 'var(--down)', margin: 0 }}>{item.last_error}</p>
                     </div>
                   )}
-                </Card>
+                </div>
               )
             })}
           </div>
-        </div>
+        </section>
       )}
 
       {isLoading && (
@@ -640,28 +656,22 @@ export default function IntegrationsPage() {
       )}
 
       {/* Add new — grupo API/CSV */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span className="aa-overline">Conectar por API o CSV</span>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>Hacé click en cualquier provider para conectar</span>
+      <section className="aa-sec aa-sec--3">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)' }}>Disponibles</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>Elegí un proveedor para conectarlo</span>
         </div>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 10px' }}>
-          Exchanges, brokers y billeteras con API o exportación de CSV. Se sincronizan automáticamente.
-        </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
           {apiProviders.map(p => (
             <ProviderPickerCard key={p.value} config={p} connected={connectedTypes.has(p.value)} onClick={() => setActiveWizard(p)} />
           ))}
         </div>
-        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>
-          <ShieldIcon /> Todas las credenciales se cifran con AES-256 y nunca se almacenan en texto plano.
-        </div>
-      </div>
+      </section>
 
       {/* Add new — grupo manual */}
-      <div>
-        <span className="aa-overline" style={{ display: 'block', marginBottom: 4 }}>Ingreso manual</span>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 10px' }}>
+      <section className="aa-sec aa-sec--4">
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>Ingreso manual</span>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 12px' }}>
           Para brokers sin API ni CSV (como Bull Market). Buscá cada activo y cargá tu cantidad; los precios se actualizan solos.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
@@ -669,7 +679,10 @@ export default function IntegrationsPage() {
             <ProviderPickerCard key={p.value} config={p} connected={false} onClick={() => setActiveWizard(p)} />
           ))}
         </div>
-      </div>
+        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>
+          <ShieldIcon /> Todas las credenciales se cifran con AES-256 y nunca se almacenan en texto plano.
+        </div>
+      </section>
 
       {activeWizard && <WizardModal config={activeWizard} onClose={() => setActiveWizard(null)} onSuccess={() => setActiveWizard(null)} />}
       {editWizard && <WizardModal config={editWizard.config} editId={editWizard.editId} initialManual={editWizard.initialManual} onClose={() => setEditWizard(null)} onSuccess={() => setEditWizard(null)} />}

@@ -17,3 +17,6 @@ class IPriceAlertRepository(ABC):
 
     @abstractmethod
     async def delete(self, alert_id: str, user_id: str) -> None: ...
+
+    @abstractmethod
+    async def set_active(self, alert_id: str, user_id: str, active: bool) -> None: ...

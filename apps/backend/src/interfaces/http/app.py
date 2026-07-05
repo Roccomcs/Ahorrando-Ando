@@ -37,6 +37,7 @@ from interfaces.http.routers.auth_router import router as auth_router
 from interfaces.http.routers.dashboard_router import router as dashboard_router
 from interfaces.http.routers.health_router import router as health_router
 from interfaces.http.routers.integrations_router import router as integrations_router
+from interfaces.http.routers.transactions_router import router as transactions_router
 
 # ── Structured JSON logging ────────────────────────────────────────────────────
 from pythonjsonlogger.json import JsonFormatter
@@ -108,7 +109,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=_origins_list,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
     )
 
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
     app.include_router(integrations_router, prefix="/api/v1")
     app.include_router(alerts_router, prefix="/api/v1")
     app.include_router(assets_router, prefix="/api/v1")
+    app.include_router(transactions_router, prefix="/api/v1")
 
     return app
 

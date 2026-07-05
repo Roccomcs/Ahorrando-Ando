@@ -11,7 +11,18 @@ import type {
   ProviderPerformanceResponse,
   AssetSearchResult,
   AssetCategory,
+  TransactionDTO,
 } from '@/lib/types'
+
+export function useTransactions(days = 30, txType?: string, account?: string) {
+  const params = new URLSearchParams({ days: String(days) })
+  if (txType) params.set('tx_type', txType)
+  if (account) params.set('account', account)
+  return useQuery<TransactionDTO[]>({
+    queryKey: ['transactions', days, txType ?? null, account ?? null],
+    queryFn: () => api.get(`/api/v1/transactions?${params.toString()}`).then((r) => r.data),
+  })
+}
 
 // Buscador de activos (tipo TradingView) para el ingreso manual.
 export async function searchAssets(query: string): Promise<AssetSearchResult[]> {
@@ -189,6 +200,15 @@ export function useCreateAlert() {
   return useMutation({
     mutationFn: (data: { asset_symbol: string; threshold_usd: number; direction: string; note?: string }) =>
       api.post('/api/v1/alerts', data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  })
+}
+
+export function useToggleAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      api.patch(`/api/v1/alerts/${id}`, { is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
   })
 }

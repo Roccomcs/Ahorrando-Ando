@@ -1,185 +1,231 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card } from '@/components/ds/Card'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ds/Button'
-import { Input } from '@/components/ds/Input'
-import { EmptyState } from '@/components/ds/EmptyState'
-import { useAlerts, useCreateAlert, useDeleteAlert } from '@/hooks/usePortfolio'
-import { api } from '@/lib/api'
+import { useAlerts, useCreateAlert, useDeleteAlert, useToggleAlert, usePortfolio } from '@/hooks/usePortfolio'
 import type { PriceAlertDTO } from '@/lib/types'
 
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
 
-function BellIcon({ size = 20 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-}
-function CheckIcon({ size = 18 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-}
-function ClockIcon({ size = 18 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-}
 function TrashIcon({ size = 16 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-}
-function PlusIcon({ size = 16 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
 }
 
-function AlertItem({ alert, onDelete }: { alert: PriceAlertDTO; onDelete: (id: string) => void }) {
-  const dirText = alert.direction === 'above' ? 'sube sobre' : 'baja de'
-  const triggered = !!alert.triggered_at
-  const active = alert.is_active && !triggered
+function fmtUsd(v: number) {
+  return `US$ ${v.toLocaleString('es-AR', { minimumFractionDigits: v < 100 ? 2 : 0, maximumFractionDigits: 2 })}`
+}
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).replace('.', '')
+}
 
+function SymbolBadge({ symbol }: { symbol: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)' }}>
-      <div style={{ flexShrink: 0, color: triggered ? 'var(--cielo-400)' : active ? 'var(--up)' : 'var(--text-3)' }}>
-        {triggered ? <CheckIcon /> : active ? <ClockIcon /> : <BellIcon size={18} />}
-      </div>
+    <div style={{
+      width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+      background: 'var(--surface-2)', border: '1px solid var(--border-2)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text-1)',
+    }}>{symbol.slice(0, 4)}</div>
+  )
+}
+
+function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!on)}
+      aria-pressed={on}
+      style={{
+        width: 44, height: 26, borderRadius: 999, border: 'none', cursor: 'pointer', flexShrink: 0,
+        background: on ? 'var(--primary)' : 'var(--surface-3)',
+        position: 'relative', transition: 'background var(--dur-fast) var(--ease-out)',
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20,
+        borderRadius: '50%', background: '#fff', transition: 'left var(--dur-fast) var(--ease-out)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+      }} />
+    </button>
+  )
+}
+
+function AlertRow({ alert, onToggle, onDelete }: {
+  alert: PriceAlertDTO
+  onToggle: (id: string, active: boolean) => void
+  onDelete: (id: string) => void
+}) {
+  const dirText = alert.direction === 'above' ? 'sube por encima de' : 'baja por debajo de'
+  const triggeredToday = alert.triggered_at && new Date(alert.triggered_at).toDateString() === new Date().toDateString()
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 0', borderBottom: '1px solid var(--border-1)' }}>
+      <SymbolBadge symbol={alert.asset_symbol} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--text-1)' }}>
-          <span className="aa-num" style={{ fontWeight: 'var(--weight-bold)' }}>{alert.asset_symbol}</span>
-          {' '}<span style={{ color: 'var(--text-2)' }}>{dirText}</span>{' '}
-          <span className="aa-num" style={{ fontWeight: 'var(--weight-bold)' }}>${alert.threshold_usd.toLocaleString()}</span> USD
-        </p>
-        <p style={{ margin: '2px 0 0', fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>
-          {triggered ? `Disparada el ${new Date(alert.triggered_at!).toLocaleDateString('es-AR')}` : active ? 'Activa' : 'Inactiva'}
-          {alert.note && ` · ${alert.note}`}
-        </p>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {alert.asset_symbol} {dirText} <span style={MONO}>{fmtUsd(alert.threshold_usd)}</span>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+          Creada el {fmtDate(alert.created_at)}{alert.note ? ` · ${alert.note}` : ''}{!alert.is_active && !alert.triggered_at ? ' · pausada' : ''}
+        </div>
       </div>
-      {active && (
-        <button onClick={() => onDelete(alert.id)}
-          style={{ flexShrink: 0, padding: 6, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--down)', display: 'flex', alignItems: 'center' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--down-bg)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-          <TrashIcon />
-        </button>
+      {triggeredToday && (
+        <span style={{
+          padding: '3px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+          border: '1px solid color-mix(in srgb, var(--warning) 55%, transparent)', color: 'var(--warning)',
+        }}>disparada hoy</span>
       )}
+      <Switch on={alert.is_active} onChange={v => onToggle(alert.id, v)} />
+      <button onClick={() => onDelete(alert.id)} aria-label="Eliminar alerta"
+        style={{ padding: 6, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--negative)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}>
+        <TrashIcon />
+      </button>
     </div>
   )
 }
 
-const segStyle = (active: boolean): React.CSSProperties => ({
-  padding: '6px 14px', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', border: '1px solid', cursor: 'pointer', flex: 1, textAlign: 'center',
-  background: active ? 'var(--surface-inset)' : 'transparent',
-  borderColor: active ? 'var(--border-2)' : 'var(--border-1)',
-  color: active ? 'var(--text-1)' : 'var(--text-2)',
-})
-
 export default function AlertsPage() {
   const { data: alerts, isLoading } = useAlerts()
+  const { data: portfolio } = usePortfolio()
   const createMutation = useCreateAlert()
   const deleteMutation = useDeleteAlert()
+  const toggleMutation = useToggleAlert()
 
   const [showModal, setShowModal] = useState(false)
   const [symbol, setSymbol] = useState('')
+  const [customSymbol, setCustomSymbol] = useState('')
   const [threshold, setThreshold] = useState('')
   const [direction, setDirection] = useState<'above' | 'below'>('above')
-  const [note, setNote] = useState('')
   const [error, setError] = useState('')
-  const [pushEnabled, setPushEnabled] = useState(false)
 
-  useEffect(() => {
-    setPushEnabled('Notification' in window && Notification.permission === 'granted')
-  }, [])
+  // Chips de activos reales del portfolio + precio actual para referencia.
+  const holdings = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of portfolio?.providers ?? []) {
+      for (const h of p.holdings) {
+        if (h.amount > 0 && h.current_value_usd > 0) map.set(h.asset_symbol, h.current_value_usd / h.amount)
+      }
+    }
+    return map
+  }, [portfolio])
+  const chipSymbols = useMemo(() => [...holdings.keys()].slice(0, 8), [holdings])
 
-  async function handleRequestPush() {
-    if (!('Notification' in window)) return
-    const perm = await Notification.requestPermission()
-    if (perm !== 'granted') return
-    const reg = await navigator.serviceWorker.ready
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-    if (!vapidKey) return
-    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKey })
-    const json = sub.toJSON()
-    await api.post('/api/v1/alerts/push/subscribe', { endpoint: json.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth })
-    setPushEnabled(true)
-  }
+  const effectiveSymbol = (symbol || customSymbol).trim().toUpperCase()
+  const currentPrice = holdings.get(effectiveSymbol)
 
   async function handleCreate() {
     setError('')
-    const sym = symbol.trim().toUpperCase()
-    if (!sym) { setError('Ingresá un símbolo de activo'); return }
-    const val = parseFloat(threshold)
+    if (!effectiveSymbol) { setError('Elegí o escribí un activo'); return }
+    const val = parseFloat(threshold.replace(/\./g, '').replace(',', '.'))
     if (isNaN(val) || val <= 0) { setError('Ingresá un umbral válido mayor a 0'); return }
     try {
-      await createMutation.mutateAsync({ asset_symbol: sym, threshold_usd: val, direction, note: note || undefined })
-      setShowModal(false); setThreshold(''); setNote('')
+      await createMutation.mutateAsync({ asset_symbol: effectiveSymbol, threshold_usd: val, direction })
+      setShowModal(false); setThreshold(''); setSymbol(''); setCustomSymbol('')
     } catch {
       setError('Error al crear la alerta. Intentá de nuevo.')
     }
   }
 
-  const active = alerts?.filter(a => a.is_active && !a.triggered_at) ?? []
-  const history = alerts?.filter(a => !a.is_active || a.triggered_at) ?? []
+  const list = alerts ?? []
+  const activeCount = list.filter(a => a.is_active).length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      {/* Header */}
+      <div className="aa-sec aa-sec--1" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px', color: 'var(--text-1)' }}>Alertas de precio</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Te avisamos cuando un activo cruza tu umbral</p>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-1)' }}>Alertas</span>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', color: 'var(--text-1)', margin: '6px 0 6px' }}>
+            Que el mercado te busque a vos
+          </h1>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Te avisamos cuando un activo cruza tu umbral.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {!pushEnabled && <Button variant="secondary" size="sm" icon={<BellIcon size={14} />} onClick={handleRequestPush}>Activar push</Button>}
-          <Button size="sm" icon={<PlusIcon />} onClick={() => setShowModal(true)}>Nueva alerta</Button>
-        </div>
+        <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>+ Nueva alerta</Button>
       </div>
 
-      {isLoading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[1, 2].map(i => <div key={i} style={{ height: 60, borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />)}
-        </div>
-      )}
+      {/* Lista */}
+      <section className="aa-sec aa-sec--2">
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 6 }}>
+          Tus alertas{activeCount > 0 ? ` · ${activeCount} activa${activeCount !== 1 ? 's' : ''}` : ''}
+        </span>
 
-      {!isLoading && active.length === 0 && history.length === 0 && (
-        <Card padding="lg">
-          <EmptyState icon={<BellIcon size={32} />} title="Sin alertas activas" body="Creá tu primera alerta para recibir notificaciones de precio." />
-        </Card>
-      )}
+        {isLoading && [0, 1].map(i => <div key={i} className="aa-skel" style={{ height: 64, marginTop: 10 }} />)}
 
-      {active.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <span className="aa-overline">Activas</span>
-          {active.map(a => <AlertItem key={a.id} alert={a} onDelete={id => deleteMutation.mutate(id)} />)}
-        </div>
-      )}
+        {!isLoading && list.length === 0 && (
+          <div style={{ padding: '32px 0', color: 'var(--text-3)', fontSize: 13 }}>
+            Sin alertas todavía. Creá la primera para que te avisemos cuando un precio cruce tu umbral.
+          </div>
+        )}
 
-      {history.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <span className="aa-overline">Historial</span>
-          {history.map(a => <AlertItem key={a.id} alert={a} onDelete={id => deleteMutation.mutate(id)} />)}
-        </div>
-      )}
+        {list.map(a => (
+          <AlertRow key={a.id} alert={a}
+            onToggle={(id, active) => toggleMutation.mutate({ id, is_active: active })}
+            onDelete={id => deleteMutation.mutate(id)} />
+        ))}
+      </section>
 
+      {/* Modal Nueva alerta */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', padding: 24 }}>
-          <Card padding="lg" raised style={{ width: '100%', maxWidth: 380 }}>
-            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: '0 0 16px' }}>Nueva alerta</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Input label="Activo" placeholder="ej: BTC, ETH, AAPL" value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} />
+        <div className="aa-dialog-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
+          <div className="aa-dialog" style={{ maxWidth: 440 }}>
+            <div style={{ padding: '22px 26px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Nueva alerta</h2>
+              <button onClick={() => setShowModal(false)} aria-label="Cerrar"
+                style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border-2)', background: 'transparent', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>✕</button>
+            </div>
+            <div style={{ padding: '18px 26px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* Activo */}
               <div>
-                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>Condición</label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 8 }}>Activo</span>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {chipSymbols.map(s => {
+                    const on = symbol === s
+                    return (
+                      <button key={s} onClick={() => { setSymbol(on ? '' : s); setCustomSymbol('') }}
+                        style={{
+                          padding: '6px 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                          background: 'transparent', border: `1px solid ${on ? 'var(--primary)' : 'var(--border-2)'}`,
+                          color: on ? 'var(--primary)' : 'var(--text-2)',
+                        }}>{s}</button>
+                    )
+                  })}
+                  <input value={customSymbol} placeholder="Otro…"
+                    onChange={e => { setCustomSymbol(e.target.value.toUpperCase()); setSymbol('') }}
+                    style={{ width: 90, padding: '6px 12px', borderRadius: 999, background: 'transparent', border: '1px solid var(--border-2)', color: 'var(--text-1)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
+                </div>
+              </div>
+              {/* Condición */}
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 8 }}>Condición</span>
+                <div className="aa-seg" style={{ width: '100%' }}>
                   {(['above', 'below'] as const).map(d => (
-                    <button key={d} onClick={() => setDirection(d)} style={segStyle(direction === d)}>
-                      {d === 'above' ? 'Sube sobre' : 'Baja de'}
+                    <button key={d} className={`aa-seg__opt${direction === d ? ' aa-seg__opt--on' : ''}`} style={{ flex: 1 }} onClick={() => setDirection(d)}>
+                      {d === 'above' ? 'Sube por encima de' : 'Baja por debajo de'}
                     </button>
                   ))}
                 </div>
               </div>
-              <Input label="Umbral (USD)" type="number" placeholder="ej: 80000" value={threshold} onChange={e => setThreshold(e.target.value)} />
-              <Input label="Nota (opcional)" placeholder="ej: comprar más si llega aquí" value={note} onChange={e => setNote(e.target.value)} />
-              {error && <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>{error}</div>}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <Button variant="secondary" onClick={() => { setShowModal(false); setError('') }}>Cancelar</Button>
-                <Button onClick={handleCreate} disabled={createMutation.isPending}>{createMutation.isPending ? 'Creando…' : 'Crear'}</Button>
+              {/* Umbral */}
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 8 }}>Umbral</span>
+                <input className="aa-input aa-input--mono" placeholder="110.000" value={threshold} onChange={e => setThreshold(e.target.value)} />
+                {currentPrice && (
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>
+                    Precio actual de {effectiveSymbol}: <span style={{ ...MONO, color: 'var(--text-1)', fontWeight: 700 }}>{fmtUsd(currentPrice)}</span>
+                  </div>
+                )}
+              </div>
+              {error && <div style={{ border: '1px solid rgba(255,77,109,0.3)', background: 'rgba(255,77,109,0.06)', borderRadius: 'var(--radius-md)', padding: '9px 13px', fontSize: 13, color: 'var(--negative)' }}>{error}</div>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancelar</button>
+                <Button variant="primary" size="sm" onClick={handleCreate} disabled={createMutation.isPending}>
+                  {createMutation.isPending ? 'Creando…' : 'Crear alerta'}
+                </Button>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       )}
-      <style>{`@keyframes aa-pulse { from { opacity: 0.4 } to { opacity: 0.9 } }`}</style>
     </div>
   )
 }

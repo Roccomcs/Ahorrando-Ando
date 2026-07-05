@@ -123,6 +123,20 @@ export interface BenchmarkResult {
   snapshot_count: number
 }
 
+export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'yield'
+
+export interface TransactionDTO {
+  id: string
+  tx_type: TransactionType
+  amount_usd: number
+  account: string
+  asset_symbol: string | null
+  quantity: number | null
+  price_usd: number | null
+  note: string | null
+  occurred_at: string
+}
+
 export interface PriceAlertDTO {
   id: string
   asset_symbol: string

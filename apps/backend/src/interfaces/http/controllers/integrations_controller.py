@@ -10,8 +10,10 @@ from application.use_cases.integrations.import_balanz_csv import ImportBalanzCSV
 from application.use_cases.integrations.import_bullmarket_csv import ImportBullMarketCSV
 from application.use_cases.integrations.list_user_integrations import ListUserIntegrations
 from application.use_cases.integrations.remove_integration import RemoveIntegration
+from application.use_cases.transactions.record_manual_movements import RecordManualMovements
 from infrastructure.cache.redis_cache_service import RedisCacheService
 from infrastructure.database.postgres.repositories.postgres_integration_repository import PostgresIntegrationRepository
+from infrastructure.database.postgres.repositories.postgres_transaction_repository import PostgresTransactionRepository
 from infrastructure.encryption.fernet_encryption_service import FernetEncryptionService
 from infrastructure.providers.registry import ProviderRegistry
 from interfaces.http.dependencies.get_db_session import get_db_session
@@ -20,6 +22,7 @@ from interfaces.http.dependencies.get_db_session import get_db_session
 class IntegrationsController:
     def __init__(self, session: AsyncSession = Depends(get_db_session)) -> None:
         self._repo = PostgresIntegrationRepository(session)
+        self._tx_repo = PostgresTransactionRepository(session)
         self._encryption = FernetEncryptionService()
         self._registry = ProviderRegistry()
         self._cache = RedisCacheService()
@@ -28,14 +31,40 @@ class IntegrationsController:
         return await ListUserIntegrations(self._repo).execute(user_id)
 
     async def add_integration(self, user_id: str, dto: AddIntegrationDTO) -> IntegrationSummaryDTO:
-        return await AddIntegration(self._repo, self._encryption, self._registry).execute(user_id, dto)
+        result = await AddIntegration(self._repo, self._encryption, self._registry).execute(user_id, dto)
+        # Alta manual: la carga inicial de posiciones son movimientos reales
+        # (compras/depósitos) para el historial.
+        if dto.provider_type.value == "manual":
+            holdings = dto.credentials.get("holdings", []) if isinstance(dto.credentials, dict) else []
+            account = (dto.credentials or {}).get("institution_name") or "Manual"
+            await RecordManualMovements(self._tx_repo).execute(
+                user_id, result.id, account, old_holdings=[], new_holdings=holdings
+            )
+        return result
 
     async def update_integration(
         self, user_id: str, integration_id: str, dto: UpdateIntegrationDTO
     ) -> IntegrationSummaryDTO:
+        # Antes de pisar las credenciales, leemos las posiciones actuales para
+        # derivar los movimientos (delta de cantidades = compra/venta real).
+        old_holdings: list = []
+        account = "Manual"
+        integration = await self._repo.find_by_id(integration_id)
+        if integration and integration.user_id == user_id and integration.type.value == "manual":
+            old_creds = self._encryption.decrypt(integration.encrypted_credentials)
+            old_holdings = old_creds.get("holdings", [])
+            account = old_creds.get("institution_name") or account
+
         result = await UpdateIntegration(self._repo, self._encryption).execute(
             user_id, integration_id, dto
         )
+
+        new_holdings = dto.credentials.get("holdings", []) if isinstance(dto.credentials, dict) else []
+        account = (dto.credentials or {}).get("institution_name") or account
+        await RecordManualMovements(self._tx_repo).execute(
+            user_id, integration_id, account, old_holdings=old_holdings, new_holdings=new_holdings
+        )
+
         await self._cache.delete(f"portfolio:{user_id}")
         return result
 

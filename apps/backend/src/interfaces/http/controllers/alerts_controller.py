@@ -54,6 +54,10 @@ class PushSubscribeRequest(BaseModel):
         return v
 
 
+class ToggleAlertRequest(BaseModel):
+    is_active: bool
+
+
 class AlertResponse(BaseModel):
     id: str
     asset_symbol: str
@@ -114,6 +118,16 @@ class AlertsController:
         current_user: User = Depends(get_current_user),
     ) -> dict:
         await DeleteAlert(PostgresPriceAlertRepository(session)).execute(alert_id, current_user.id)
+        return {"ok": True}
+
+    async def toggle_alert(
+        self,
+        alert_id: str,
+        body: "ToggleAlertRequest",
+        session: AsyncSession = Depends(get_session),
+        current_user: User = Depends(get_current_user),
+    ) -> dict:
+        await PostgresPriceAlertRepository(session).set_active(alert_id, current_user.id, body.is_active)
         return {"ok": True}
 
     async def subscribe_push(

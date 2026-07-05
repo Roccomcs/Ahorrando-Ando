@@ -50,6 +50,16 @@ class PostgresPriceAlertRepository(IPriceAlertRepository):
         )
         await self._session.commit()
 
+    async def set_active(self, alert_id: str, user_id: str, active: bool) -> None:
+        # Al reactivar, limpiamos triggered_at para que pueda volver a dispararse.
+        values = {"is_active": True, "triggered_at": None} if active else {"is_active": False}
+        await self._session.execute(
+            update(PriceAlertModel)
+            .where(PriceAlertModel.id == alert_id, PriceAlertModel.user_id == user_id)
+            .values(**values)
+        )
+        await self._session.commit()
+
     async def delete(self, alert_id: str, user_id: str) -> None:
         stmt = select(PriceAlertModel).where(
             PriceAlertModel.id == alert_id,

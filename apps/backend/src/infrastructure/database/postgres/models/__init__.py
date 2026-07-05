@@ -6,8 +6,10 @@ from infrastructure.database.postgres.models.provider_snapshot_model import Prov
 from infrastructure.database.postgres.models.audit_log_model import AuditLogModel
 from infrastructure.database.postgres.models.price_alert_model import PriceAlertModel
 from infrastructure.database.postgres.models.push_subscription_model import PushSubscriptionModel
+from infrastructure.database.postgres.models.transaction_model import TransactionModel
 
 __all__ = [
+    "TransactionModel",
     "UserModel",
     "IntegrationModel",
     "PortfolioSnapshotModel",
