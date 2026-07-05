@@ -335,7 +335,9 @@ function Hero({ portfolio, onRefresh, refreshing, deltas }: {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <div>
-        <span style={OVERLINE}>Patrimonio total</span>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', color: 'var(--text-1)', margin: 0 }}>
+          Patrimonio total
+        </h1>
         <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 52, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: 'var(--text-1)', margin: '10px 0 8px' }}>
           {format(total, rate)}
         </div>

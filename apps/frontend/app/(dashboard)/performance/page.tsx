@@ -1,165 +1,273 @@
 'use client'
 
-import { useState } from 'react'
-import { Card } from '@/components/ds/Card'
+import { useMemo } from 'react'
 import { Delta } from '@/components/ds/Delta'
-import { useProviderPerformance, usePortfolio } from '@/hooks/usePortfolio'
-import { formatMoneyDual } from '@/components/ds/Stat'
+import { useProviderPerformance, usePortfolio, usePortfolioHistory, useROI } from '@/hooks/usePortfolio'
+import { useCurrency } from '@/lib/currency-context'
 import type { ProviderPerformanceItem } from '@/lib/types'
 
+// Colores de marca por cuenta (mismos que el dashboard).
 const PROVIDER_COLORS: Record<string, string> = {
-  binance: '#E8C268', mercadopago: '#63B8F4', bullmarket: '#3DD993', bullmarket_csv: '#3DD993',
-  lemoncash: '#45D4C8', iol: '#9D8CFF', onchain: '#F08FB7',
-  solana: '#B5D85A', balanz_csv: '#F4626E', manual: '#8A97AB',
+  binance: '#E8C268', bullmarket: '#63B8F4', bullmarket_csv: '#63B8F4',
+  mercadopago: '#45D4C8', lemoncash: '#3DD993', iol: '#41A4EF',
+  onchain: '#9D8CFF', solana: '#B5D85A', balanz_csv: '#F08FB7', manual: '#8A97AB',
 }
-const FALLBACK = ['#41A4EF','#63B8F4','#00B1EA','#00C896','#FFB454','#8FC8F6']
+const FALLBACK = ['#41A4EF', '#63B8F4', '#00B1EA', '#00C896', '#FFB454', '#8FC8F6']
 function pColor(name: string, idx: number) { return PROVIDER_COLORS[name] ?? FALLBACK[idx % FALLBACK.length] }
 
-const PERIODS = [
-  { label: '7 días', days: 7 },
-  { label: '30 días', days: 30 },
-  { label: '90 días', days: 90 },
-  { label: '1 año', days: 365 },
-]
+const OVERLINE: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--primary)',
+}
+const OVERLINE_MUTED: React.CSSProperties = { ...OVERLINE, color: 'var(--text-3)' }
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
 
-function ChartIcon() {
-  return <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+function isoFrom(days: number) {
+  const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString()
 }
 
-function MiniSparkline({ data, color }: { data: { date: string; balance_usd: number }[]; color: string }) {
-  if (data.length < 2) return <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>Sin datos aún</span></div>
-  const W = 240, H = 80
-  const vals = data.map(d => d.balance_usd)
-  const minV = Math.min(...vals), maxV = Math.max(...vals), rng = maxV - minV || 1
-  const xs = vals.map((_, i) => (i / (vals.length - 1)) * W)
-  const ys = vals.map(v => H - 8 - ((v - minV) / rng) * (H - 16))
-  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x},${ys[i]}`).join(' ')
-  const area = `${path} L${xs[xs.length-1]},${H} L0,${H} Z`
+/* ── Sparkline (tendencia verde/roja, como el dashboard) ────── */
+function Sparkline({ series, w = 120, h = 30 }: { series: number[]; w?: number; h?: number }) {
+  if (series.length < 2) return <div style={{ width: w, height: h }} />
+  const min = Math.min(...series), max = Math.max(...series), range = max - min || 1
+  const up = series[series.length - 1] >= series[0]
+  const color = up ? 'var(--positive)' : 'var(--negative)'
+  const pts = series.map((v, i) => {
+    const x = (i / (series.length - 1)) * w
+    const y = h - 2 - ((v - min) / range) * (h - 4)
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 80, display: 'block' }}>
-      <path d={area} fill={color} fillOpacity="0.1" />
-      <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+      <path d={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-function SummaryTable({ providers }: { providers: ProviderPerformanceItem[] }) {
-  const { data: portfolio } = usePortfolio()
+/* ── Barras de PnL mensual ──────────────────────────────────── */
+interface MonthPnl { label: string; pnl: number }
+
+function MonthlyBars({ months, format, rate }: { months: MonthPnl[]; format: (v: number, r?: number | null) => string; rate?: number | null }) {
+  if (months.length === 0) {
+    return <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>El PnL mensual se construye a medida que se acumula historial.</div>
+  }
+  const maxAbs = Math.max(...months.map(m => Math.abs(m.pnl)), 1)
+  const H = 210, BAR_MAX = 150
   return (
-    <Card padding="none">
-      <div style={{ padding: '16px 16px 0' }}>
-        <p style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: 0 }}>Resumen por cuenta</p>
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-          <thead>
-            <tr>
-              {['Cuenta', 'Actual', '24h', '7d', '30d'].map((h, i) => (
-                <th key={h} style={{ padding: '10px 16px', textAlign: i >= 1 ? 'right' : 'left', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', borderBottom: '1px solid var(--border-1)', whiteSpace: 'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {providers.map((p, i) => (
-              <tr key={p.provider} style={{ borderBottom: '1px solid var(--border-1)' }}>
-                <td style={{ padding: '12px 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: pColor(p.provider, i), flexShrink: 0 }} />
-                    <span style={{ fontWeight: 'var(--weight-medium)', color: 'var(--text-1)' }}>{p.label}</span>
-                  </div>
-                </td>
-                <td className="aa-num" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{formatMoneyDual(p.current_usd, portfolio?.usd_to_ars)}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right' }}>{p.change_pct_24h !== null ? <Delta value={p.change_pct_24h} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right' }}>{p.change_pct_7d !== null ? <Delta value={p.change_pct_7d} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right' }}>{p.change_pct_30d !== null ? <Delta value={p.change_pct_30d} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, height: H, paddingTop: 24 }}>
+      {months.map(m => {
+        const positive = m.pnl >= 0
+        const hgt = Math.max(8, (Math.abs(m.pnl) / maxAbs) * BAR_MAX)
+        const color = positive ? 'var(--positive)' : 'var(--negative)'
+        return (
+          <div key={m.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1, maxWidth: 96 }}>
+            <span style={{ ...MONO, fontSize: 12, fontWeight: 600, color }}>
+              {positive ? '+' : '−'}{format(Math.abs(m.pnl), rate)}
+            </span>
+            <div style={{
+              width: '100%', maxWidth: 64, height: hgt, borderRadius: '8px 8px 3px 3px',
+              background: positive
+                ? 'linear-gradient(180deg, #00C896 0%, rgba(0,200,150,0.45) 100%)'
+                : 'linear-gradient(180deg, #FF4D6D 0%, rgba(255,77,109,0.45) 100%)',
+            }} />
+            <span style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>{m.label}</span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
-function ProviderMiniCard({ provider, idx }: { provider: ProviderPerformanceItem; idx: number }) {
-  const c = pColor(provider.provider, idx)
-  const { data: portfolio } = usePortfolio()
+/* ── Badge de activo ────────────────────────────────────────── */
+function AssetBadge({ symbol }: { symbol: string }) {
+  const colors = ['#41A4EF', '#00C896', '#FFB454', '#B6FF3C', '#8FC8F6', '#FF9DAE', '#5DE9C4']
+  const c = colors[symbol.charCodeAt(0) % colors.length]
   return (
-    <Card padding="md">
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-bold)', color: '#fff', flexShrink: 0 }}>
-            {provider.label.charAt(0)}
-          </div>
-          <div>
-            <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: 0 }}>{provider.label}</p>
-            <p className="aa-num" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>{formatMoneyDual(provider.current_usd, portfolio?.usd_to_ars)}</p>
-          </div>
-        </div>
-        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-3)' }}>24h</span>
-            {provider.change_pct_24h !== null ? <Delta value={provider.change_pct_24h} /> : <span style={{ color: 'var(--text-3)', fontSize: 'var(--text-xs)' }}>—</span>}
-          </div>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-3)' }}>30d</span>
-            {provider.change_pct_30d !== null ? <Delta value={provider.change_pct_30d} /> : <span style={{ color: 'var(--text-3)', fontSize: 'var(--text-xs)' }}>—</span>}
-          </div>
+    <div style={{
+      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+      background: `color-mix(in srgb, ${c} 18%, transparent)`, color: c,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+    }}>{symbol.slice(0, 4)}</div>
+  )
+}
+
+function MoverRow({ name, symbol, pct, maxAbs, kind }: { name: string; symbol: string; pct: number; maxAbs: number; kind: 'up' | 'down' }) {
+  const color = kind === 'up' ? 'var(--positive)' : 'var(--negative)'
+  const width = Math.max(6, (Math.abs(pct) / (maxAbs || 1)) * 100)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0' }}>
+      <AssetBadge symbol={symbol} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>{name}</div>
+        <div style={{ height: 5, background: 'var(--surface-hover)', borderRadius: 999, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${width}%`, background: color, borderRadius: 999 }} />
         </div>
       </div>
-      <MiniSparkline data={provider.history} color={c} />
-    </Card>
+      <span style={{ ...MONO, fontSize: 13, fontWeight: 600, color, flexShrink: 0 }}>
+        {pct >= 0 ? '+' : '−'}{Math.abs(pct).toFixed(1).replace('.', ',')}%
+      </span>
+    </div>
   )
 }
 
 export default function PerformancePage() {
-  const [days, setDays] = useState(30)
-  const { data, isLoading } = useProviderPerformance(days)
+  const { data, isLoading } = useProviderPerformance(30)
+  const { data: portfolio } = usePortfolio()
+  const fromIso = useMemo(() => isoFrom(365), [])
+  const { data: yearHistory } = usePortfolioHistory(fromIso)
+  const { data: roi } = useROI()
+  const { format } = useCurrency()
+
+  const rate = portfolio?.usd_to_ars
+
+  // PnL 30 días: suma de (actual - inicio de la serie) por cuenta.
+  const pnl30 = useMemo(() => {
+    if (!data) return null
+    let start = 0, current = 0, any = false
+    for (const p of data.providers) {
+      if (p.history.length >= 2) {
+        start += p.history[0].balance_usd
+        current += p.current_usd
+        any = true
+      }
+    }
+    if (!any || start === 0) return null
+    return { abs: current - start, pct: ((current - start) / start) * 100 }
+  }, [data])
+
+  // PnL mensual desde los snapshots del último año (últimos 6 meses con datos).
+  const months = useMemo<MonthPnl[]>(() => {
+    const pts = yearHistory?.points ?? []
+    if (pts.length < 2) return []
+    const byMonth = new Map<string, { first: number; last: number }>()
+    for (const p of pts) {
+      const d = new Date(p.snapshot_at)
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`
+      const e = byMonth.get(key)
+      if (!e) byMonth.set(key, { first: p.total_usd, last: p.total_usd })
+      else e.last = p.total_usd
+    }
+    return [...byMonth.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([key, v]) => {
+        const [y, m] = key.split('-').map(Number)
+        const label = new Date(y, m, 1).toLocaleDateString('es-AR', { month: 'short' }).replace('.', '')
+        return { label, pnl: v.last - v.first }
+      })
+  }, [yearHistory])
+
+  // Ganadores / rezagados 30d desde el ROI real por activo.
+  const movers = useMemo(() => {
+    const items = (roi ?? []).filter(r => typeof r.performance_30d === 'number')
+    if (items.length === 0) return { winners: [], laggards: [], maxAbs: 0 }
+    const sorted = [...items].sort((a, b) => b.performance_30d - a.performance_30d)
+    const winners = sorted.filter(r => r.performance_30d > 0).slice(0, 3)
+    const laggards = sorted.filter(r => r.performance_30d < 0).slice(-3).reverse()
+    const maxAbs = Math.max(...items.map(r => Math.abs(r.performance_30d)))
+    return { winners, laggards, maxAbs }
+  }, [roi])
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="aa-skel" style={{ height: 12, width: 110 }} />
+            <div className="aa-skel" style={{ height: 34, width: 340 }} />
+            <div className="aa-skel" style={{ height: 14, width: 280 }} />
+          </div>
+          <div className="aa-skel" style={{ height: 64, width: 180 }} />
+        </div>
+        <div className="aa-skel" style={{ height: 220 }} />
+        <div className="aa-skel" style={{ height: 240 }} />
+      </div>
+    )
+  }
+
+  const providers = data?.providers ?? []
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+      {/* Header */}
+      <div className="aa-sec aa-sec--1" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', margin: '0 0 4px', color: 'var(--text-1)' }}>Rendimiento</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>Evolución de cada cuenta en el tiempo</p>
+          <span style={OVERLINE}>Performance</span>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', color: 'var(--text-1)', margin: '6px 0 6px' }}>
+            Cuánto rinde cada cuenta
+          </h1>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>PnL realizado + no realizado, comparado lado a lado.</p>
         </div>
-        <div style={{ display: 'flex', gap: 4, background: 'var(--surface-inset)', borderRadius: 'var(--radius-lg)', padding: 4 }}>
-          {PERIODS.map(p => (
-            <button key={p.days} onClick={() => setDays(p.days)}
-              style={{ padding: '6px 12px', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', border: 'none', cursor: 'pointer', transition: 'all var(--dur-fast) var(--ease-out)',
-                background: days === p.days ? 'var(--surface-card)' : 'transparent',
-                color: days === p.days ? 'var(--text-1)' : 'var(--text-3)',
-                boxShadow: days === p.days ? 'var(--shadow-sm)' : 'none' }}>
-              {p.label}
-            </button>
-          ))}
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ ...OVERLINE_MUTED, fontFamily: 'var(--font-mono)' }}>PNL 30 días</span>
+          {pnl30 ? (
+            <>
+              <div style={{ ...MONO, fontSize: 30, fontWeight: 700, color: pnl30.abs >= 0 ? 'var(--positive)' : 'var(--negative)', margin: '6px 0 2px' }}>
+                {pnl30.abs >= 0 ? '+' : '−'}{format(Math.abs(pnl30.abs), rate)}
+              </div>
+              <Delta value={pnl30.pct} size="md" />
+            </>
+          ) : (
+            <div style={{ ...MONO, fontSize: 22, color: 'var(--text-3)', marginTop: 6 }}>—</div>
+          )}
         </div>
       </div>
 
-      {isLoading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[140, 320, 140].map((h, i) => <div key={i} style={{ height: h, borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />)}
+      {/* RESUMEN POR CUENTA */}
+      <section className="aa-sec aa-sec--2">
+        <span style={{ ...OVERLINE_MUTED, display: 'block', marginBottom: 14 }}>Resumen por cuenta</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, padding: '0 0 10px', borderBottom: '1px solid var(--border-1)' }}>
+          {['Cuenta', '', 'Actual', '24h', '7d', '30d'].map((h, i) => (
+            <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i >= 2 ? 'right' : 'left' }}>{h}</span>
+          ))}
         </div>
-      ) : !data || data.providers.length === 0 ? (
-        <Card padding="lg" style={{ textAlign: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 0', color: 'var(--text-3)' }}>
-            <ChartIcon />
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-3)', margin: 0 }}>No hay datos de performance disponibles.</p>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>Asegurate de tener cuentas conectadas en Integraciones.</p>
+        {providers.length === 0 && (
+          <div style={{ padding: '28px 0', color: 'var(--text-3)', fontSize: 13 }}>
+            No hay datos de performance todavía. Conectá cuentas en Integraciones.
           </div>
-        </Card>
-      ) : (
-        <>
-          <SummaryTable providers={data.providers} />
-          <div>
-            <span className="aa-overline" style={{ display: 'block', marginBottom: 12 }}>Por cuenta</span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-              {data.providers.map((p, i) => <ProviderMiniCard key={p.provider} provider={p} idx={i} />)}
+        )}
+        {providers.map((p: ProviderPerformanceItem, i: number) => (
+          <div key={p.provider} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border-1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <div style={{ width: 9, height: 9, borderRadius: 2.5, background: pColor(p.provider, i), flexShrink: 0 }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label}</span>
             </div>
+            <Sparkline series={p.history.map(h => h.balance_usd)} />
+            <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(p.current_usd, rate)}</span>
+            {[p.change_pct_24h, p.change_pct_7d, p.change_pct_30d].map((v, j) => (
+              <span key={j} style={{ textAlign: 'right' }}>
+                {v !== null ? <Delta value={v} /> : <span style={{ ...MONO, color: 'var(--text-3)', fontSize: 13 }}>—</span>}
+              </span>
+            ))}
           </div>
-        </>
+        ))}
+      </section>
+
+      {/* PNL MENSUAL */}
+      <section className="aa-sec aa-sec--3">
+        <span style={{ ...OVERLINE_MUTED, display: 'block', marginBottom: 4 }}>PnL mensual</span>
+        <MonthlyBars months={months} format={format} rate={rate} />
+      </section>
+
+      {/* GANADORES / REZAGADOS */}
+      {(movers.winners.length > 0 || movers.laggards.length > 0) && (
+        <section className="aa-sec aa-sec--4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
+          <div>
+            <span style={{ ...OVERLINE, color: 'var(--positive)', display: 'block', marginBottom: 8 }}>Ganadores · 30d</span>
+            {movers.winners.length === 0 && <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Sin activos en positivo este mes.</span>}
+            {movers.winners.map(w => (
+              <MoverRow key={w.asset_symbol + w.provider} name={w.asset_name || w.asset_symbol} symbol={w.asset_symbol} pct={w.performance_30d} maxAbs={movers.maxAbs} kind="up" />
+            ))}
+          </div>
+          <div>
+            <span style={{ ...OVERLINE, color: 'var(--negative)', display: 'block', marginBottom: 8 }}>Rezagados · 30d</span>
+            {movers.laggards.length === 0 && <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Sin activos en negativo este mes.</span>}
+            {movers.laggards.map(l => (
+              <MoverRow key={l.asset_symbol + l.provider} name={l.asset_name || l.asset_symbol} symbol={l.asset_symbol} pct={l.performance_30d} maxAbs={movers.maxAbs} kind="down" />
+            ))}
+          </div>
+        </section>
       )}
-      <style>{`@keyframes aa-pulse { from { opacity: 0.4 } to { opacity: 0.9 } }`}</style>
     </div>
   )
 }
