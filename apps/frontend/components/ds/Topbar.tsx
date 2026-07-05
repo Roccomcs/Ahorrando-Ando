@@ -25,11 +25,10 @@ export function Topbar() {
   return (
     <header
       style={{
-        height: 60, flexShrink: 0,
+        height: 62, flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 16,
         padding: '0 24px',
-        borderBottom: '1px solid var(--border-1)',
-        background: 'var(--surface-canvas)',
+        background: 'var(--surface-raised)',
       }}
     >
       {/* Buscador */}

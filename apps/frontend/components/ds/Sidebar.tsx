@@ -74,7 +74,7 @@ export function Sidebar() {
       <aside className={`aa-side${open ? ' aa-side--open' : ''}`}>
         <div className="aa-side__brand">
           <AppLogo size={26} />
-          <div className="aa-side__wm">Ahorrando<br /><span>Ando</span></div>
+          <div className="aa-side__wm" style={{ fontSize: 17, whiteSpace: 'nowrap' }}>Ahorrando Ando</div>
         </div>
         <nav className="aa-side__nav">
           {NAV.map(item => (

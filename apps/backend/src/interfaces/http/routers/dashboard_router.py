@@ -45,9 +45,16 @@ async def get_history(
         description="Fecha de fin (ISO 8601). Default: ahora.",
     ),
 ):
+    def _naive_utc(dt: datetime) -> datetime:
+        """Los snapshots se guardan como TIMESTAMP naive en UTC; los clientes
+        mandan ISO con zona (Z) — normalizamos a naive UTC para asyncpg."""
+        if dt.tzinfo is not None:
+            return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    start = from_date or (now - timedelta(days=30))
-    end = to_date or now
+    start = _naive_utc(from_date) if from_date else (now - timedelta(days=30))
+    end = _naive_utc(to_date) if to_date else now
     return await controller.get_history(user_id=current_user.id, start=start, end=end)
 
 

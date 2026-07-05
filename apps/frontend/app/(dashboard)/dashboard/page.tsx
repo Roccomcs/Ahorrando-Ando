@@ -13,6 +13,14 @@ import type { PortfolioSummaryDTO } from '@/lib/types'
 // Paleta categórica: azul Cielo al frente. Verde/rojo reservados para P&L.
 const CHART_COLORS = ['#41A4EF', '#63B8F4', '#00B1EA', '#00C896', '#FFB454', '#8FC8F6', '#B6FF3C', '#5DE9C4', '#8A97AB']
 
+// Color de marca por cuenta (como en la referencia: Binance dorado, brokers
+// azul, Mercado Pago verde agua). Fallback: paleta categórica.
+const PROVIDER_COLORS: Record<string, string> = {
+  binance: '#E8C268', bullmarket: '#63B8F4', bullmarket_csv: '#63B8F4',
+  mercadopago: '#45D4C8', lemoncash: '#3DD993', iol: '#41A4EF',
+  onchain: '#9D8CFF', solana: '#B5D85A', balanz_csv: '#F08FB7', manual: '#8A97AB',
+}
+
 const PROVIDER_LABELS: Record<string, string> = {
   binance: 'Binance', mercadopago: 'Mercado Pago', bullmarket: 'Bull Market',
   bullmarket_csv: 'Bull Market', lemoncash: 'Lemon', iol: 'IOL', onchain: 'Wallet EVM',
@@ -79,8 +87,13 @@ function DistributionBar({ segments }: { segments: { pct: number; color: string 
 }
 
 /* ── Evolution area chart ───────────────────────────────────── */
-function AreaChart({ points, symbol }: { points: { date: string; usd: number }[]; symbol: string }) {
+function AreaChart({ points: rawPoints, symbol }: { points: { date: string; usd: number }[]; symbol: string }) {
   const [hover, setHover] = useState<number | null>(null)
+  // Con 1 solo snapshot dibujamos una línea plana (cuenta nueva): el gráfico
+  // siempre se ve, y se va poblando con cada actualización.
+  const points = rawPoints.length === 1
+    ? [{ ...rawPoints[0], date: new Date(Date.now() - 86400000).toISOString() }, rawPoints[0]]
+    : rawPoints
   if (points.length < 2) {
     return (
       <div style={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -163,7 +176,10 @@ export default function DashboardPage() {
   const { data: portfolio, isLoading, error } = usePortfolio()
   const refresh = useRefreshPortfolio()
   const [period, setPeriod] = useState<Period>(PERIODS[2])
-  const { data: history } = usePortfolioHistory(isoFrom(period.days))
+  // Memoizado: si el "from" cambia en cada render, la queryKey de react-query
+  // cambia siempre y entra en loop de refetch infinito (429 en el backend).
+  const fromIso = useMemo(() => isoFrom(period.days), [period.days])
+  const { data: history, isLoading: historyLoading } = usePortfolioHistory(fromIso)
   const { data: perf } = useProviderPerformance(30)
   const { currency, format } = useCurrency()
 
@@ -203,7 +219,7 @@ export default function DashboardPage() {
   const perfByProvider = new Map((perf?.providers ?? []).map(p => [p.provider, p.history.map(h => h.balance_usd)]))
 
   const providers = portfolio.providers.map((p, i) => ({
-    ...p, color: CHART_COLORS[i % CHART_COLORS.length],
+    ...p, color: PROVIDER_COLORS[p.provider] ?? CHART_COLORS[i % CHART_COLORS.length],
     pct: portfolio.total_usd > 0 ? (p.balance_usd / portfolio.total_usd) * 100 : 0,
     spark: perfByProvider.get(p.provider) ?? [],
   }))
@@ -216,10 +232,12 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      <Hero portfolio={portfolio} onRefresh={() => refresh.mutate()} refreshing={refresh.isPending} deltas={{ d1, d7, d30 }} />
+      <div className="aa-sec aa-sec--1">
+        <Hero portfolio={portfolio} onRefresh={() => refresh.mutate()} refreshing={refresh.isPending} deltas={{ d1, d7, d30 }} />
+      </div>
 
       {/* EVOLUCIÓN */}
-      <section>
+      <section className="aa-sec aa-sec--2">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={OVERLINE}>Evolución</span>
@@ -236,11 +254,13 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-        <AreaChart points={pts} symbol={currency === 'ARS' && rate ? 'AR$' : 'US$'} />
+        {historyLoading
+          ? <div className="aa-skel" style={{ height: 260 }} />
+          : <AreaChart points={pts} symbol={currency === 'ARS' && rate ? 'AR$' : 'US$'} />}
       </section>
 
       {/* POR CUENTA */}
-      <section>
+      <section className="aa-sec aa-sec--3">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <span style={OVERLINE}>Por cuenta</span>
           <span style={META}>{providers.length} cuenta{providers.length !== 1 ? 's' : ''} conectada{providers.length !== 1 ? 's' : ''}</span>
@@ -248,8 +268,8 @@ export default function DashboardPage() {
         <DistributionBar segments={providers.map(p => ({ pct: p.pct, color: p.color }))} />
         <div style={{ marginTop: 8 }}>
           {providers.map(p => (
-            <div key={p.provider} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 0', borderBottom: '1px solid var(--border-1)' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+            <div key={p.provider} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 0', borderBottom: '1px solid var(--border-1)' }}>
+              <div style={{ width: 9, height: 9, borderRadius: 2.5, background: p.color, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{label(p.provider)}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{subtitle(p.provider)}</div>
@@ -267,7 +287,7 @@ export default function DashboardPage() {
 
       {/* PRINCIPALES ACTIVOS */}
       {topAssets.length > 0 && (
-        <section>
+        <section className="aa-sec aa-sec--4">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={OVERLINE}>Principales activos</span>
             <Link href="/history" style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Ver historial completo →</Link>
@@ -316,17 +336,17 @@ function Hero({ portfolio, onRefresh, refreshing, deltas }: {
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <div>
         <span style={OVERLINE}>Patrimonio total</span>
-        <div className="aa-num" style={{ fontFamily: 'var(--font-display)', fontSize: 44, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-1)', margin: '6px 0 4px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 52, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: 'var(--text-1)', margin: '10px 0 8px' }}>
           {format(total, rate)}
         </div>
-        <div style={{ fontSize: 14, color: 'var(--text-3)' }} className="aa-num">
+        <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-3)' }}>
           {oppositeCurrency}{rate ? ` · AR$ ${rate.toLocaleString('es-AR', { maximumFractionDigits: 0 })} / US$` : ''}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 14, flexWrap: 'wrap' }}>
           {([['24h', deltas.d1], ['7d', deltas.d7], ['30d', deltas.d30]] as const).map(([lab, val]) => (
-            <div key={lab} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{lab}</span>
-              {val !== null ? <Delta value={val} /> : <span style={{ color: 'var(--text-3)', fontSize: 13 }}>—</span>}
+            <div key={lab} style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{lab}</span>
+              {val !== null ? <Delta value={val} /> : <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-3)', fontSize: 13 }}>—</span>}
             </div>
           ))}
         </div>
@@ -344,10 +364,13 @@ function Hero({ portfolio, onRefresh, refreshing, deltas }: {
 function Skeleton() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      {[120, 260, 220, 260].map((h, i) => (
-        <div key={i} style={{ height: h, borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />
-      ))}
-      <style>{`@keyframes aa-pulse { from { opacity: 0.5 } to { opacity: 1 } }`}</style>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="aa-skel" style={{ height: 14, width: 140 }} />
+        <div className="aa-skel" style={{ height: 52, width: 340 }} />
+        <div className="aa-skel" style={{ height: 14, width: 260 }} />
+      </div>
+      <div className="aa-skel" style={{ height: 260 }} />
+      {[0, 1, 2].map(i => <div key={i} className="aa-skel" style={{ height: 64 }} />)}
     </div>
   )
 }

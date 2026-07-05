@@ -363,7 +363,7 @@ h2, h3 { font-family: var(--font-serif); }
 .aa-pm { width: 36px; height: 36px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-bold); flex: none; }
 
 /* ── Sidebar ────────────────────────────────────────────────── */
-.aa-side { width: var(--sidebar-width); height: 100%; background: var(--surface-raised); border-right: 1px solid var(--border-1); display: flex; flex-direction: column; flex: none; font-family: var(--font-ui); }
+.aa-side { width: var(--sidebar-width); height: 100%; background: var(--surface-raised); border-right: none; display: flex; flex-direction: column; flex: none; font-family: var(--font-ui); }
 .aa-side__brand { display: flex; align-items: center; gap: 11px; padding: 20px 20px 18px; }
 .aa-side__wm { font-family: var(--font-display); font-weight: var(--weight-bold); font-stretch: var(--display-stretch); letter-spacing: var(--tracking-tight); font-size: 15px; line-height: 1.1; }
 .aa-side__wm span { color: var(--text-3); }
@@ -416,11 +416,11 @@ h2, h3 { font-family: var(--font-serif); }
    son parte de la identidad y deben mostrarse siempre. */
 
 /* ============================================================================
-   Design System v2 — Claude Design (violeta, dark fintech)
-   Este bloque va ÚLTIMO a propósito: define los tokens exactos del nuevo DS y
-   re-mapea los tokens legacy de la app a ellos, así toda la UI toma el look
-   nuevo sin reescribir cada componente. Space Grotesk + Manrope se cargan vía
-   next/font en layout.tsx (--ff-display / --ff-body).
+   Design System v2 — Claude Design (dark fintech, acento azul Cielo)
+   Este bloque va ÚLTIMO a propósito: define los tokens del nuevo DS y
+   re-mapea los tokens legacy de la app, así toda la UI toma el look nuevo sin
+   reescribir cada componente. Fuentes: las originales de la app (Stack Sans /
+   Noto Serif / Gelasio / JetBrains Mono vía next/font en layout.tsx).
    ========================================================================== */
 :root,
 [data-theme="dark"],
@@ -485,12 +485,14 @@ h2, h3 { font-family: var(--font-serif); }
   /* ======================================================================
      Alias: tokens legacy de la app → nuevos tokens del DS
      ==================================================================== */
-  --surface-canvas: var(--bg);
-  --surface-raised: var(--surface-1);
-  --surface-card:   var(--surface-2);
-  --surface-hover:  var(--surface-3);
-  --surface-inset:  var(--surface);
-  --surface-elevated: var(--surface-3);
+  /* Sidebar/header NEGROS, área de contenido azul oscuro (carbón), como en
+     el diseño de referencia. */
+  --surface-canvas: #0B0E14;
+  --surface-raised: #050608;
+  --surface-card:   #10151E;
+  --surface-hover:  #161C27;
+  --surface-inset:  #07090D;
+  --surface-elevated: #161C27;
 
   --text-1: var(--text-primary);
   --text-2: var(--text-secondary);
@@ -520,13 +522,12 @@ h2, h3 { font-family: var(--font-serif); }
   --rojo-300: var(--on-negative-container);
   --sol-500: var(--warning);         --sol-400: var(--warning); --sol-300: #F2D695;
 
-  /* Tipografía */
-  --font-display: var(--ff-display), 'Space Grotesk', system-ui, sans-serif;
-  --font-serif:   var(--ff-display), 'Space Grotesk', system-ui, sans-serif;
-  --font-ui:      var(--ff-body), 'Manrope', system-ui, -apple-system, sans-serif;
-  --font-mono:    var(--ff-display), 'Space Grotesk', ui-monospace, monospace;
-  --display-stretch: 100%;
-  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700;
+  /* Tipografía: las fuentes ORIGINALES de la app (Stack Sans display, serif
+     para UI, JetBrains Mono para números) — la referencia las usa tal cual. */
+  --font-display: var(--ff-display), 'Helvetica Neue', Arial, sans-serif;
+  --font-serif:   var(--ff-serif), Georgia, serif;
+  --font-ui:      var(--ff-body), Georgia, 'Times New Roman', serif;
+  --font-mono:    var(--ff-mono), 'SFMono-Regular', Menlo, monospace;
   --tracking-tight: -0.02em; --tracking-num: -0.01em; --tracking-wide: 0.12em;
 
   /* Radios (escala DS) */
@@ -544,4 +545,29 @@ h2, h3 { font-family: var(--font-serif); }
   --ll-black: var(--bg); --ll-section: var(--surface); --ll-gray: var(--surface-1);
   --ll-text-1: var(--text-primary); --ll-text-2: var(--text-secondary); --ll-text-3: var(--text-tertiary);
   --ll-border: var(--ds-border);
+}
+
+/* ── Animaciones de entrada + skeletons (DS v2) ─────────────── */
+@keyframes aa-rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.aa-sec { animation: aa-rise-in 0.55s var(--ease-out) both; }
+.aa-sec--1 { animation-delay: 0.05s; }
+.aa-sec--2 { animation-delay: 0.14s; }
+.aa-sec--3 { animation-delay: 0.23s; }
+.aa-sec--4 { animation-delay: 0.32s; }
+
+@keyframes aa-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.aa-skel {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(100deg,
+    var(--surface-card) 40%,
+    var(--surface-hover) 50%,
+    var(--surface-card) 60%);
+  background-size: 200% 100%;
+  animation: aa-shimmer 1.6s linear infinite;
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ds/Card'
 import { Delta } from '@/components/ds/Delta'
@@ -111,7 +111,10 @@ function LineChart({ points, rate }: { points: { date: string; usd: number }[]; 
 export default function HistoryPage() {
   const [range, setRange] = useState<Range>('30d')
   const rangeConfig = RANGES.find(r => r.value === range)!
-  const { data, isLoading } = usePortfolioHistory(isoFrom(rangeConfig.days))
+  // Memoizado: un "from" nuevo por render cambia la queryKey y provoca
+  // refetch infinito (429).
+  const fromIso = useMemo(() => isoFrom(rangeConfig.days), [rangeConfig.days])
+  const { data, isLoading } = usePortfolioHistory(fromIso)
   const { data: portfolio } = usePortfolio()
 
   const points = data?.points.map(p => ({ date: p.snapshot_at, usd: p.total_usd })) ?? []
