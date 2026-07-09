@@ -8,6 +8,8 @@ class HoldingDTO(BaseModel):
     current_value_usd: float
     performance_24h: float
     performance_30d: float
+    category: str | None = None
+    logo_url: str | None = None
 
 
 class ProviderSummaryDTO(BaseModel):
@@ -39,6 +41,8 @@ class PortfolioSummaryDTO(BaseModel):
                     current_value_usd=h.current_value.amount,
                     performance_24h=h.performance_24h.value,
                     performance_30d=h.performance_30d.value,
+                    category=getattr(h, "category", None),
+                    logo_url=getattr(h, "logo_url", None),
                 )
                 for h in r["holdings"]
             ]

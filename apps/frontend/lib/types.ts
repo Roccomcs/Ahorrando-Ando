@@ -18,6 +18,8 @@ export interface HoldingDTO {
   current_value_usd: number
   performance_24h: number
   performance_30d: number
+  category?: AssetCategory | null
+  logo_url?: string | null
 }
 
 export interface ProviderSummaryDTO {

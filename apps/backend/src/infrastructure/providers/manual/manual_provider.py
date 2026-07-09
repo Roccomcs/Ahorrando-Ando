@@ -53,6 +53,7 @@ class ManualProvider(IFinancialProvider):
         crypto_refs: set[str] = set()
         ar_refs: set[str] = set()
         needs_ars = False
+        needs_eur = False
         for h in self._holdings_data:
             category = (h.get("category") or "").lower()
             ref = (h.get("ref") or h.get("symbol") or "").strip()
@@ -64,6 +65,8 @@ class ManualProvider(IFinancialProvider):
                 ar_refs.add(ref.upper())
             elif category == "fx" and ref.upper() == "ARS":
                 needs_ars = True
+            elif category == "fx" and ref.upper() == "EUR":
+                needs_eur = True
 
         prices: dict[str, float] = {}
         if crypto_refs:
@@ -90,6 +93,13 @@ class ManualProvider(IFinancialProvider):
                     prices["fx:ARS"] = float(ars)
             except Exception:
                 pass
+        if needs_eur:
+            try:
+                eur = await self._fx.get_eur_to_usd()
+                if eur:
+                    prices["fx:EUR"] = float(eur)
+            except Exception:
+                pass
         return prices
 
     def _resolve_price(self, h: dict, live: dict[str, float]) -> float:
@@ -108,6 +118,8 @@ class ManualProvider(IFinancialProvider):
                 return 1.0
             if ref.upper() == "ARS":
                 return live.get("fx:ARS", fallback)
+            if ref.upper() == "EUR":
+                return live.get("fx:EUR", fallback)
         return fallback
 
     async def get_holdings(self) -> list[Holding]:
@@ -126,6 +138,8 @@ class ManualProvider(IFinancialProvider):
                     current_value=Money(amount=amount * price_usd, currency=Currency.USD),
                     performance_24h=Percentage(0.0),
                     performance_30d=Percentage(0.0),
+                    category=(h.get("category") or None),
+                    logo_url=(h.get("logo_url") or None),
                 )
             )
         return holdings

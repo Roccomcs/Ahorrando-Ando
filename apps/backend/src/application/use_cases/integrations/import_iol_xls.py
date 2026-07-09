@@ -39,14 +39,20 @@ class ImportIOLXls:
         except Exception:
             ars_to_usd = 0.0
 
+        def _price_usd(p) -> float:
+            # US$ → el precio ya está en dólares; AR$ → convertir con el blue.
+            if p.currency == "USD":
+                return round(p.price, 6)
+            return round(p.price * ars_to_usd, 6) if ars_to_usd else 0.0
+
         holdings = [
             {
                 "symbol": p.symbol,
                 "name": p.name,
                 "amount": p.amount,
                 "category": p.category,
-                "ref": p.symbol,
-                "price_usd": round(p.price_ars * ars_to_usd, 6) if ars_to_usd else 0.0,
+                "ref": p.ref,
+                "price_usd": _price_usd(p),
                 "logo_url": None,
             }
             for p in positions

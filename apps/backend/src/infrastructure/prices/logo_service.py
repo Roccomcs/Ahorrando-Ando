@@ -14,6 +14,7 @@ El endpoint requiere headers de navegador; se cachean los resultados en memoria
 (incluyendo negativos) para no pegarle a TradingView repetidamente.
 """
 
+import asyncio
 import re
 
 from infrastructure.providers._base.http_client import BaseHttpClient
@@ -76,6 +77,15 @@ class TradingViewLogoService(BaseHttpClient):
         self._cache[key] = url
         return url
 
+    async def logo_for_symbol_or_base(self, symbol: str) -> str | None:
+        """Igual que logo_for_symbol pero, si no encuentra, prueba el símbolo base
+        sin sufijo de settlement C/D (GOGLD→GOGL, AMZND→AMZN)."""
+        url = await self.logo_for_symbol(symbol)
+        s = (symbol or "").strip().upper()
+        if not url and len(s) >= 3 and s[-1] in ("C", "D"):
+            url = await self.logo_for_symbol(s[:-1])
+        return url
+
     async def logos_for_query(self, query: str) -> dict[str, str]:
         """Un solo request: mapa {símbolo → logo_url} para todos los resultados del query."""
         items = await self._search(query)
@@ -87,3 +97,32 @@ class TradingViewLogoService(BaseHttpClient):
                 out[sym] = self._url(logoid)
                 self._cache.setdefault(sym, self._url(logoid))
         return out
+
+
+_AR_CATEGORIES = ("stock", "cedear", "bond")
+
+
+async def fill_holding_logos(holdings: list) -> None:
+    """Completa `logo_url` faltante en una lista de holdings (objetos con
+    .asset_symbol, .category y .logo_url seteable): cripto vía CoinGecko,
+    acciones/CEDEARs/bonos vía TradingView. Todo cacheado; mutación in-place."""
+    from infrastructure.prices.coingecko_price_service import CoinGeckoPriceService
+
+    pending = [h for h in holdings if not getattr(h, "logo_url", None) and getattr(h, "asset_symbol", None)]
+    if not pending:
+        return
+    coingecko = CoinGeckoPriceService()
+    tv = TradingViewLogoService()
+
+    async def resolve(h) -> None:
+        category = (getattr(h, "category", None) or "").lower()
+        symbol = h.asset_symbol
+        try:
+            if category == "crypto":
+                h.logo_url = await coingecko.logo_for_symbol(symbol)
+            elif category in _AR_CATEGORIES:
+                h.logo_url = await tv.logo_for_symbol_or_base(symbol)
+        except Exception:
+            pass
+
+    await asyncio.gather(*(resolve(h) for h in pending), return_exceptions=True)

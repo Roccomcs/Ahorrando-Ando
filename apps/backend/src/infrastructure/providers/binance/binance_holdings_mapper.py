@@ -18,4 +18,5 @@ class BinanceHoldingsMapper:
             current_value=Money(amount=amount * price, currency=Currency.USD),
             performance_24h=Percentage(0.0),
             performance_30d=Percentage(0.0),
+            category="crypto",
         )

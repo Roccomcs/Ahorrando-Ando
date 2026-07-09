@@ -102,7 +102,7 @@ class IntegrationsController:
                 if category == "crypto":
                     h["logo_url"] = await coingecko.logo_for_symbol(symbol)
                 elif category in ("stock", "cedear", "bond"):
-                    h["logo_url"] = await logos.logo_for_symbol(symbol)
+                    h["logo_url"] = await logos.logo_for_symbol_or_base(symbol)
             except Exception:
                 pass
 

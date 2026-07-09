@@ -12,3 +12,5 @@ class Holding:
     current_value: Money
     performance_24h: Percentage
     performance_30d: Percentage
+    category: str | None = None      # crypto | stock | cedear | bond | fx
+    logo_url: str | None = None
