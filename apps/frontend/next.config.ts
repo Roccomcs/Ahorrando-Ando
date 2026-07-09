@@ -14,7 +14,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https://s3-symbol-logo.tradingview.com https://coin-images.coingecko.com https://assets.coingecko.com",
       "font-src 'self'",
       `connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'} https://fcm.googleapis.com https://o*.ingest.sentry.io`,
       "frame-ancestors 'none'",
