@@ -13,10 +13,12 @@ class HoldingDTO(BaseModel):
 
 
 class ProviderSummaryDTO(BaseModel):
-    provider: str
+    provider: str                      # nombre visible (ej: "Binance")
     balance_usd: float
     holdings: list[HoldingDTO]
     performance: dict[str, float]
+    provider_type: str = ""            # binance | iol_csv | manual | …
+    integration_id: str = ""           # cada entrada corresponde a una integración
 
 
 class PortfolioSummaryDTO(BaseModel):
@@ -52,6 +54,8 @@ class PortfolioSummaryDTO(BaseModel):
                     balance_usd=balance,
                     holdings=holdings,
                     performance=r["performance"],
+                    provider_type=r.get("provider_type", ""),
+                    integration_id=r.get("integration_id", ""),
                 )
             )
         return cls(total_usd=total, providers=providers)

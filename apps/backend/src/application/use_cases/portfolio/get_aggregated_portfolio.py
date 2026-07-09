@@ -78,8 +78,9 @@ class GetAggregatedPortfolio:
         if snap_30d and snap_30d.total_value.amount > 0:
             summary.change_pct_30d = _pct_change(snap_30d.total_value.amount, summary.total_usd)
 
-        # Completar logos faltantes de los holdings (cripto/acciones/CEDEARs).
-        await self._enrich_logos(summary)
+        # Los logos NO se resuelven acá: bloqueaban la respuesta y un fallo de
+        # TradingView/CoinGecko dejaba `logo_url = null` cacheado 5 minutos.
+        # El frontend los pide por símbolo a GET /api/v1/assets/logo (cacheado).
 
         # Guardar snapshots del estado actual (total + por provider)
         await self._save_snapshot(user_id, summary.total_usd, now)
@@ -87,14 +88,6 @@ class GetAggregatedPortfolio:
 
         await self._cache.set(f"portfolio:{user_id}", summary.model_dump(), ttl=300)
         return summary
-
-    async def _enrich_logos(self, summary) -> None:
-        try:
-            from infrastructure.prices.logo_service import fill_holding_logos
-            all_holdings = [h for p in summary.providers for h in p.holdings]
-            await fill_holding_logos(all_holdings)
-        except Exception as e:
-            logger.warning("No se pudieron completar logos: %s", e)
 
     async def _fetch_from_provider(self, integration) -> dict:
         from infrastructure.providers._base.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
@@ -123,6 +116,8 @@ class GetAggregatedPortfolio:
             "balance": balance,
             "holdings": holdings,
             "performance": performance,
+            "provider_type": integration.type.value,
+            "integration_id": integration.id,
         }
 
     async def _save_snapshot(self, user_id: str, total_usd: float, now: datetime) -> None:

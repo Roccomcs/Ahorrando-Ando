@@ -27,6 +27,8 @@ export interface ProviderSummaryDTO {
   balance_usd: number
   holdings: HoldingDTO[]
   performance: Record<string, number>
+  provider_type: string
+  integration_id: string
 }
 
 export interface PortfolioSummaryDTO {

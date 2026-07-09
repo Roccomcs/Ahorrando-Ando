@@ -10,6 +10,9 @@ import type { User, TokenPair } from './types'
 interface AuthContextValue {
   user: User | null
   loading: boolean
+  /** true cuando terminó el refresh de bootstrap (haya o no sesión). Las queries
+   *  autenticadas esperan esto para no salir sin token y comerse un 401. */
+  ready: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
@@ -23,6 +26,7 @@ const PUBLIC_PATHS = ['/login', '/register', '/verify-email', '/oauth-callback',
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [ready, setReady] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -36,12 +40,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // tiempo, ambos comparten la misma promesa y la rotación no rompe sesión.
     refreshAccessToken()
       .then(async (token) => {
+        // Habilitamos las queries apenas hay token, sin esperar a /auth/me.
+        setReady(true)
         if (!token) return
         const me = await api.get<User>('/api/v1/auth/me')
         setUser(me.data)
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => { setReady(true); setLoading(false) })
   }, [])
 
   // Redirigir a /verify-email si el usuario no verificó su email
@@ -101,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, ready, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

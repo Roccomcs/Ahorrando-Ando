@@ -24,3 +24,14 @@ async def quote_asset(
     controller: AssetsController = Depends(),
 ):
     return await controller.quote_asset(category=category, ref=ref)
+
+
+@router.get("/logo")
+async def asset_logo(
+    symbol: str = Query(..., min_length=1, max_length=20),
+    category: str = Query(..., description="crypto | stock | cedear | bond | fx"),
+    current_user=Depends(get_current_user),
+    controller: AssetsController = Depends(),
+):
+    """Logo del activo. Se resuelve fuera del portfolio para no bloquearlo."""
+    return await controller.asset_logo(symbol=symbol, category=category)
