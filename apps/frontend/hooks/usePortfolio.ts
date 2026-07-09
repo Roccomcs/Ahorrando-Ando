@@ -109,40 +109,6 @@ export function useDeleteIntegration() {
   })
 }
 
-export function useImportBalanzCSV() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (file: File) => {
-      const form = new FormData()
-      form.append('file', file)
-      return api.post('/api/v1/integrations/balanz/import', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }).then((r) => r.data)
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
-  })
-}
-
-export function useImportBullMarketCSV() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (file: File) => {
-      const form = new FormData()
-      form.append('file', file)
-      return api.post('/api/v1/integrations/bullmarket/import', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }).then((r) => r.data)
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
-  })
-}
-
 export function useImportIOL() {
   const qc = useQueryClient()
   return useMutation({

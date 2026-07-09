@@ -1,15 +1,8 @@
 from application.ports.i_financial_provider import IFinancialProvider
-from .balanz.balanz_csv_provider import BalanzCSVProvider
-from .bullmarket.bullmarket_csv_provider import BullMarketCSVProvider
 from .binance.binance_provider import BinanceProvider
-from .bullmarket.bullmarket_provider import BullMarketProvider
 from .iol.iol_csv_provider import IOLCSVProvider
-from .iol.iol_provider import IOLProvider
-from .lemoncash.lemoncash_provider import LemonCashProvider
 from .manual.manual_provider import ManualProvider
 from .mercadopago.mercadopago_provider import MercadoPagoProvider
-from .onchain.onchain_provider import OnChainProvider
-from .solana.solana_provider import SolanaProvider
 
 
 class ProviderRegistry:
@@ -18,13 +11,6 @@ class ProviderRegistry:
     _providers: dict[str, type] = {
         "binance": BinanceProvider,
         "mercadopago": MercadoPagoProvider,
-        "bullmarket": BullMarketProvider,
-        "lemoncash": LemonCashProvider,
-        "iol": IOLProvider,
-        "onchain": OnChainProvider,
-        "solana": SolanaProvider,
-        "balanz_csv": BalanzCSVProvider,
-        "bullmarket_csv": BullMarketCSVProvider,
         "iol_csv": IOLCSVProvider,
         "manual": ManualProvider,
     }
