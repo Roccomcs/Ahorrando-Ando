@@ -16,7 +16,7 @@ class MercadoPagoInvestmentsClient(MercadoPagoAuthClient):
         try:
             user_id = await self.get_user_id()
             data = await self.get(
-                f"/v1/users/{user_id}/mercadopago_account/balance",
+                f"/users/{user_id}/mercadopago_account/balance",
                 headers=self._auth_headers(),
             )
             total = float(data.get("total_amount", 0))
