@@ -75,6 +75,17 @@ export interface AssetSearchResult {
   category: AssetCategory
   ref: string
   price_usd: number
+  logo_url?: string | null
+}
+
+export interface ManualHoldingDTO {
+  symbol: string
+  name?: string
+  amount: number
+  category?: AssetCategory
+  ref?: string
+  price_usd?: number
+  logo_url?: string | null
 }
 
 export interface AllocationItem {

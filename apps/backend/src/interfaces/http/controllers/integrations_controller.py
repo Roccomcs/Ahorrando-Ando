@@ -8,6 +8,7 @@ from application.use_cases.integrations.add_integration import AddIntegration
 from application.use_cases.integrations.update_integration import UpdateIntegration
 from application.use_cases.integrations.import_balanz_csv import ImportBalanzCSV
 from application.use_cases.integrations.import_bullmarket_csv import ImportBullMarketCSV
+from application.use_cases.integrations.import_iol_xls import ImportIOLXls
 from application.use_cases.integrations.list_user_integrations import ListUserIntegrations
 from application.use_cases.integrations.remove_integration import RemoveIntegration
 from application.use_cases.transactions.record_manual_movements import RecordManualMovements
@@ -72,12 +73,13 @@ class IntegrationsController:
         integration = await self._repo.find_by_id(integration_id)
         if not integration or integration.user_id != user_id:
             raise ValueError("Integración no encontrada")
-        if integration.type.value != "manual":
+        if integration.type.value not in ("manual", "iol_csv"):
             raise ValueError("Solo disponible para integraciones manuales.")
         creds = self._encryption.decrypt(integration.encrypted_credentials)
         return {
             "institution_name": creds.get("institution_name", ""),
             "holdings": creds.get("holdings", []),
+            "editable": integration.type.value == "manual",
         }
 
     async def remove_integration(self, user_id: str, integration_id: str) -> None:
@@ -88,6 +90,9 @@ class IntegrationsController:
 
     async def import_bullmarket_csv(self, user_id: str, csv_bytes: bytes) -> IntegrationSummaryDTO:
         return await ImportBullMarketCSV(self._repo, self._encryption).execute(user_id, csv_bytes)
+
+    async def import_iol_xls(self, user_id: str, file_bytes: bytes) -> IntegrationSummaryDTO:
+        return await ImportIOLXls(self._repo, self._encryption).execute(user_id, file_bytes)
 
     async def sync_integration(self, user_id: str, integration_id: str) -> dict:
         integration = await self._repo.find_by_id(integration_id)

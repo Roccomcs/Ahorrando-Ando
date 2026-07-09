@@ -3,15 +3,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card } from '@/components/ds/Card'
 import { Button } from '@/components/ds/Button'
-import { Input } from '@/components/ds/Input'
 import {
   useIntegrations, useAddIntegration, useDeleteIntegration,
-  useSyncIntegration, useImportBalanzCSV, useImportBullMarketCSV,
+  useSyncIntegration, useImportIOL, useManualHoldings,
   useUpdateIntegration, searchAssets, quoteAsset, usePortfolio,
 } from '@/hooks/usePortfolio'
 import { useCurrency } from '@/lib/currency-context'
-import { api } from '@/lib/api'
-import type { ProviderType, AssetSearchResult, AssetCategory } from '@/lib/types'
+import type { ProviderType, AssetSearchResult, AssetCategory, IntegrationSummaryDTO } from '@/lib/types'
 
 // ── Types & config ────────────────────────────────────────────────────────────
 
@@ -24,6 +22,7 @@ type ProviderConfig = {
   color: string
   type: 'fields' | 'csv' | 'manual'
   group: 'api' | 'manual'
+  accept?: string
   fields?: FieldDef[]
   instructions: {
     description: string
@@ -51,90 +50,55 @@ const PROVIDERS: ProviderConfig[] = [
   },
   {
     value: 'mercadopago', label: 'MercadoPago', tagline: 'Billetera digital argentina', color: '#63B8F4', type: 'fields', group: 'api',
-    fields: [{ key: 'access_token', label: 'Access Token', placeholder: 'APP_USR-...', secret: true }],
+    fields: [{ key: 'access_token', label: 'Access Token', placeholder: 'APP_USR-...', secret: true, note: 'Es la única forma oficial de leer tu saldo. El token es de solo lectura: no permite mover dinero.' }],
     instructions: {
-      description: 'MercadoPago permite acceder al saldo mediante un Access Token de producción.',
-      steps: ['Andá a mercadopago.com.ar/developers', 'Creá o elegí una aplicación', 'Entrá a "Credenciales de producción"', 'Copiá el Access Token (empieza con APP_USR-)'],
-      credentialUrl: 'https://www.mercadopago.com.ar/developers/panel',
-      credentialUrlLabel: 'Ir al panel de desarrolladores →',
+      description: 'MercadoPago solo permite leer el saldo con un Access Token de producción. Para obtenerlo hay que crear una aplicación (es gratis y toma 2 minutos).',
+      steps: [
+        'Entrá a mercadopago.com.ar/developers e iniciá sesión',
+        'Andá a "Tus integraciones" → "Crear aplicación"',
+        'Poné cualquier nombre y elegí el modelo "Pagos online" (o el que aparezca)',
+        'Abrí la aplicación creada → sección "Credenciales de producción"',
+        'Copiá el "Access Token" (empieza con APP_USR-) y pegalo abajo',
+      ],
+      credentialUrl: 'https://www.mercadopago.com.ar/developers/panel/app',
+      credentialUrlLabel: 'Ir a Tus integraciones →',
       securityNote: 'El access token permite leer tu saldo. No permite mover dinero.',
     },
   },
   {
-    value: 'iol', label: 'InvertirOnline', tagline: 'Broker argentino (IOL)', color: '#9D8CFF', type: 'fields', group: 'api',
-    fields: [{ key: 'username', label: 'Usuario', placeholder: 'Tu email de IOL' }, { key: 'password', label: 'Contraseña', placeholder: '••••••••', secret: true }],
+    value: 'iol', label: 'InvertirOnline', tagline: 'Broker argentino (IOL)', color: '#9D8CFF', type: 'csv', group: 'api', accept: '.xls,.xlsx,.csv,.html,.htm',
     instructions: {
-      description: 'InvertirOnline (IOL) es un broker argentino de acciones, bonos y FCI.',
-      steps: ['Usamos las mismas credenciales de invertironline.com', 'Ingresá tu email y contraseña', 'Recomendamos no usar una cuenta compartida'],
-      credentialUrl: 'https://invertironline.com', credentialUrlLabel: 'Ir a InvertirOnline →',
-      securityNote: 'Tus credenciales se cifran con AES-256. Solo hacemos llamadas de lectura.',
-    },
-  },
-  {
-    value: 'bullmarket_csv', label: 'Bull Market', tagline: 'Importar portfolio via CSV', color: '#3DD993', type: 'csv', group: 'api',
-    instructions: {
-      description: 'Bull Market no tiene API pública estable. Importá tu portfolio exportando un CSV desde su plataforma web.',
+      description: 'IOL no ofrece conexión automática para terceros: la API se solicita por mensaje al soporte de IOL. Mientras tanto, importá tu cartera desde el archivo de operaciones que podés descargar de tu cuenta.',
       steps: [
-        'Iniciá sesión en bullmarketbrokers.com',
-        'Andá a "Mi Cartera" o "Posiciones"',
-        'Buscá el botón "Exportar" o "Descargar CSV"',
-        'Guardá el archivo .csv',
-        'Subilo en el formulario de la siguiente pantalla',
+        'Iniciá sesión en invertironline.com',
+        'Andá a "Mi Cuenta" → "Operaciones" → "Operaciones Finalizadas"',
+        'Elegí el período (desde el inicio) y tocá "Buscar"',
+        'Descargá el archivo con el botón de exportar (baja un .xls)',
+        'Subí ese archivo acá — calculamos tu tenencia actual (compras − ventas)',
       ],
-      credentialUrl: 'https://bullmarketbrokers.com', credentialUrlLabel: 'Ir a Bull Market →',
-      securityNote: 'El CSV solo contiene tus posiciones. No incluye datos de acceso ni contraseñas.',
-    },
-  },
-  {
-    value: 'lemoncash', label: 'Lemon Cash', tagline: 'Exchange cripto argentino', color: '#45D4C8', type: 'fields', group: 'api',
-    fields: [{ key: 'api_key', label: 'API Key', placeholder: 'Tu Lemon Cash API Key', secret: true }],
-    instructions: {
-      description: 'Lemon Cash es un exchange de criptomonedas argentino.',
-      steps: ['Abrí la app de Lemon Cash', 'Perfil → Configuración → API', 'Generá una nueva API Key', 'Copiá y pegá la key abajo'],
-      securityNote: 'La API Key de Lemon solo permite leer tu saldo. No permite extracciones.',
-    },
-  },
-  {
-    value: 'onchain', label: 'Wallet EVM', tagline: 'Ethereum, Polygon o BSC', color: '#F08FB7', type: 'fields', group: 'api',
-    fields: [
-      { key: 'address', label: 'Dirección de wallet', placeholder: '0x...' },
-      { key: 'chain', label: 'Red', placeholder: 'ethereum · polygon · bsc' },
-      { key: 'api_key', label: 'API Key Etherscan (opcional)', placeholder: 'Dejar vacío para usar la gratuita' },
-    ],
-    instructions: {
-      description: 'Conectá cualquier wallet EVM: Ethereum, Polygon o BSC. Solo necesitamos tu dirección pública.',
-      steps: ['Abrí tu wallet (MetaMask, Rabby, etc.)', 'Copiá tu dirección pública (empieza con 0x)', 'Elegí la red: ethereum, polygon o bsc', 'La API Key es opcional'],
-      credentialUrl: 'https://etherscan.io/myapikey', credentialUrlLabel: 'Obtener API Key de Etherscan (gratis) →',
-      securityNote: 'Solo necesitamos la dirección pública. Nunca pedimos claves privadas ni frases semilla.',
-    },
-  },
-  {
-    value: 'solana', label: 'Wallet Solana', tagline: 'SOL + SPL tokens', color: '#B5D85A', type: 'fields', group: 'api',
-    fields: [{ key: 'address', label: 'Dirección Solana', placeholder: 'Ej: 4Nd1mBQtrMJVYVfKf2PX98...' }],
-    instructions: {
-      description: 'Conectá una wallet Solana para ver SOL y tokens SPL.',
-      steps: ['Abrí tu wallet (Phantom, Solflare, etc.)', 'Copiá tu dirección pública (32–44 caracteres base58)', 'Pegala abajo'],
-      securityNote: 'Solo necesitamos la dirección pública. Sin claves privadas ni frases semilla.',
-    },
-  },
-  {
-    value: 'balanz_csv', label: 'Balanz', tagline: 'Importar portfolio via CSV', color: '#F4626E', type: 'csv', group: 'api',
-    instructions: {
-      description: 'Balanz no tiene API pública. Importá tu portfolio exportando un CSV desde su plataforma.',
-      steps: ['Iniciá sesión en balanz.com', 'Mi Cuenta → Mi Cartera o Posiciones', 'Buscá "Exportar" o "Descargar CSV"', 'Guardá el archivo .csv', 'Subilo en el formulario de la siguiente pantalla'],
-      credentialUrl: 'https://balanz.com', credentialUrlLabel: 'Ir a Balanz →',
-      securityNote: 'El CSV solo contiene tus posiciones. No incluye datos de acceso.',
+      credentialUrl: 'https://invertironline.com', credentialUrlLabel: 'Ir a InvertirOnline →',
+      securityNote: 'El archivo solo contiene tus operaciones. No incluye usuario ni contraseña.',
     },
   },
   {
     value: 'manual', label: 'Ingreso manual', tagline: 'Bull Market, Cocos, Naranja X, Ualá y más', color: '#8A97AB', type: 'manual', group: 'manual',
     instructions: {
-      description: 'Para brokers sin API ni CSV (como Bull Market) o billeteras: buscá cada activo y cargá tu cantidad. Los precios de cripto, acciones y CEDEARs se actualizan solos.',
-      steps: ['Ingresá el nombre de la institución (ej: Bull Market)', 'Buscá cada activo (BTC, AAPL, GGAL, USD…) y elegilo', 'Cargá la cantidad que tenés — el precio se actualiza automáticamente', 'Podés editar tus posiciones cuando quieras sin borrar la cuenta'],
+      description: 'Para brokers o billeteras sin API ni archivo: buscá cada activo y cargá tu cantidad. Los precios de cripto, acciones y CEDEARs se actualizan solos.',
+      steps: ['Buscá cada activo (BTC, AAPL, GGAL, USD…) y elegilo', 'Cargá la cantidad que tenés — el precio se actualiza automáticamente', 'Podés editar tus posiciones cuando quieras sin borrar la cuenta'],
       securityNote: 'Los valores se guardan cifrados en tu cuenta y solo son visibles para vos.',
     },
   },
 ]
+
+// Config para renderizar cuentas ya conectadas (incluye tipos que no se eligen
+// directamente, como iol_csv que nace del import de IOL).
+function configFor(providerType: string): ProviderConfig | undefined {
+  if (providerType === 'iol_csv') return PROVIDERS.find(p => p.value === 'iol')
+  return PROVIDERS.find(p => p.value === providerType)
+}
+
+// Cuentas que se muestran expandidas en una fila por activo.
+const ASSET_ROW_TYPES = new Set(['manual', 'iol_csv'])
 
 type ManualHolding = {
   symbol: string
@@ -143,10 +107,15 @@ type ManualHolding = {
   category: AssetCategory
   ref: string
   price_usd: number   // último precio USD conocido (fallback)
+  logo_url?: string | null
 }
 
 const CATEGORY_LABEL: Record<AssetCategory, string> = {
   crypto: 'Cripto', stock: 'Acción', cedear: 'CEDEAR', bond: 'Bono', fx: 'Efectivo',
+}
+
+const CATEGORY_COLOR: Record<AssetCategory, string> = {
+  crypto: '#E8C268', stock: '#63B8F4', cedear: '#9D8CFF', bond: '#3DD993', fx: '#8A97AB',
 }
 
 function fmtUsd(n: number): string {
@@ -157,7 +126,6 @@ function fmtUsd(n: number): string {
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function CheckIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg> }
-function XCircleIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> }
 function RefreshIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> }
 function TrashIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> }
 function EditIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> }
@@ -167,6 +135,26 @@ function ShieldIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" f
 function UploadIcon() { return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg> }
 function AlertIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> }
 function ExtLinkIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg> }
+function SearchIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> }
+
+// ── AssetAvatar (logo del activo o monograma) ──────────────────────────────────
+
+function AssetAvatar({ logoUrl, symbol, category, size = 32 }: { logoUrl?: string | null; symbol: string; category?: AssetCategory; size?: number }) {
+  const [failed, setFailed] = useState(false)
+  const color = category ? CATEGORY_COLOR[category] : 'var(--text-3)'
+  if (logoUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={logoUrl} alt={symbol} width={size} height={size} onError={() => setFailed(true)}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, background: 'var(--surface-inset)' }} />
+    )
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `color-mix(in srgb, ${color} 16%, transparent)`, color, fontFamily: 'var(--font-mono)', fontSize: size <= 28 ? 9 : 11, fontWeight: 700 }}>
+      {symbol.slice(0, 4).toUpperCase()}
+    </div>
+  )
+}
 
 // ── StepDot ───────────────────────────────────────────────────────────────────
 
@@ -207,13 +195,9 @@ function ProviderPickerCard({ config, connected, onClick }: { config: ProviderCo
   )
 }
 
-function SearchIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> }
-
 // ── Manual entry (buscador tipo TradingView + posiciones) ──────────────────────
 
-function ManualEntry({ institutionName, setInstitutionName, holdings, setHoldings }: {
-  institutionName: string
-  setInstitutionName: (v: string) => void
+function ManualEntry({ holdings, setHoldings }: {
   holdings: ManualHolding[]
   setHoldings: (updater: (arr: ManualHolding[]) => ManualHolding[]) => void
 }) {
@@ -222,8 +206,6 @@ function ManualEntry({ institutionName, setInstitutionName, holdings, setHolding
   const [searching, setSearching] = useState(false)
   const [open, setOpen] = useState(false)
 
-  // Buscar con debounce (todos los setState van dentro del timeout para no
-  // disparar renders en cascada dentro del cuerpo del efecto).
   useEffect(() => {
     const q = query.trim()
     if (q.length < 1) {
@@ -250,20 +232,17 @@ function ManualEntry({ institutionName, setInstitutionName, holdings, setHolding
     setResults([])
     setOpen(false)
     if (holdings.some(h => h.ref === a.ref && h.category === a.category)) return
-    // Cripto viene con precio 0 en la búsqueda → cotizar ahora
     let price = a.price_usd
     if (!price) {
       try { price = await quoteAsset(a.category, a.ref) } catch { price = 0 }
     }
     setHoldings(arr => [...arr, {
-      symbol: a.symbol, name: a.name, amount: '', category: a.category, ref: a.ref, price_usd: price,
+      symbol: a.symbol, name: a.name, amount: '', category: a.category, ref: a.ref, price_usd: price, logo_url: a.logo_url ?? null,
     }])
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <Input label="Nombre de la institución" placeholder="Ej: Bull Market, Cocos Capital, Naranja X…" value={institutionName} onChange={e => setInstitutionName(e.target.value)} />
-
       <div style={{ position: 'relative' }}>
         <span className="aa-overline" style={{ display: 'block', marginBottom: 8 }}>Buscar activo</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', padding: '0 12px', background: 'var(--surface-inset)' }}>
@@ -279,11 +258,12 @@ function ManualEntry({ institutionName, setInstitutionName, holdings, setHolding
         </div>
 
         {open && results.length > 0 && (
-          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: 4, maxHeight: 260, overflowY: 'auto', background: 'var(--surface-elevated)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)' }}>
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: 4, maxHeight: 300, overflowY: 'auto', background: 'var(--surface-elevated)', border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)' }}>
             {results.map((a) => (
               <button key={`${a.category}:${a.ref}`} onClick={() => selectAsset(a)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', textAlign: 'left', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-1)', cursor: 'pointer' }}>
-                <div style={{ minWidth: 0 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-1)', cursor: 'pointer' }}>
+                <AssetAvatar logoUrl={a.logo_url} symbol={a.symbol} category={a.category} size={28} />
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{a.symbol}</span>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', marginLeft: 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
                 </div>
@@ -301,6 +281,7 @@ function ManualEntry({ institutionName, setInstitutionName, holdings, setHolding
             const value = (parseFloat(h.amount) || 0) * h.price_usd
             return (
               <div key={`${h.category}:${h.ref}:${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-md)', background: 'var(--surface-card)' }}>
+                <AssetAvatar logoUrl={h.logo_url} symbol={h.symbol} category={h.category} size={32} />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)' }}>{h.symbol}</span>
@@ -353,42 +334,35 @@ function ManualEntry({ institutionName, setInstitutionName, holdings, setHolding
 function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
   config: ProviderConfig
   editId?: string
-  initialManual?: { institution_name: string; holdings: ManualHolding[] }
+  initialManual?: { holdings: ManualHolding[] }
   onClose: () => void
   onSuccess: () => void
 }) {
   const addMutation = useAddIntegration()
   const updateMutation = useUpdateIntegration()
-  const importBalanzCSV = useImportBalanzCSV()
-  const importBullMarketCSV = useImportBullMarketCSV()
+  const importIOL = useImportIOL()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const isEdit = !!editId
   const [step, setStep] = useState<1 | 2>(isEdit ? 2 : 1)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [csvFile, setCsvFile] = useState<File | null>(null)
-  const [institutionName, setInstitutionName] = useState(initialManual?.institution_name ?? '')
   const [manualHoldings, setManualHoldings] = useState<ManualHolding[]>(initialManual?.holdings ?? [])
   const [error, setError] = useState('')
-  const isSubmitting = addMutation.isPending || updateMutation.isPending || importBalanzCSV.isPending || importBullMarketCSV.isPending
+  const isSubmitting = addMutation.isPending || updateMutation.isPending || importIOL.isPending
 
   async function handleConnect() {
     setError('')
     try {
       if (config.type === 'csv') {
-        if (!csvFile) { setError('Seleccioná un archivo CSV.'); return }
-        if (config.value === 'bullmarket_csv') {
-          await importBullMarketCSV.mutateAsync(csvFile)
-        } else {
-          await importBalanzCSV.mutateAsync(csvFile)
-        }
+        if (!csvFile) { setError('Seleccioná el archivo exportado.'); return }
+        await importIOL.mutateAsync(csvFile)
       } else if (config.type === 'manual') {
-        if (!institutionName.trim()) { setError('Ingresá el nombre de la institución.'); return }
         const holdings = manualHoldings
           .filter(h => h.symbol.trim() && parseFloat(h.amount) > 0)
-          .map(h => ({ symbol: h.symbol.toUpperCase(), name: h.name || h.symbol.toUpperCase(), amount: parseFloat(h.amount), category: h.category, ref: h.ref, price_usd: h.price_usd || 0 }))
+          .map(h => ({ symbol: h.symbol.toUpperCase(), name: h.name || h.symbol.toUpperCase(), amount: parseFloat(h.amount), category: h.category, ref: h.ref, price_usd: h.price_usd || 0, logo_url: h.logo_url ?? null }))
         if (!holdings.length) { setError('Agregá al menos un activo con cantidad > 0.'); return }
-        const creds = { institution_name: institutionName, holdings }
+        const creds = { institution_name: 'Manual', holdings }
         if (isEdit) {
           await updateMutation.mutateAsync({ id: editId!, credentials: creds })
         } else {
@@ -416,7 +390,7 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
           </div>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--text-1)', margin: 0 }}>{isEdit ? 'Editar posiciones' : config.label}</h2>
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>{isEdit ? (initialManual?.institution_name || config.label) : config.tagline}</p>
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>{isEdit ? 'Ajustá cantidades o quitá activos' : config.tagline}</p>
           </div>
           <button onClick={onClose} style={{ padding: 6, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
@@ -426,7 +400,7 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', background: 'var(--surface-inset)', borderBottom: '1px solid var(--border-1)' }}>
             <StepDot n={1} active={step === 1} done={step === 2} label="Instrucciones" />
             <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-            <StepDot n={2} active={step === 2} done={false} label="Conectar" />
+            <StepDot n={2} active={step === 2} done={false} label={config.type === 'manual' ? 'Cargar' : config.type === 'csv' ? 'Importar' : 'Conectar'} />
           </div>
         )}
 
@@ -463,7 +437,12 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {config.type === 'fields' && config.fields && config.fields.map(field => (
                 <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <Input label={field.label} type={field.secret ? 'password' : 'text'} placeholder={field.placeholder} value={credentials[field.key] ?? ''} onChange={e => setCredentials(c => ({ ...c, [field.key]: e.target.value }))} />
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span className="aa-overline">{field.label}</span>
+                    <input type={field.secret ? 'password' : 'text'} placeholder={field.placeholder} value={credentials[field.key] ?? ''}
+                      onChange={e => setCredentials(c => ({ ...c, [field.key]: e.target.value }))}
+                      style={{ border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', background: 'var(--surface-inset)', color: 'var(--text-1)', fontSize: 'var(--text-sm)', padding: '10px 12px' }} />
+                  </label>
                   {field.note && (
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0, lineHeight: 1.4 }}>{field.note}</p>
                   )}
@@ -473,33 +452,26 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
               {config.type === 'csv' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: 0 }}>
-                    {config.value === 'bullmarket_csv' ? 'Subí el CSV exportado desde Bull Market.' : 'Subí el CSV exportado desde Balanz.'}
+                    Subí el archivo de operaciones que descargaste de IOL. Calculamos tu tenencia actual (compras − ventas).
                   </p>
-                  {config.value === 'bullmarket_csv' && (
-                    <div style={{ display: 'flex', gap: 10, background: 'rgba(232,194,104,0.10)', border: '1px solid rgba(232,194,104,0.35)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
-                      <span style={{ color: '#E8C268', flexShrink: 0, marginTop: 1 }}><AlertIcon /></span>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>
-                        <strong style={{ color: 'var(--text-1)' }}>Recordá:</strong> si comprás o vendés acciones en Bull Market, actualizá el CSV para mantener tu portfolio sincronizado.
-                      </p>
-                    </div>
-                  )}
                   <div onClick={() => fileRef.current?.click()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 'var(--radius-lg)', border: '2px dashed var(--border-2)', padding: 28, cursor: 'pointer', transition: 'border-color var(--dur-fast) var(--ease-out)' }}>
                     <span style={{ color: 'var(--text-3)' }}><UploadIcon /></span>
                     {csvFile
                       ? <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-accent)', margin: 0 }}>{csvFile.name}</p>
-                      : <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-3)', margin: 0 }}>Hacé click para seleccionar el .csv</p>}
+                      : <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-3)', margin: 0 }}>Hacé click para seleccionar el archivo (.xls)</p>}
                   </div>
-                  <input ref={fileRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => setCsvFile(e.target.files?.[0] ?? null)} />
+                  <input ref={fileRef} type="file" accept={config.accept ?? '.csv'} style={{ display: 'none' }} onChange={e => setCsvFile(e.target.files?.[0] ?? null)} />
+                  <div style={{ display: 'flex', gap: 8, background: 'rgba(157,140,255,0.08)', border: '1px solid rgba(157,140,255,0.28)', borderRadius: 'var(--radius-md)', padding: '9px 12px' }}>
+                    <span style={{ color: '#9D8CFF', flexShrink: 0, marginTop: 1 }}><AlertIcon /></span>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>
+                      Si operás seguido, volvé a importar el archivo actualizado para reflejar tu cartera actual.
+                    </p>
+                  </div>
                 </div>
               )}
 
               {config.type === 'manual' && (
-                <ManualEntry
-                  institutionName={institutionName}
-                  setInstitutionName={setInstitutionName}
-                  holdings={manualHoldings}
-                  setHoldings={setManualHoldings}
-                />
+                <ManualEntry holdings={manualHoldings} setHoldings={setManualHoldings} />
               )}
 
               {error && (
@@ -520,9 +492,135 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
           </button>
           {step === 1 && !isEdit
             ? <Button onClick={() => setStep(2)} icon={<ChevRight />}>Siguiente</Button>
-            : <Button onClick={handleConnect} disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : (isEdit ? 'Guardar' : 'Conectar')}</Button>}
+            : <Button onClick={handleConnect} disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : (isEdit ? 'Guardar' : config.type === 'csv' ? 'Importar' : 'Conectar')}</Button>}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Connected account (una fila por activo para manual / iol_csv) ───────────────
+
+function AssetRowsAccount({ item, onEdit, onRemove }: {
+  item: IntegrationSummaryDTO
+  onEdit: (id: string) => void
+  onRemove: (id: string) => void
+}) {
+  const cfg = configFor(item.provider_type)
+  const { format } = useCurrency()
+  const { data: portfolio } = usePortfolio()
+  const rate = portfolio?.usd_to_ars ?? undefined
+  const { data, isLoading } = useManualHoldings(item.id, true)
+  const syncMutation = useSyncIntegration()
+  const holdings = data?.holdings ?? []
+  const editable = data?.editable ?? (item.provider_type === 'manual')
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-1)', padding: '15px 0' }}>
+      {/* group header (sutil) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: holdings.length ? 10 : 0 }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.is_active ? 'var(--positive)' : 'var(--negative)', flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{cfg?.label ?? item.provider_type}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>· {holdings.length} {holdings.length === 1 ? 'activo' : 'activos'}</span>
+        <div style={{ flex: 1 }} />
+        {item.provider_type === 'manual' && (
+          <button onClick={() => syncMutation.mutate(item.id)} title="Sincronizar precios"
+            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+            <RefreshIcon /> Sincronizar
+          </button>
+        )}
+        <button onClick={() => onRemove(item.id)} title="Quitar cuenta"
+          style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--negative)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}>
+          Quitar
+        </button>
+      </div>
+
+      {isLoading && <div style={{ height: 44, borderRadius: 'var(--radius-md)', background: 'var(--surface-card)', animation: 'aa-pulse 1.5s ease-in-out infinite alternate' }} />}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {holdings.map((h, i) => {
+          const price = h.price_usd ?? 0
+          const value = (h.amount ?? 0) * price
+          const category = (h.category as AssetCategory) ?? 'fx'
+          return (
+            <div key={`${h.ref ?? h.symbol}:${i}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--border-1)', borderRadius: 'var(--radius-md)', background: 'var(--surface-card)' }}>
+              <AssetAvatar logoUrl={h.logo_url} symbol={h.symbol} category={category} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{h.symbol}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.name || h.symbol}</div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{format(value, rate)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>{h.amount} u.</div>
+              </div>
+              {editable && (
+                <button onClick={() => onEdit(item.id)} title="Editar posiciones"
+                  style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-inset)', border: '1px solid var(--border-1)', color: 'var(--text-2)', cursor: 'pointer', flexShrink: 0, transition: 'all var(--dur-fast) var(--ease-out)' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-accent)'; e.currentTarget.style.borderColor = 'var(--border-2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-2)'; e.currentTarget.style.borderColor = 'var(--border-1)' }}>
+                  <EditIcon />
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ApiAccount({ item, balance, rate, format, onRemove }: {
+  item: IntegrationSummaryDTO
+  balance: number | undefined
+  rate: number | undefined
+  format: (n: number, rate?: number) => string
+  onRemove: (id: string) => void
+}) {
+  const cfg = configFor(item.provider_type)
+  const syncMutation = useSyncIntegration()
+  const [now] = useState(() => Date.now())
+  const syncAgo = item.last_sync_at
+    ? `hace ${Math.max(1, Math.round((now - new Date(item.last_sync_at).getTime()) / 60000))} min`
+    : 'conectada'
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-1)', padding: '15px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0, background: `color-mix(in srgb, ${cfg?.color ?? '#8A97AB'} 16%, transparent)`, color: cfg?.color ?? 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700 }}>
+          {(cfg?.label ?? item.provider_type).slice(0, 3).toUpperCase()}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{cfg?.label ?? item.provider_type}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{cfg?.tagline}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.is_active ? 'var(--positive)' : 'var(--negative)' }} />
+          <span style={{ fontSize: 12, color: item.is_active ? 'var(--positive)' : 'var(--negative)' }}>{item.is_active ? syncAgo : 'inactiva'}</span>
+        </div>
+        {typeof balance === 'number' && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 700, color: 'var(--text-1)', minWidth: 110, textAlign: 'right', flexShrink: 0 }}>
+            {format(balance, rate)}
+          </span>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <Button variant="secondary" size="sm" style={{ height: 34, padding: '0 16px', fontSize: 13 }} onClick={() => syncMutation.mutate(item.id)}>
+            Sincronizar
+          </Button>
+          <button onClick={() => onRemove(item.id)}
+            style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--negative)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}>
+            Quitar
+          </button>
+        </div>
+      </div>
+      {item.last_error && (
+        <div style={{ marginTop: 10, display: 'flex', gap: 8, background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px' }}>
+          <span style={{ color: 'var(--down)', flexShrink: 0 }}><AlertIcon /></span>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--down)', margin: 0 }}>{item.last_error}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -534,12 +632,10 @@ export default function IntegrationsPage() {
   const { data: portfolio } = usePortfolio()
   const { format } = useCurrency()
   const deleteMutation = useDeleteIntegration()
-  const syncMutation = useSyncIntegration()
-  // Balance actual por provider (para mostrar en cada cuenta conectada).
   const balanceByProvider = new Map((portfolio?.providers ?? []).map(p => [p.provider, p.balance_usd]))
-  const rate = portfolio?.usd_to_ars
+  const rate = portfolio?.usd_to_ars ?? undefined
   const [activeWizard, setActiveWizard] = useState<ProviderConfig | null>(null)
-  const [editWizard, setEditWizard] = useState<{ config: ProviderConfig; editId: string; initialManual: { institution_name: string; holdings: ManualHolding[] } } | null>(null)
+  const [editWizard, setEditWizard] = useState<{ config: ProviderConfig; editId: string; initialManual: { holdings: ManualHolding[] } } | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const connectedTypes = new Set(integrations?.map(i => i.provider_type) ?? [])
@@ -549,7 +645,8 @@ export default function IntegrationsPage() {
 
   async function handleEditManual(integrationId: string) {
     try {
-      const { data } = await api.get<{ institution_name: string; holdings: Array<{ symbol: string; name?: string; amount: number; category?: AssetCategory; ref?: string; price_usd?: number }> }>(`/api/v1/integrations/${integrationId}/manual`)
+      const { api } = await import('@/lib/api')
+      const { data } = await api.get<{ holdings: Array<{ symbol: string; name?: string; amount: number; category?: AssetCategory; ref?: string; price_usd?: number; logo_url?: string | null }> }>(`/api/v1/integrations/${integrationId}/manual`)
       const holdings: ManualHolding[] = (data.holdings ?? []).map(h => ({
         symbol: h.symbol,
         name: h.name ?? h.symbol,
@@ -557,8 +654,9 @@ export default function IntegrationsPage() {
         category: (h.category as AssetCategory) ?? 'fx',
         ref: h.ref ?? h.symbol,
         price_usd: h.price_usd ?? 0,
+        logo_url: h.logo_url ?? null,
       }))
-      setEditWizard({ config: manualConfig, editId: integrationId, initialManual: { institution_name: data.institution_name, holdings } })
+      setEditWizard({ config: manualConfig, editId: integrationId, initialManual: { holdings } })
     } catch {
       // si falla, no abrimos el editor
     }
@@ -583,68 +681,11 @@ export default function IntegrationsPage() {
             Conectadas · {integrations.length}
           </span>
           <div>
-            {integrations.map(item => {
-              const cfg = PROVIDERS.find(p => p.value === item.provider_type)
-              const balance = balanceByProvider.get(item.provider_type)
-              const syncAgo = item.last_sync_at
-                ? `hace ${Math.max(1, Math.round((Date.now() - new Date(item.last_sync_at).getTime()) / 60000))} min`
-                : 'conectada'
-              return (
-                <div key={item.id} style={{ borderBottom: '1px solid var(--border-1)', padding: '15px 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0, background: `color-mix(in srgb, ${cfg?.color ?? '#8A97AB'} 16%, transparent)`, color: cfg?.color ?? 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700 }}>
-                      {(cfg?.label ?? item.provider_type).slice(0, 3).toUpperCase()}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{cfg?.label ?? item.provider_type}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{cfg?.tagline}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.is_active ? 'var(--positive)' : 'var(--negative)' }} />
-                      <span style={{ fontSize: 12, color: item.is_active ? 'var(--positive)' : 'var(--negative)' }}>{item.is_active ? syncAgo : 'inactiva'}</span>
-                    </div>
-                    {typeof balance === 'number' && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 700, color: 'var(--text-1)', minWidth: 110, textAlign: 'right', flexShrink: 0 }}>
-                        {format(balance, rate)}
-                      </span>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                      {item.provider_type !== 'balanz_csv' && item.provider_type !== 'bullmarket_csv' && (
-                        <Button variant="secondary" size="sm" style={{ height: 34, padding: '0 16px', fontSize: 13 }} onClick={() => syncMutation.mutate(item.id)}>
-                          Sincronizar
-                        </Button>
-                      )}
-                      {item.provider_type === 'manual' && (
-                        <button onClick={() => handleEditManual(item.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
-                          Editar
-                        </button>
-                      )}
-                      <button onClick={() => setConfirmDeleteId(item.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--negative)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}>
-                        Quitar
-                      </button>
-                    </div>
-                  </div>
-                  {item.provider_type === 'bullmarket_csv' && (
-                    <div style={{ marginTop: 10, display: 'flex', gap: 8, background: 'rgba(232,194,104,0.08)', border: '1px solid rgba(232,194,104,0.3)', borderRadius: 'var(--radius-md)', padding: '8px 12px' }}>
-                      <span style={{ color: '#E8C268', flexShrink: 0 }}><AlertIcon /></span>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-2)', margin: 0 }}>
-                        Si comprás o vendés acciones, eliminá esta integración y volvé a importar el CSV actualizado.
-                      </p>
-                    </div>
-                  )}
-                  {item.last_error && (
-                    <div style={{ marginTop: 10, display: 'flex', gap: 8, background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px' }}>
-                      <span style={{ color: 'var(--down)', flexShrink: 0 }}><AlertIcon /></span>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--down)', margin: 0 }}>{item.last_error}</p>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+            {integrations.map(item => (
+              ASSET_ROW_TYPES.has(item.provider_type)
+                ? <AssetRowsAccount key={item.id} item={item} onEdit={handleEditManual} onRemove={setConfirmDeleteId} />
+                : <ApiAccount key={item.id} item={item} balance={balanceByProvider.get(item.provider_type)} rate={rate} format={format} onRemove={setConfirmDeleteId} />
+            ))}
           </div>
         </section>
       )}
@@ -655,15 +696,15 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Add new — grupo API/CSV */}
+      {/* Add new — grupo API */}
       <section className="aa-sec aa-sec--3">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)' }}>Disponibles</span>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>Elegí un proveedor para conectarlo</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)' }}>Conectar por API o archivo</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)' }}>Elegí un proveedor</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
           {apiProviders.map(p => (
-            <ProviderPickerCard key={p.value} config={p} connected={connectedTypes.has(p.value)} onClick={() => setActiveWizard(p)} />
+            <ProviderPickerCard key={p.value} config={p} connected={connectedTypes.has(p.value) || (p.value === 'iol' && connectedTypes.has('iol_csv'))} onClick={() => setActiveWizard(p)} />
           ))}
         </div>
       </section>
@@ -672,7 +713,7 @@ export default function IntegrationsPage() {
       <section className="aa-sec aa-sec--4">
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 4 }}>Ingreso manual</span>
         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: '0 0 12px' }}>
-          Para brokers sin API ni CSV (como Bull Market). Buscá cada activo y cargá tu cantidad; los precios se actualizan solos.
+          Para brokers o billeteras sin API ni archivo. Buscá cada activo y cargá tu cantidad; los precios se actualizan solos.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
           {manualProviders.map(p => (

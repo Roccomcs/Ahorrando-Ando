@@ -11,6 +11,7 @@ import type {
   ProviderPerformanceResponse,
   AssetSearchResult,
   AssetCategory,
+  ManualHoldingDTO,
   TransactionDTO,
 } from '@/lib/types'
 
@@ -139,6 +140,32 @@ export function useImportBullMarketCSV() {
       qc.invalidateQueries({ queryKey: ['integrations'] })
       qc.invalidateQueries({ queryKey: ['portfolio'] })
     },
+  })
+}
+
+export function useImportIOL() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return api.post('/api/v1/integrations/iol/import', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then((r) => r.data)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['integrations'] })
+      qc.invalidateQueries({ queryKey: ['portfolio'] })
+    },
+  })
+}
+
+// Posiciones de una integración manual / IOL-import (para mostrarlas por activo).
+export function useManualHoldings(id: string, enabled: boolean) {
+  return useQuery<{ institution_name: string; holdings: ManualHoldingDTO[]; editable?: boolean }>({
+    queryKey: ['manual-holdings', id],
+    queryFn: () => api.get(`/api/v1/integrations/${id}/manual`).then((r) => r.data),
+    enabled,
   })
 }
 

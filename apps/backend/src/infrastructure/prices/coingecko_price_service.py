@@ -34,5 +34,6 @@ class CoinGeckoPriceService(IPriceService, BaseHttpClient):
                 "id": c.get("id", ""),
                 "symbol": str(c.get("symbol", "")).upper(),
                 "name": c.get("name", ""),
+                "logo_url": c.get("large") or c.get("thumb") or None,
             })
         return out

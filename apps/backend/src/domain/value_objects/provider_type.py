@@ -11,4 +11,5 @@ class ProviderType(str, Enum):
     SOLANA = "solana"
     BALANZ_CSV = "balanz_csv"
     BULLMARKET_CSV = "bullmarket_csv"
+    IOL_CSV = "iol_csv"
     MANUAL = "manual"

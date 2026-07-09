@@ -81,6 +81,33 @@ async def import_bullmarket_csv(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.post("/iol/import", response_model=IntegrationSummaryDTO, status_code=status.HTTP_201_CREATED)
+async def import_iol_xls(
+    file: UploadFile,
+    current_user=Depends(get_current_user),
+    controller: IntegrationsController = Depends(),
+):
+    """Importa la cartera actual desde el export 'Operaciones Finalizadas' de IOL (HTML/.xls)."""
+    name = (file.filename or "").lower()
+    if not name.endswith((".xls", ".xlsx", ".csv", ".html", ".htm")):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subí el archivo exportado de IOL (.xls).")
+
+    _MAX_SIZE = 5 * 1024 * 1024
+    chunks: list[bytes] = []
+    size = 0
+    while chunk := await file.read(64 * 1024):
+        size += len(chunk)
+        if size > _MAX_SIZE:
+            raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="El archivo es demasiado grande (máx 5 MB).")
+        chunks.append(chunk)
+    content = b"".join(chunks)
+
+    try:
+        return await controller.import_iol_xls(user_id=current_user.id, file_bytes=content)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.get("/{integration_id}/manual")
 async def get_manual_holdings(
     integration_id: str,

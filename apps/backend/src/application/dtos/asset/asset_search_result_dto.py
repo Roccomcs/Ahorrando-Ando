@@ -11,3 +11,4 @@ class AssetSearchResultDTO(BaseModel):
     category: AssetCategory
     ref: str               # identificador para cotizar (coingecko_id o símbolo AR)
     price_usd: float       # precio actual en USD (0 si no se pudo cotizar)
+    logo_url: str | None = None  # logo del activo (cripto vía CoinGecko; None = monograma)

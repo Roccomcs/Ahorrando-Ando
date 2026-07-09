@@ -70,7 +70,7 @@ class SearchAssets:
                     continue
                 results.append(AssetSearchResultDTO(
                     symbol=c["symbol"], name=c["name"], category="crypto",
-                    ref=c["id"], price_usd=0.0,
+                    ref=c["id"], price_usd=0.0, logo_url=c.get("logo_url"),
                 ))
 
         return results[:limit]
