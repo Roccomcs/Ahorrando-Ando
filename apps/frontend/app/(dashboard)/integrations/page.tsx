@@ -20,6 +20,7 @@ type ProviderConfig = {
   label: string
   tagline: string
   color: string
+  logoUrl?: string
   type: 'fields' | 'csv' | 'manual'
   group: 'api' | 'manual'
   accept?: string
@@ -35,7 +36,7 @@ type ProviderConfig = {
 
 const PROVIDERS: ProviderConfig[] = [
   {
-    value: 'binance', label: 'Binance', tagline: 'Exchange de cripto mundial', color: '#E8C268', type: 'fields', group: 'api',
+    value: 'binance', label: 'Binance', tagline: 'Exchange de cripto mundial', color: '#E8C268', logoUrl: 'https://icons.duckduckgo.com/ip3/binance.com.ico', type: 'fields', group: 'api',
     fields: [
       { key: 'api_key', label: 'API Key', placeholder: 'Tu Binance API Key' },
       { key: 'api_secret', label: 'API Secret', placeholder: 'Solo visible al crear la clave', secret: true, note: 'El Secret solo se muestra UNA vez, al crear la clave. Si ya la creaste y no lo copiaste, no lo vas a poder ver de nuevo: generá una clave nueva.' },
@@ -49,7 +50,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'mercadopago', label: 'MercadoPago', tagline: 'Billetera digital argentina', color: '#63B8F4', type: 'fields', group: 'api',
+    value: 'mercadopago', label: 'MercadoPago', tagline: 'Billetera digital argentina', color: '#63B8F4', logoUrl: 'https://icons.duckduckgo.com/ip3/mercadopago.com.ar.ico', type: 'fields', group: 'api',
     fields: [{ key: 'access_token', label: 'Access Token', placeholder: 'APP_USR-...', secret: true, note: 'Es la única forma oficial de leer tu saldo. El token es de solo lectura: no permite mover dinero.' }],
     instructions: {
       description: 'MercadoPago solo permite leer el saldo con un Access Token de producción. Para obtenerlo hay que crear una aplicación (es gratis y toma 2 minutos).',
@@ -66,7 +67,7 @@ const PROVIDERS: ProviderConfig[] = [
     },
   },
   {
-    value: 'iol', label: 'InvertirOnline', tagline: 'Broker argentino (IOL)', color: '#9D8CFF', type: 'csv', group: 'api', accept: '.xls,.xlsx,.csv,.html,.htm',
+    value: 'iol', label: 'InvertirOnline', tagline: 'Broker argentino (IOL)', color: '#9D8CFF', logoUrl: 'https://icons.duckduckgo.com/ip3/invertironline.com.ico', type: 'csv', group: 'api', accept: '.xls,.xlsx,.csv,.html,.htm',
     instructions: {
       description: 'IOL no ofrece conexión automática para terceros: la API se solicita por mensaje al soporte de IOL. Mientras tanto, importá tu cartera desde el archivo de operaciones que podés descargar de tu cuenta.',
       steps: [
@@ -156,6 +157,24 @@ function AssetAvatar({ logoUrl, symbol, category, size = 32 }: { logoUrl?: strin
   )
 }
 
+// ── ProviderLogo (logo de marca o monograma) ───────────────────────────────────
+
+function ProviderLogo({ logoUrl, label, color, size = 36, radius = 'var(--radius-md)', mono = 1 }: { logoUrl?: string; label: string; color: string; size?: number; radius?: string; mono?: number }) {
+  const [failed, setFailed] = useState(false)
+  if (logoUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={logoUrl} alt={label} width={size} height={size} onError={() => setFailed(true)}
+        style={{ width: size, height: size, borderRadius: radius, objectFit: 'contain', flexShrink: 0, background: '#fff', padding: Math.round(size * 0.14) }} />
+    )
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: radius, background: mono === 1 ? color : `color-mix(in srgb, ${color} 16%, transparent)`, color: mono === 1 ? '#fff' : color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size <= 36 ? 'var(--text-sm)' : 'var(--text-base)', fontWeight: 'var(--weight-bold)', flexShrink: 0, fontFamily: mono === 1 ? undefined : 'var(--font-mono)' }}>
+      {mono === 1 ? label.charAt(0) : label.slice(0, 3).toUpperCase()}
+    </div>
+  )
+}
+
 // ── StepDot ───────────────────────────────────────────────────────────────────
 
 function StepDot({ n, active, done, label }: { n: number; active: boolean; done: boolean; label: string }) {
@@ -180,9 +199,7 @@ function ProviderPickerCard({ config, connected, onClick }: { config: ProviderCo
       style={{ width: '100%', textAlign: 'left', borderRadius: 'var(--radius-lg)', border: '1px solid', cursor: connected ? 'default' : 'pointer', padding: 14, background: connected ? 'rgba(61,217,147,0.04)' : hovered ? 'var(--surface-hover)' : 'var(--surface-card)', borderColor: connected ? 'rgba(61,217,147,0.25)' : hovered ? 'var(--border-2)' : 'var(--border-1)', transition: 'all var(--dur-fast) var(--ease-out)', opacity: connected ? 0.75 : 1 }}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: config.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-bold)', color: '#fff', flexShrink: 0 }}>
-          {config.label.charAt(0)}
-        </div>
+        <ProviderLogo logoUrl={config.logoUrl} label={config.label} color={config.color} size={36} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: 0 }}>{config.label}</p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{config.tagline}</p>
@@ -385,9 +402,7 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '20px 24px', borderBottom: '1px solid var(--border-1)' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-lg)', background: config.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-base)', fontWeight: 'var(--weight-bold)', color: '#fff', flexShrink: 0 }}>
-            {config.label.charAt(0)}
-          </div>
+          <ProviderLogo logoUrl={config.logoUrl} label={config.label} color={config.color} size={40} radius="var(--radius-lg)" />
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--text-1)', margin: 0 }}>{isEdit ? 'Editar posiciones' : config.label}</h2>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0 }}>{isEdit ? 'Ajustá cantidades o quitá activos' : config.tagline}</p>
@@ -587,9 +602,7 @@ function ApiAccount({ item, balance, rate, format, onRemove }: {
   return (
     <div style={{ borderBottom: '1px solid var(--border-1)', padding: '15px 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0, background: `color-mix(in srgb, ${cfg?.color ?? '#8A97AB'} 16%, transparent)`, color: cfg?.color ?? 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700 }}>
-          {(cfg?.label ?? item.provider_type).slice(0, 3).toUpperCase()}
-        </div>
+        <ProviderLogo logoUrl={cfg?.logoUrl} label={cfg?.label ?? item.provider_type} color={cfg?.color ?? '#8A97AB'} size={38} radius="11px" mono={0} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{cfg?.label ?? item.provider_type}</div>
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{cfg?.tagline}</div>
