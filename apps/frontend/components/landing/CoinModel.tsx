@@ -25,7 +25,9 @@ interface Props {
   floatAmplitude: number
   spinSpeed: number
   phase?: number
-  paint: Paint
+  /** Repinta la malla. Si se omite, se conservan los materiales del .glb
+   *  (los modelos de logo ya vienen con los colores de marca horneados). */
+  paint?: Paint
   /** Radio final de la moneda en unidades de escena. */
   size?: number
   /** Inclinación fija en X (radianes) — cada moneda con la suya para variedad. */
@@ -56,6 +58,13 @@ export function CoinModel({
       if (!mesh.isMesh) return
 
       const geo = mesh.geometry
+
+      // Algunos .glb (los de logo) se exportaron solo con POSITION. Sin NORMAL
+      // el material PBR no tiene con qué sombrear y la malla se ve negra.
+      if (!geo.getAttribute('normal')) geo.computeVertexNormals()
+
+      if (!paint) return
+
       let colors: THREE.BufferAttribute | undefined
 
       if (paint.relief) {

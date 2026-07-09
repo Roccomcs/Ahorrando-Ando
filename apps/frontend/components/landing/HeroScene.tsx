@@ -18,15 +18,18 @@ import s from './HeroScene.module.css'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
 
+// Los .glb viven en `public/models/`. Vienen solo con POSITION (sin materiales
+// ni normales), así que cada uno se pinta con el color plano de su marca —
+// sin `relief`, porque no son monedas con logo en bajorrelieve.
 const MODELS = {
-  bitcoin: '/models/bitcoin-hq.glb',
-  binance: '/models/binance-hq.glb',
-  mercadoPago: '/models/mercado-pago-hq.glb',
+  bitcoin: '/models/Bitcoin_Logo.glb',
+  binance: '/models/Binance_Logo.glb',
+  usdt: '/models/USDT_Logo.glb',
 }
 
 useGLTF.preload(MODELS.bitcoin)
 useGLTF.preload(MODELS.binance)
-useGLTF.preload(MODELS.mercadoPago)
+useGLTF.preload(MODELS.usdt)
 
 const COIN_Y = 2.35
 const COIN_SIZE = 1.5
@@ -34,7 +37,7 @@ const COIN_SIZE = 1.5
 // Profundidad real: cada moneda vive en su propio plano Z.
 const BTC_POS: [number, number, number] = [0.25, COIN_Y, 1.1]
 const BNB_POS: [number, number, number] = [-0.2, 0, 0]
-const MP_POS: [number, number, number] = [0.25, -COIN_Y, -1.3]
+const USDT_POS: [number, number, number] = [0.25, -COIN_Y, -1.3]
 
 function Parallax({ children }: { children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null)
@@ -64,10 +67,10 @@ function Parallax({ children }: { children: React.ReactNode }) {
 function Scene() {
   const bitcoinRef = useRef<THREE.Group>(null)
   const binanceRef = useRef<THREE.Group>(null)
-  const mpRef = useRef<THREE.Group>(null)
+  const usdtRef = useRef<THREE.Group>(null)
 
   useGSAP(() => {
-    // Entrada escalonada: fondo → BTC → BNB → MP (las cards siguen en HTML)
+    // Entrada escalonada: fondo → BTC → BNB → USDT (las cards siguen en HTML)
     const tl = gsap.timeline({ defaults: { ease: 'power4.out', duration: 1.3 } })
     if (bitcoinRef.current) {
       gsap.set(bitcoinRef.current.scale, { x: 0.8, y: 0.8, z: 0.8 })
@@ -78,10 +81,10 @@ function Scene() {
       gsap.set(binanceRef.current.scale, { x: 0.8, y: 0.8, z: 0.8 })
       tl.to(binanceRef.current.scale, { x: 1, y: 1, z: 1 }, 0.75)
     }
-    if (mpRef.current) {
-      gsap.set(mpRef.current.scale, { x: 0.8, y: 0.8, z: 0.8 })
-      tl.fromTo(mpRef.current.position, { y: -5.5 }, { y: -COIN_Y }, 0.95)
-        .to(mpRef.current.scale, { x: 1, y: 1, z: 1 }, 0.95)
+    if (usdtRef.current) {
+      gsap.set(usdtRef.current.scale, { x: 0.8, y: 0.8, z: 0.8 })
+      tl.fromTo(usdtRef.current.position, { y: -5.5 }, { y: -COIN_Y }, 0.95)
+        .to(usdtRef.current.scale, { x: 1, y: 1, z: 1 }, 0.95)
     }
 
     ScrollTrigger.create({
@@ -93,7 +96,7 @@ function Scene() {
         const p = self.progress
         if (bitcoinRef.current) bitcoinRef.current.position.z = BTC_POS[2] + p * 0.5
         if (binanceRef.current) binanceRef.current.rotation.z = p * 0.25
-        if (mpRef.current) mpRef.current.position.z = MP_POS[2] - p * 0.5
+        if (usdtRef.current) usdtRef.current.position.z = USDT_POS[2] - p * 0.5
       },
     })
   }, [])
@@ -107,14 +110,7 @@ function Scene() {
           position={[0, 0, 0]}
           size={COIN_SIZE}
           tilt={THREE.MathUtils.degToRad(12)}
-          paint={{
-            base: '#f2a01f',
-            relief: '#ffdf8a',
-            metalness: 0.85,
-            roughness: 0.2,
-            emissive: '#c77a00',
-            emissiveIntensity: 0.32,
-          }}
+          paint={{ base: '#F7931A', metalness: 0.6, roughness: 0.28, emissive: '#F7931A', emissiveIntensity: 0.16 }}
           floatSpeed={0.6}
           floatAmplitude={0.14}
           spinSpeed={0.12}
@@ -129,14 +125,7 @@ function Scene() {
           position={[0, 0, 0]}
           size={COIN_SIZE}
           tilt={THREE.MathUtils.degToRad(-6)}
-          paint={{
-            base: '#191a1e',
-            relief: '#F0B90B',
-            metalness: 0.9,
-            roughness: 0.28,
-            emissive: '#3d2f00',
-            emissiveIntensity: 0.18,
-          }}
+          paint={{ base: '#F0B90B', metalness: 0.65, roughness: 0.3, emissive: '#F0B90B', emissiveIntensity: 0.14 }}
           floatSpeed={0.5}
           floatAmplitude={0.13}
           spinSpeed={0.085}
@@ -146,33 +135,26 @@ function Scene() {
       <GravityField center={BNB_POS} colors={['#F0B90B', '#e9edf2']} count={24} radiusMin={1.6} radiusMax={2.4} seed={2} size={0.045} />
       <RadarWaves center={BNB_POS} color="#F0B90B" period={3.2} count={2} maxScale={2} y={-0.7} opacity={0.3} />
 
-      {/* MP: conexión — ondas azules tipo radar que pulsan, sin girar */}
-      <group ref={mpRef} position={MP_POS}>
+      {/* USDT: estabilidad — ondas verdes tipo radar que pulsan */}
+      <group ref={usdtRef} position={USDT_POS}>
         <CoinModel
-          url={MODELS.mercadoPago}
+          url={MODELS.usdt}
           position={[0, 0, 0]}
           size={COIN_SIZE}
           tilt={THREE.MathUtils.degToRad(8)}
-          paint={{
-            base: '#0a85d9',
-            relief: '#f4f8ff',
-            metalness: 0.75,
-            roughness: 0.3,
-            emissive: '#003a66',
-            emissiveIntensity: 0.3,
-          }}
+          paint={{ base: '#26A17B', metalness: 0.6, roughness: 0.3, emissive: '#26A17B', emissiveIntensity: 0.18 }}
           floatSpeed={0.55}
           floatAmplitude={0.15}
           spinSpeed={0.1}
           phase={4}
         />
       </group>
-      <RadarWaves center={MP_POS} color="#41A4EF" period={2} count={3} maxScale={2.6} y={-0.8} opacity={0.5} />
-      <GravityField center={MP_POS} colors={['#41A4EF', '#9ad2ff']} count={18} radiusMin={1.6} radiusMax={2.3} seed={3} size={0.04} />
+      <RadarWaves center={USDT_POS} color="#26A17B" period={2} count={3} maxScale={2.6} y={-0.8} opacity={0.5} />
+      <GravityField center={USDT_POS} colors={['#26A17B', '#7fe0bd']} count={18} radiusMin={1.6} radiusMax={2.3} seed={3} size={0.04} />
 
       {/* Energía que fluye de una moneda a la siguiente */}
       <EnergyStream from={[BTC_POS[0], BTC_POS[1] - 1, BTC_POS[2]]} to={[BNB_POS[0], BNB_POS[1] + 1, BNB_POS[2]]} color="#ffcf7a" seed={1} />
-      <EnergyStream from={[BNB_POS[0], BNB_POS[1] - 1, BNB_POS[2]]} to={[MP_POS[0], MP_POS[1] + 1, MP_POS[2]]} color="#7ec4f7" seed={2} />
+      <EnergyStream from={[BNB_POS[0], BNB_POS[1] - 1, BNB_POS[2]]} to={[USDT_POS[0], USDT_POS[1] + 1, USDT_POS[2]]} color="#7ec4f7" seed={2} />
 
       {/* Partículas ambientales lejanas, pocas y variadas */}
       <SparkField center={[0, 0, -2.5]} colors={['#ffd27a', '#ffffff', '#6fc3ff']} count={30} innerRadius={3.6} outerRadius={5.5} seed={7} driftSpeed={0.015} />
@@ -270,7 +252,7 @@ export function HeroScene() {
       <div className={`${s.chipCol} ${s.chipColRight}`} aria-hidden="true">
         <Chip value="BTC" label="Bitcoin" icon="/crypto/btc.svg" alt="Bitcoin" />
         <Chip value="BNB" label="Binance Coin" icon="/providers/binance.svg" alt="Binance" />
-        <Chip value="MP" label="Mercado Pago" icon="/providers/mercado-pago.svg" alt="Mercado Pago" />
+        <Chip value="USDT" label="Tether" icon="/crypto/usdt.svg" alt="Tether" />
       </div>
     </div>
   )

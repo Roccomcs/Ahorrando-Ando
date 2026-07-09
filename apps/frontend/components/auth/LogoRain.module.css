@@ -1,0 +1,18 @@
+/* Capa 3D de fondo.
+   - z-index 1: por encima del aurora (0) y por debajo de la tarjeta (2).
+   - pointer-events: none es CRÍTICO — sin esto el <canvas> a pantalla completa
+     se come todos los clicks, hovers y focus de los inputs del login. */
+.canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* El canvas se pinta solo; se lo aísla para que no dispare repaints de la tarjeta. */
+  contain: strict;
+}
+
+.canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}

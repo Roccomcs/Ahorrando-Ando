@@ -2,12 +2,17 @@
 
 import { ReactNode, useRef } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 
 gsap.registerPlugin(useGSAP)
 import { AppLogo } from '@/components/ds/AppLogo'
 import s from './AuthShell.module.css'
+
+// three + los .glb solo se descargan en el cliente y fuera del bundle inicial:
+// el formulario es interactivo aunque la escena todavía no haya cargado.
+const LogoRain = dynamic(() => import('./LogoRain').then(m => m.LogoRain), { ssr: false })
 
 interface Props {
   title: string
@@ -47,6 +52,8 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
         <div className={`${s.blob} ${s.b1}`} />
         <div className={`${s.blob} ${s.b2}`} />
       </div>
+
+      <LogoRain />
 
       <Link href="/" className={s.back} aria-label="Volver al inicio">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
