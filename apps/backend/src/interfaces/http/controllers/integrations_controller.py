@@ -74,11 +74,39 @@ class IntegrationsController:
         if integration.type.value not in ("manual", "iol_csv"):
             raise ValueError("Solo disponible para integraciones manuales.")
         creds = self._encryption.decrypt(integration.encrypted_credentials)
+        holdings = creds.get("holdings", [])
+        await self._fill_missing_logos(holdings)
         return {
             "institution_name": creds.get("institution_name", ""),
-            "holdings": creds.get("holdings", []),
+            "holdings": holdings,
             "editable": integration.type.value == "manual",
         }
+
+    async def _fill_missing_logos(self, holdings: list) -> None:
+        """Completa logo_url faltante: cripto vía CoinGecko, acciones/CEDEARs vía TradingView."""
+        import asyncio
+
+        from infrastructure.prices.coingecko_price_service import CoinGeckoPriceService
+        from infrastructure.prices.logo_service import TradingViewLogoService
+
+        pending = [h for h in holdings if isinstance(h, dict) and not h.get("logo_url") and h.get("symbol")]
+        if not pending:
+            return
+        coingecko = CoinGeckoPriceService()
+        logos = TradingViewLogoService()
+
+        async def resolve(h: dict) -> None:
+            category = (h.get("category") or "").lower()
+            symbol = h.get("symbol", "")
+            try:
+                if category == "crypto":
+                    h["logo_url"] = await coingecko.logo_for_symbol(symbol)
+                elif category in ("stock", "cedear", "bond"):
+                    h["logo_url"] = await logos.logo_for_symbol(symbol)
+            except Exception:
+                pass
+
+        await asyncio.gather(*(resolve(h) for h in pending), return_exceptions=True)
 
     async def remove_integration(self, user_id: str, integration_id: str) -> None:
         await RemoveIntegration(self._repo).execute(user_id, integration_id)

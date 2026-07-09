@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import os
 import time
 
 import httpx
@@ -54,7 +55,9 @@ def _friendly_binance_error(exc: Exception) -> str:
 
 
 class BinanceAuthClient(BaseHttpClient):
-    BASE_URL = "https://api.binance.com"
+    # Configurable por env para poder rutear via proxy en region no bloqueada
+    # (Binance responde 451 a IPs de datacenters US como Railway).
+    BASE_URL = os.getenv("BINANCE_API_BASE", "https://api.binance.com").rstrip("/")
 
     def __init__(self, api_key: str, api_secret: str) -> None:
         super().__init__(self.BASE_URL)

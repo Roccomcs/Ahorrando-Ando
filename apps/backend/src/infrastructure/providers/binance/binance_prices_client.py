@@ -1,3 +1,5 @@
+import os
+
 from infrastructure.providers._base.http_client import BaseHttpClient
 
 _STABLECOINS = {"USDT", "BUSD", "USDC", "DAI", "TUSD", "USDP", "FDUSD", "USDS"}
@@ -7,7 +9,7 @@ class BinancePricesClient(BaseHttpClient):
     """Obtiene precios spot en USDT. No requiere autenticación."""
 
     def __init__(self) -> None:
-        super().__init__("https://api.binance.com")
+        super().__init__(os.getenv("BINANCE_API_BASE", "https://api.binance.com").rstrip("/"))
 
     async def get_prices_usdt(self, symbols: list[str]) -> dict[str, float]:
         """

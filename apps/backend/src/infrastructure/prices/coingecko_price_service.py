@@ -3,6 +3,8 @@ from infrastructure.providers._base.http_client import BaseHttpClient
 
 
 class CoinGeckoPriceService(IPriceService, BaseHttpClient):
+    _logo_cache: dict[str, str | None] = {}
+
     def __init__(self) -> None:
         BaseHttpClient.__init__(self, "https://api.coingecko.com/api/v3")
 
@@ -37,3 +39,18 @@ class CoinGeckoPriceService(IPriceService, BaseHttpClient):
                 "logo_url": c.get("large") or c.get("thumb") or None,
             })
         return out
+
+    async def logo_for_symbol(self, symbol: str) -> str | None:
+        """Logo de una cripto por símbolo (ej: BTC). Cachea el resultado (incl. negativos)."""
+        key = (symbol or "").strip().upper()
+        if not key:
+            return None
+        if key in self._logo_cache:
+            return self._logo_cache[key]
+        url = None
+        for c in await self.search(key, limit=10):
+            if c.get("symbol", "").upper() == key and c.get("logo_url"):
+                url = c["logo_url"]
+                break
+        self._logo_cache[key] = url
+        return url

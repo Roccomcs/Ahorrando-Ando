@@ -3,6 +3,7 @@ import asyncio
 from application.dtos.asset.asset_search_result_dto import AssetSearchResultDTO
 from infrastructure.prices.coingecko_price_service import CoinGeckoPriceService
 from infrastructure.prices.data912_price_service import Data912PriceService
+from infrastructure.prices.logo_service import TradingViewLogoService
 
 _PANEL_CATEGORY = {
     "arg_stocks": "stock",
@@ -26,9 +27,11 @@ class SearchAssets:
         self,
         coingecko: CoinGeckoPriceService | None = None,
         data912: Data912PriceService | None = None,
+        logos: TradingViewLogoService | None = None,
     ) -> None:
         self._coingecko = coingecko or CoinGeckoPriceService()
         self._data912 = data912 or Data912PriceService()
+        self._logos = logos or TradingViewLogoService()
 
     async def execute(self, query: str, limit: int = 20) -> list[AssetSearchResultDTO]:
         q = query.strip()
@@ -37,7 +40,12 @@ class SearchAssets:
 
         crypto_task = self._coingecko.search(q, limit=8)
         ar_task = self._data912.search(q, limit=12)
-        crypto_res, ar_res = await asyncio.gather(crypto_task, ar_task, return_exceptions=True)
+        logo_task = self._logos.logos_for_query(q)
+        crypto_res, ar_res, logo_map = await asyncio.gather(
+            crypto_task, ar_task, logo_task, return_exceptions=True
+        )
+        if not isinstance(logo_map, dict):
+            logo_map = {}
 
         results: list[AssetSearchResultDTO] = []
 
@@ -61,6 +69,7 @@ class SearchAssets:
                 results.append(AssetSearchResultDTO(
                     symbol=sym, name=sym, category=category,
                     ref=sym, price_usd=a.get("price_usd", 0.0),
+                    logo_url=logo_map.get(sym.upper()),
                 ))
 
         # Cripto (precio se cotiza al agregar; acá 0 para no hacer N requests)
