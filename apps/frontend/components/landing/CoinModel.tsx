@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { faceAxis, applyPlanarUV, loadLogoTexture } from '@/components/three/logoProjection'
 
 interface Paint {
   /** Color del cuerpo de la moneda. */
@@ -25,9 +26,11 @@ interface Props {
   floatAmplitude: number
   spinSpeed: number
   phase?: number
-  /** Repinta la malla. Si se omite, se conservan los materiales del .glb
-   *  (los modelos de logo ya vienen con los colores de marca horneados). */
+  /** Repinta la malla. Si se omite, se conservan los materiales del .glb. */
   paint?: Paint
+  /** Imagen del logo a proyectar sobre las dos caras (ver `logoProjection`).
+   *  Cuando está presente, `paint.base` queda como color del canto. */
+  logo?: string
   /** Radio final de la moneda en unidades de escena. */
   size?: number
   /** Inclinación fija en X (radianes) — cada moneda con la suya para variedad. */
@@ -42,11 +45,22 @@ export function CoinModel({
   spinSpeed,
   phase = 0,
   paint,
+  logo,
   size = 1.25,
   tilt = 0,
 }: Props) {
   const { scene } = useGLTF(url)
   const group = useRef<THREE.Group>(null)
+  const [tex, setTex] = useState<THREE.Texture | null>(null)
+
+  useEffect(() => {
+    if (!logo) return
+    let alive = true
+    loadLogoTexture(logo, paint?.base ?? '#ffffff')
+      .then(t => { if (alive) setTex(t) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [logo, paint?.base])
 
   const { content, scale } = useMemo(() => {
     // Se clona la escena entera para conservar la transformación del nodo que
@@ -62,6 +76,8 @@ export function CoinModel({
       // Algunos .glb (los de logo) se exportaron solo con POSITION. Sin NORMAL
       // el material PBR no tiene con qué sombrear y la malla se ve negra.
       if (!geo.getAttribute('normal')) geo.computeVertexNormals()
+      // Y sin UV no hay dónde pegar la imagen del logo.
+      if (logo && !geo.getAttribute('uv')) applyPlanarUV(geo, faceAxis(geo))
 
       if (!paint) return
 
@@ -95,12 +111,15 @@ export function CoinModel({
       }
 
       mesh.material = new THREE.MeshStandardMaterial({
-        color: paint.relief ? '#ffffff' : paint.base,
+        // Con textura o con vertex colors el color base va en blanco, para no
+        // teñir la imagen ni los colores por vértice.
+        color: paint.relief || tex ? '#ffffff' : paint.base,
+        map: tex,
         vertexColors: !!paint.relief,
         metalness: paint.metalness ?? 0.85,
         roughness: paint.roughness ?? 0.25,
         emissive: new THREE.Color(paint.emissive ?? '#000000'),
-        emissiveIntensity: paint.emissiveIntensity ?? 0,
+        emissiveIntensity: tex ? 0.05 : (paint.emissiveIntensity ?? 0),
       })
     })
 
@@ -110,7 +129,7 @@ export function CoinModel({
     cloned.position.sub(center)
     const radius = sphere.radius || 1
     return { content: <primitive object={cloned} />, scale: size / radius }
-  }, [scene, paint, size])
+  }, [scene, paint, size, logo, tex])
 
   useFrame(({ clock }) => {
     if (!group.current) return

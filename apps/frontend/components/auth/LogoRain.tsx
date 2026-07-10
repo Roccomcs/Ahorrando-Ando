@@ -1,9 +1,10 @@
 'use client'
 
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { faceAxis, applyPlanarUV, loadLogoTexture } from '@/components/three/logoProjection'
 import s from './LogoRain.module.css'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -17,16 +18,35 @@ import s from './LogoRain.module.css'
  *
  * `color` es obligatorio: estos .glb se exportaron solo con POSITION —
  * sin materiales, sin normales y sin vertex colors. Ver `Logo` más abajo.
+ *
+ * `logo` es opcional: si se indica, la imagen se proyecta sobre las dos caras
+ * de la moneda y `color` pasa a ser solo el color del canto y del fondo de la
+ * textura. Sin `logo`, el modelo queda del color plano de la marca.
  * ────────────────────────────────────────────────────────────────────────── */
 const MODELS = [
-  { url: '/models/Bitcoin_Logo.glb', color: '#F7931A' },
-  { url: '/models/Binance_Logo.glb', color: '#F0B90B' },
-  { url: '/models/USDT_Logo.glb', color: '#26A17B' },
-  { url: '/models/Aaple_Logo.glb', color: '#D8DBE0' },
-  { url: '/models/Meli_Logo.glb', color: '#FFE600' },
+  { url: '/models/Bitcoin_Logo.glb', color: '#F7931A', logo: '/crypto/btc.svg' },
+  { url: '/models/Binance_Logo.glb', color: '#F0B90B', logo: '/models/binance-face.svg' },
+  { url: '/models/USDT_Logo.glb', color: '#26A17B', logo: '/crypto/usdt.svg' },
+  // Apple queda en plata sólida a propósito: el logo real es monocromo.
+  { url: '/models/Aaple_Logo.glb', color: '#D8DBE0', logo: null },
+  // TODO: falta el arte del apretón de manos. Al dejar un SVG en
+  // `public/providers/meli.svg` basta con apuntarlo acá para que se proyecte.
+  { url: '/models/Meli_Logo.glb', color: '#FFE600', logo: null },
 ] as const
 
 MODELS.forEach(m => useGLTF.preload(m.url))
+
+/** Rasteriza el logo a textura una sola vez y la comparte entre instancias. */
+function useLogoTexture(src: string | null, brandColor: string): THREE.Texture | null {
+  const [tex, setTex] = useState<THREE.Texture | null>(null)
+  useEffect(() => {
+    if (!src) return
+    let alive = true
+    loadLogoTexture(src, brandColor).then(t => { if (alive) setTex(t) }).catch(() => {})
+    return () => { alive = false }
+  }, [src, brandColor])
+  return tex
+}
 
 /** Radio de cada logo en unidades de mundo (todos quedan del mismo tamaño). */
 const LOGO_RADIUS = 0.42
@@ -45,6 +65,7 @@ const OFFSCREEN = 1.2
 interface Body {
   url: string
   color: string
+  logo: string | null
   /** Posición X actual (empieza fuera de pantalla por derecha). */
   x: number
   /** Altura sobre el suelo invisible. */
@@ -58,10 +79,11 @@ interface Body {
   delay: number
 }
 
-/** Un logo: se clona el .glb, se le calculan las normales, se lo pinta con el
- *  color de marca y se lo normaliza a `LOGO_RADIUS` centrado en su origen. */
-function Logo({ url, color }: { url: string; color: string }) {
+/** Un logo: se clona el .glb, se le calculan normales y UVs, se le proyecta la
+ *  imagen de marca y se lo normaliza a `LOGO_RADIUS` centrado en su origen. */
+function Logo({ url, color, logo }: { url: string; color: string; logo: string | null }) {
   const { scene } = useGLTF(url)
+  const tex = useLogoTexture(logo, color)
 
   const { object, scale } = useMemo(() => {
     // Clon profundo: el mismo .glb se instancia varias veces y cada copia
@@ -75,18 +97,24 @@ function Logo({ url, color }: { url: string; color: string }) {
       mesh.castShadow = false
       mesh.receiveShadow = false
 
+      const geo = mesh.geometry
       // Estos .glb traen solo POSITION: sin NORMAL el material PBR no tiene
       // con qué sombrear y la malla sale negra. Las calculamos una vez.
-      if (!mesh.geometry.getAttribute('normal')) mesh.geometry.computeVertexNormals()
+      if (!geo.getAttribute('normal')) geo.computeVertexNormals()
+      // Y sin UV no hay dónde pegar la imagen del logo. `applyPlanarUV` cachea
+      // en la geometría, que es compartida por todas las instancias del .glb.
+      if (logo && !geo.getAttribute('uv')) applyPlanarUV(geo, faceAxis(geo))
 
       mesh.material = new THREE.MeshStandardMaterial({
-        color,
-        metalness: 0.55,
-        roughness: 0.3,
+        // Con textura el color base va en blanco para no teñir la imagen.
+        color: tex ? '#ffffff' : color,
+        map: tex,
+        metalness: 0.35,
+        roughness: 0.42,
         emissive: new THREE.Color(color),
         // Un poco de emisión para que el logo no desaparezca en las zonas
         // que ninguna de las dos luces alcanza.
-        emissiveIntensity: 0.18,
+        emissiveIntensity: tex ? 0.06 : 0.18,
       })
     })
 
@@ -94,7 +122,7 @@ function Logo({ url, color }: { url: string; color: string }) {
     cloned.position.sub(box.getCenter(new THREE.Vector3()))
     const radius = box.getBoundingSphere(new THREE.Sphere()).radius || 1
     return { object: cloned, scale: LOGO_RADIUS / radius }
-  }, [scene, color])
+  }, [scene, color, logo, tex])
 
   return (
     <group scale={scale}>
@@ -115,6 +143,7 @@ function Rain() {
       MODELS.map((m, i) => ({
         url: m.url,
         color: m.color,
+        logo: m.logo,
         // NaN = "todavía no nació": el primer frame lo posiciona fuera de
         // cámara, ya conociendo el viewport real (que depende del tamaño).
         x: NaN,
@@ -195,7 +224,7 @@ function Rain() {
           }}
           visible={false}
         >
-          <Logo url={b.url} color={b.color} />
+          <Logo url={b.url} color={b.color} logo={b.logo} />
         </group>
       ))}
     </>

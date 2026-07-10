@@ -18,9 +18,9 @@ import s from './HeroScene.module.css'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
 
-// Los .glb viven en `public/models/`. Vienen solo con POSITION (sin materiales
-// ni normales), así que cada uno se pinta con el color plano de su marca —
-// sin `relief`, porque no son monedas con logo en bajorrelieve.
+// Los .glb viven en `public/models/`. Vienen solo con POSITION (sin materiales,
+// ni normales, ni UVs), así que a cada uno se le proyecta la imagen real de su
+// logo sobre las caras (`logo`) y `paint.base` le da color al canto.
 const MODELS = {
   bitcoin: '/models/Bitcoin_Logo.glb',
   binance: '/models/Binance_Logo.glb',
@@ -111,6 +111,7 @@ function Scene() {
           size={COIN_SIZE}
           tilt={THREE.MathUtils.degToRad(12)}
           paint={{ base: '#F7931A', metalness: 0.6, roughness: 0.28, emissive: '#F7931A', emissiveIntensity: 0.16 }}
+          logo="/crypto/btc.svg"
           floatSpeed={0.6}
           floatAmplitude={0.14}
           spinSpeed={0.12}
@@ -126,6 +127,7 @@ function Scene() {
           size={COIN_SIZE}
           tilt={THREE.MathUtils.degToRad(-6)}
           paint={{ base: '#F0B90B', metalness: 0.65, roughness: 0.3, emissive: '#F0B90B', emissiveIntensity: 0.14 }}
+          logo="/models/binance-face.svg"
           floatSpeed={0.5}
           floatAmplitude={0.13}
           spinSpeed={0.085}
@@ -143,6 +145,7 @@ function Scene() {
           size={COIN_SIZE}
           tilt={THREE.MathUtils.degToRad(8)}
           paint={{ base: '#26A17B', metalness: 0.6, roughness: 0.3, emissive: '#26A17B', emissiveIntensity: 0.18 }}
+          logo="/crypto/usdt.svg"
           floatSpeed={0.55}
           floatAmplitude={0.15}
           spinSpeed={0.1}
