@@ -2,20 +2,18 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 
-export type Theme = 'dark' | 'light' | 'midnight' | 'sepia'
+export type Theme = 'dark' | 'light'
 
 export const THEMES: { value: Theme; label: string; swatch: string }[] = [
   { value: 'dark', label: 'Oscuro', swatch: '#0B0E14' },
   { value: 'light', label: 'Claro', swatch: '#F4F7FB' },
-  { value: 'midnight', label: 'Medianoche', swatch: '#0A0F1E' },
-  { value: 'sepia', label: 'Sepia', swatch: '#F3EBDD' },
 ]
 
 const STORAGE_KEY = 'aa-theme'
 const DEFAULT_THEME: Theme = 'dark'
 
 function isTheme(v: string | null): v is Theme {
-  return v === 'dark' || v === 'light' || v === 'midnight' || v === 'sepia'
+  return v === 'dark' || v === 'light'
 }
 
 interface ThemeContextValue {
