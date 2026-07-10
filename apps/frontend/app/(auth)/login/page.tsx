@@ -94,12 +94,14 @@ export default function LoginPage() {
         </>
       }
     >
-      <Link href="/api/auth/google" style={{ textDecoration: 'none' }}>
-        <button type="button" className={a.gbtn}>
-          <GoogleIcon />
-          Continuar con Google
-        </button>
-      </Link>
+      {/* <a> y no <Link>: esta ruta redirige al backend, en otro dominio. Link la
+          trataría como ruta interna y la buscaría con fetch (?_rsc=…), lo que
+          convierte el redirect en una petición cross-origin y CORS la bloquea.
+          Con un <a> el navegador navega de verdad y sigue el redirect. */}
+      <a href="/api/auth/google" className={a.gbtn} style={{ textDecoration: 'none' }}>
+        <GoogleIcon />
+        Continuar con Google
+      </a>
 
       <div className={a.sep}><span>o</span></div>
 

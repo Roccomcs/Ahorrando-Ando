@@ -71,12 +71,11 @@ export default function RegisterPage() {
         </>
       }
     >
-      <Link href="/api/auth/google" style={{ textDecoration: 'none' }}>
-        <button type="button" className={a.gbtn}>
-          <GoogleIcon />
-          Registrarse con Google
-        </button>
-      </Link>
+      {/* Ver la nota en login/page.tsx: acá va <a>, no <Link>. */}
+      <a href="/api/auth/google" className={a.gbtn} style={{ textDecoration: 'none' }}>
+        <GoogleIcon />
+        Registrarse con Google
+      </a>
 
       <div className={a.sep}><span>o</span></div>
 
