@@ -4,7 +4,6 @@ import { Suspense, useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ds/Card'
-import { Button } from '@/components/ds/Button'
 import { tokenStore } from '@/lib/token-store'
 import { AppLogo } from '@/components/ds/AppLogo'
 import { api } from '@/lib/api'
@@ -64,7 +63,25 @@ function VerifyEmailInner() {
       })
       if (!res.ok) {
         const err = await res.json()
-        setError(err.detail ?? 'Código inválido o expirado')
+        const detail = err.detail
+
+        // Se agotaron los 5 intentos: el código quedó invalidado en el backend,
+        // no tiene sentido dejarlo reintentando acá.
+        if (detail?.code === 'too_many_attempts') {
+          router.replace('/login?error=too_many_attempts')
+          return
+        }
+
+        if (detail?.code === 'invalid_code') {
+          const left = detail.attempts_left
+          setError(
+            left === 1
+              ? 'Código incorrecto. Te queda 1 intento.'
+              : `Código incorrecto. Te quedan ${left} intentos.`
+          )
+        } else {
+          setError(typeof detail === 'string' ? detail : 'Código inválido o expirado')
+        }
         setDigits(['', '', '', '', '', ''])
         inputs.current[0]?.focus()
         return

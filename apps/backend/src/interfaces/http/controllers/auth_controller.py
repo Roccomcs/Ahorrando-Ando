@@ -18,7 +18,7 @@ from application.use_cases.auth.login_user import LoginUser
 from application.use_cases.auth.register_user import RegisterUser
 from domain.entities.user import User
 from infrastructure.cache.redis_token_blacklist_service import RedisTokenBlacklistService
-from infrastructure.cache.redis_verification_service import RedisVerificationService
+from infrastructure.cache.redis_verification_service import MAX_ATTEMPTS, RedisVerificationService
 from infrastructure.database.postgres.repositories.postgres_audit_log_repository import PostgresAuditLogRepository
 from infrastructure.database.postgres.repositories.postgres_user_repository import PostgresUserRepository
 from infrastructure.services.email_service import EmailService
@@ -63,6 +63,19 @@ def _make_token_pair(user_id: str) -> TokenDTO:
     )
 
 
+async def _send_verification_code(email: str) -> None:
+    """Genera y manda el código. Nunca propaga: que falle el SMTP no debe tumbar
+    el registro ni filtrar si el email existe. El usuario siempre puede reenviar."""
+    try:
+        code = await _verify_svc.generate_and_store(email)
+        if code is None:
+            logger.info("Tope de reenvíos alcanzado para %s", email)
+            return
+        await _email_svc.send_verification_code(email, code)
+    except Exception as exc:
+        logger.error("No se pudo enviar el código de verificación a %s: %s", email, exc)
+
+
 class AuthController:
     def __init__(self, session: AsyncSession = Depends(get_db_session)) -> None:
         self._session = session
@@ -75,13 +88,7 @@ class AuthController:
         user = await use_case.execute(dto, hashed)
         await self._audit.log("register", request, user_id=user.id, metadata={"email": dto.email})
 
-        # Enviar código de verificación de email
-        try:
-            code = await _verify_svc.generate_and_store(dto.email)
-            await _email_svc.send_verification_code(dto.email, code)
-        except Exception:
-            logger.warning("No se pudo enviar email de verificación a %s", dto.email)
-
+        await _send_verification_code(dto.email)
         return _make_token_pair(user.id)
 
     async def login(self, dto: LoginDTO, request: Request) -> TokenDTO:
@@ -91,12 +98,7 @@ class AuthController:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
 
         if not user.email_verified:
-            # Reenviar código automáticamente
-            try:
-                code = await _verify_svc.generate_and_store(dto.email)
-                await _email_svc.send_verification_code(dto.email, code)
-            except Exception:
-                pass
+            await _send_verification_code(dto.email)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="email_not_verified",
@@ -150,24 +152,33 @@ class AuthController:
         user = await self._repo.find_by_email(email)
         # Respuesta idéntica tanto si el usuario existe como si no (evita enumeración)
         if user and not user.email_verified:
-            try:
-                code = await _verify_svc.generate_and_store(email)
-                await _email_svc.send_verification_code(email, code)
-            except Exception as exc:
-                logger.error("Error enviando verificación a %s: %s", email, exc)
+            await _send_verification_code(email)
         return {"detail": "Si el email existe, recibirás un código"}
 
     async def verify_email(self, email: str, code: str) -> TokenDTO:
         user = await self._repo.find_by_email(email)
+        # Sin usuario no hay nada que verificar, pero se responde igual que con un
+        # código equivocado para no revelar qué emails están registrados.
         if not user:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "invalid_code", "attempts_left": MAX_ATTEMPTS - 1},
+            )
 
         if user.email_verified:
             return _make_token_pair(user.id)
 
-        ok = await _verify_svc.verify(email, code)
-        if not ok:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
+        result = await _verify_svc.verify(email, code)
+        if not result.ok:
+            if result.attempts_left == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={"code": "too_many_attempts"},
+                )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "invalid_code", "attempts_left": result.attempts_left},
+            )
 
         await self._repo.mark_email_verified(user.id)
         return _make_token_pair(user.id)
@@ -200,7 +211,8 @@ class AuthController:
         if user and user.hashed_password:  # solo usuarios con contraseña (no Google-only)
             try:
                 code = await _reset_svc.generate_and_store(email)
-                await _email_svc.send_password_reset_code(email, code)
+                if code is not None:
+                    await _email_svc.send_password_reset_code(email, code)
             except Exception as exc:
                 logger.error("Error enviando reset a %s: %s", email, exc)
         return {"detail": "Si el email existe, recibirás un código para resetear tu contraseña"}
@@ -210,8 +222,7 @@ class AuthController:
         if not user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
 
-        ok = await _reset_svc.verify(email, code)
-        if not ok:
+        if not (await _reset_svc.verify(email, code)).ok:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código inválido o expirado")
 
         hashed = _hash_password(new_password)

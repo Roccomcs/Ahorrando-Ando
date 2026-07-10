@@ -13,7 +13,9 @@ class EmailService:
         self._host = os.getenv("SMTP_HOST", "")
         self._port = int(os.getenv("SMTP_PORT", "587"))
         self._user = os.getenv("SMTP_USER", "")
-        self._password = os.getenv("SMTP_PASSWORD", "")
+        # Google muestra las contraseñas de aplicación en grupos de 4 separados por
+        # espacios. smtplib los manda tal cual y el login falla.
+        self._password = os.getenv("SMTP_PASSWORD", "").replace(" ", "")
         self._from = os.getenv("FROM_EMAIL", self._user)
 
     def _send_sync(self, to: str, subject: str, html: str) -> None:
@@ -23,15 +25,22 @@ class EmailService:
         msg["To"] = to
         msg.attach(MIMEText(html, "html", "utf-8"))
 
-        with smtplib.SMTP(self._host, self._port, timeout=10) as smtp:
+        with smtplib.SMTP(self._host, self._port, timeout=20) as smtp:
             smtp.ehlo()
             smtp.starttls()
             smtp.login(self._user, self._password)
             smtp.sendmail(self._from, [to], msg.as_string())
 
+    @property
+    def _configured(self) -> bool:
+        return bool(self._host and self._user)
+
     async def send(self, to: str, subject: str, html: str) -> None:
-        if not self._host or not self._user:
-            logger.warning("SMTP no configurado — email no enviado a %s", to)
+        if not self._configured:
+            # En producción esto es una falla, no una nota al pie: nadie puede
+            # verificar su cuenta y el warning se pierde entre el ruido.
+            log = logger.error if os.getenv("ENV") == "production" else logger.warning
+            log("SMTP no configurado — email no enviado a %s", to)
             return
         try:
             await asyncio.to_thread(self._send_sync, to, subject, html)
@@ -42,7 +51,7 @@ class EmailService:
     def _log_code_fallback(self, to: str, code: str, kind: str) -> None:
         """Sin SMTP configurado (desarrollo), dejar el código en los logs para
         poder verificar cuentas igual. En producción SMTP debe estar configurado."""
-        if not self._host or not self._user:
+        if not self._configured:
             logger.warning("SMTP no configurado — código de %s para %s: %s", kind, to, code)
 
     async def send_password_reset_code(self, to: str, code: str) -> None:

@@ -44,6 +44,8 @@ export default function LoginPage() {
       setError('El inicio de sesión con Google no está disponible por ahora. Usá email y contraseña.')
     } else if (err === 'oauth_failed') {
       setError('No se pudo iniciar sesión con Google. Probá de nuevo.')
+    } else if (err === 'too_many_attempts') {
+      setError('Demasiados intentos fallidos. Entrá de nuevo para pedir un código nuevo.')
     }
   }, [])
 
