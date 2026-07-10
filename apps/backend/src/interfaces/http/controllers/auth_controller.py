@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import secrets
@@ -63,9 +64,9 @@ def _make_token_pair(user_id: str) -> TokenDTO:
     )
 
 
-async def _send_verification_code(email: str) -> None:
-    """Genera y manda el código. Nunca propaga: que falle el SMTP no debe tumbar
-    el registro ni filtrar si el email existe. El usuario siempre puede reenviar."""
+async def _deliver_verification_code(email: str) -> None:
+    """Nunca propaga: que falle el SMTP no debe tumbar el registro ni filtrar si
+    el email existe. El usuario siempre puede pedir un reenvío."""
     try:
         code = await _verify_svc.generate_and_store(email)
         if code is None:
@@ -74,6 +75,20 @@ async def _send_verification_code(email: str) -> None:
         await _email_svc.send_verification_code(email, code)
     except Exception as exc:
         logger.error("No se pudo enviar el código de verificación a %s: %s", email, exc)
+
+
+# asyncio solo guarda una referencia débil a las tareas: sin esto el recolector
+# puede matar el envío antes de que termine.
+_pending_emails: set[asyncio.Task] = set()
+
+
+def _send_verification_code(email: str) -> None:
+    """Dispara el envío en segundo plano. El handshake TLS con Gmail se lleva
+    varios segundos y no hay razón para que el usuario los espere mirando un
+    botón en 'Creando cuenta…'."""
+    task = asyncio.create_task(_deliver_verification_code(email))
+    _pending_emails.add(task)
+    task.add_done_callback(_pending_emails.discard)
 
 
 class AuthController:
@@ -88,7 +103,7 @@ class AuthController:
         user = await use_case.execute(dto, hashed)
         await self._audit.log("register", request, user_id=user.id, metadata={"email": dto.email})
 
-        await _send_verification_code(dto.email)
+        _send_verification_code(dto.email)
         return _make_token_pair(user.id)
 
     async def login(self, dto: LoginDTO, request: Request) -> TokenDTO:
@@ -98,7 +113,7 @@ class AuthController:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
 
         if not user.email_verified:
-            await _send_verification_code(dto.email)
+            _send_verification_code(dto.email)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="email_not_verified",
@@ -152,7 +167,7 @@ class AuthController:
         user = await self._repo.find_by_email(email)
         # Respuesta idéntica tanto si el usuario existe como si no (evita enumeración)
         if user and not user.email_verified:
-            await _send_verification_code(email)
+            _send_verification_code(email)
         return {"detail": "Si el email existe, recibirás un código"}
 
     async def verify_email(self, email: str, code: str) -> TokenDTO:
