@@ -39,6 +39,9 @@ class IntegrationsController:
             await RecordManualMovements(self._tx_repo).execute(
                 user_id, result.id, account, old_holdings=[], new_holdings=holdings
             )
+        # El portfolio agregado se cachea 5 min; sin esto, la cuenta recién
+        # conectada no aparece en el dashboard hasta que expire el TTL.
+        await self._cache.delete(f"portfolio:{user_id}")
         return result
 
     async def update_integration(
@@ -84,9 +87,14 @@ class IntegrationsController:
 
     async def remove_integration(self, user_id: str, integration_id: str) -> None:
         await RemoveIntegration(self._repo).execute(user_id, integration_id)
+        # Sin esto, la cuenta borrada sigue sumando al total hasta que venza el
+        # cache de 5 min del portfolio.
+        await self._cache.delete(f"portfolio:{user_id}")
 
     async def import_iol_xls(self, user_id: str, file_bytes: bytes) -> IntegrationSummaryDTO:
-        return await ImportIOLXls(self._repo, self._encryption).execute(user_id, file_bytes)
+        result = await ImportIOLXls(self._repo, self._encryption).execute(user_id, file_bytes)
+        await self._cache.delete(f"portfolio:{user_id}")
+        return result
 
     async def sync_integration(self, user_id: str, integration_id: str) -> dict:
         integration = await self._repo.find_by_id(integration_id)

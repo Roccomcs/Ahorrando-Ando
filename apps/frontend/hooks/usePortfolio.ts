@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import type {
@@ -112,15 +112,27 @@ export function useIntegrations() {
   })
 }
 
+// Cambiar una integración mueve TODO lo derivado del portfolio, no sólo el total:
+// el "por cuenta" (provider-performance), la evolución (portfolio-history), el
+// historial de movimientos (transactions) y analytics (allocation/roi/benchmark).
+// Antes sólo se invalidaba portfolio+integrations, así que esas vistas quedaban
+// congeladas hasta que expiraba staleTime o volvía el foco a la pestaña.
+function invalidatePortfolio(qc: QueryClient) {
+  for (const key of [
+    ['integrations'], ['portfolio'], ['portfolio-history'],
+    ['provider-performance'], ['transactions'],
+    ['allocation'], ['roi'], ['benchmark'],
+  ]) {
+    qc.invalidateQueries({ queryKey: key })
+  }
+}
+
 export function useAddIntegration() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: { provider_type: string; credentials: Record<string, unknown> }) =>
       api.post('/api/v1/integrations/', data).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
+    onSuccess: () => invalidatePortfolio(qc),
   })
 }
 
@@ -129,10 +141,7 @@ export function useUpdateIntegration() {
   return useMutation({
     mutationFn: ({ id, credentials }: { id: string; credentials: Record<string, unknown> }) =>
       api.patch(`/api/v1/integrations/${id}`, { credentials }).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
+    onSuccess: () => invalidatePortfolio(qc),
   })
 }
 
@@ -140,10 +149,7 @@ export function useDeleteIntegration() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/v1/integrations/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
+    onSuccess: () => invalidatePortfolio(qc),
   })
 }
 
@@ -157,10 +163,7 @@ export function useImportIOL() {
         headers: { 'Content-Type': 'multipart/form-data' },
       }).then((r) => r.data)
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
+    onSuccess: () => invalidatePortfolio(qc),
   })
 }
 
@@ -177,10 +180,7 @@ export function useSyncIntegration() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.post(`/api/v1/integrations/${id}/sync`).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['integrations'] })
-      qc.invalidateQueries({ queryKey: ['portfolio'] })
-    },
+    onSuccess: () => invalidatePortfolio(qc),
   })
 }
 
