@@ -17,7 +17,7 @@ import * as THREE from 'three'
  * de potencia (matriz 3×3, converge en unas pocas vueltas).
  *
  * Hace falta calcularlo porque cada modelo vino rotado distinto: las monedas
- * están giradas 45° sobre Y y Meli tiene otra orientación. */
+ * están giradas 45° sobre Y. */
 export function faceAxis(geo: THREE.BufferGeometry): THREE.Vector3 {
   const pos = geo.getAttribute('position')
   const index = geo.getIndex()
@@ -115,7 +115,8 @@ export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3): v
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {
     uv[i * 2] = (su[i] - minU) / spanU
-    // V invertida: el origen de la textura está arriba.
+    // V invertida: el origen de la textura está arriba (y por eso el material
+    // desactiva `flipY`, que si no la invertiría de nuevo).
     uv[i * 2 + 1] = 1 - (sv[i] - minV) / spanV
   }
 
@@ -169,6 +170,10 @@ export function loadLogoTexture(src: string, brandColor: string): Promise<THREE.
           const tex = new THREE.CanvasTexture(canvas)
           tex.colorSpace = THREE.SRGBColorSpace
           tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping
+          // `applyPlanarUV` ya emite la V con el origen arriba, como la imagen.
+          // Sin esto, el flipY por defecto la invertiría una segunda vez y los
+          // logos saldrían cabeza abajo (era el caso de la T de Tether).
+          tex.flipY = false
           tex.anisotropy = 4
           tex.needsUpdate = true
           resolve(tex)

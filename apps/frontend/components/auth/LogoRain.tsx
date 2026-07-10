@@ -21,17 +21,17 @@ import s from './LogoRain.module.css'
  *
  * `logo` es opcional: si se indica, la imagen se proyecta sobre las dos caras
  * de la moneda y `color` pasa a ser solo el color del canto y del fondo de la
- * textura. Sin `logo`, el modelo queda del color plano de la marca.
+ * textura. Sin `logo`, el modelo queda del color plano de la marca — que es lo
+ * correcto cuando el .glb ya tiene la forma del logo (Apple, Meta).
  * ────────────────────────────────────────────────────────────────────────── */
 const MODELS = [
   { url: '/models/Bitcoin_Logo.glb', color: '#F7931A', logo: '/crypto/btc.svg' },
   { url: '/models/Binance_Logo.glb', color: '#F0B90B', logo: '/models/binance-face.svg' },
   { url: '/models/USDT_Logo.glb', color: '#26A17B', logo: '/crypto/usdt.svg' },
-  // Apple queda en plata sólida a propósito: el logo real es monocromo.
+  // Apple y Meta van en color sólido a propósito: el .glb ya tiene la silueta
+  // del logo, así que no hay nada que proyectarle encima.
   { url: '/models/Aaple_Logo.glb', color: '#D8DBE0', logo: null },
-  // TODO: falta el arte del apretón de manos. Al dejar un SVG en
-  // `public/providers/meli.svg` basta con apuntarlo acá para que se proyecte.
-  { url: '/models/Meli_Logo.glb', color: '#FFE600', logo: null },
+  { url: '/models/Meta_Logo.glb', color: '#0082FB', logo: null },
 ] as const
 
 MODELS.forEach(m => useGLTF.preload(m.url))
