@@ -23,28 +23,26 @@ export function Topbar() {
   const { currency, setCurrency } = useCurrency()
 
   return (
-    <header
-      style={{
-        height: 62, flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: 16,
-        padding: '0 24px',
-        background: 'var(--surface-raised)',
-      }}
-    >
+    <header className="aa-topbar">
       {/* Buscador */}
-      <div style={{ flex: 1, maxWidth: 520, position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <span style={{ position: 'absolute', left: 14, color: 'var(--text-3)', display: 'flex' }}><SearchIcon /></span>
+      <div className="aa-topbar__search">
+        <span aria-hidden style={{ position: 'absolute', left: 14, color: 'var(--text-3)', display: 'flex' }}><SearchIcon /></span>
+        <label htmlFor="aa-topsearch" className="aa-sr-only">Buscar activos, cuentas y movimientos</label>
         <input
+          id="aa-topsearch"
+          type="search"
           className="aa-topsearch"
           placeholder="Buscar activos, cuentas, movimientos…"
           style={{
             width: '100%', height: 40, borderRadius: 'var(--radius-full)',
             background: 'var(--surface-2)', border: '1px solid var(--border-1)',
             color: 'var(--text-1)', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)',
-            padding: '0 44px 0 40px', outline: 'none',
+            padding: '0 44px 0 40px',
           }}
         />
         <kbd
+          className="aa-topbar__kbd"
+          aria-hidden
           style={{
             position: 'absolute', right: 10, fontSize: 11, color: 'var(--text-3)',
             fontFamily: 'var(--font-mono)', background: 'var(--surface-1)',
@@ -56,15 +54,18 @@ export function Topbar() {
       <div style={{ flex: 1 }} />
 
       {/* Toggle de moneda */}
-      <div className="aa-seg" style={{ padding: 3 }}>
+      <div className="aa-seg" style={{ padding: 3 }} role="group" aria-label="Moneda de visualización">
         {(['USD', 'ARS'] as const).map(c => (
           <button
             key={c}
+            type="button"
+            aria-pressed={currency === c}
             className={`aa-seg__opt${currency === c ? ' aa-seg__opt--on' : ''}`}
             style={{ height: 30, padding: '0 12px', fontSize: 12 }}
             onClick={() => setCurrency(c)}
           >
-            {c === 'USD' ? 'US$' : 'AR$'}
+            <span aria-hidden>{c === 'USD' ? 'US$' : 'AR$'}</span>
+            <span className="aa-sr-only">{c === 'USD' ? 'Dólares' : 'Pesos argentinos'}</span>
           </button>
         ))}
       </div>

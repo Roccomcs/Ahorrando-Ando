@@ -197,7 +197,7 @@ function Stepper({ value, onChange, step = 1, decimals = false, disabled = false
   return (
     <div style={{ display: 'flex', alignItems: 'center', width, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', background: disabled ? 'var(--surface-card)' : 'var(--surface-inset)', opacity: disabled ? 0.6 : 1, flexShrink: 0 }}>
       {btn('−', () => commit(num - step))}
-      <input value={value} onChange={e => onChange(e.target.value)} inputMode="decimal" disabled={disabled} placeholder="0"
+      <input value={value} onChange={e => onChange(e.target.value)} inputMode="decimal" disabled={disabled} placeholder="0" aria-label="Cantidad"
         style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', textAlign: 'center', padding: '8px 0' }} />
       {btn('+', () => commit(num + step))}
     </div>
@@ -312,7 +312,7 @@ function ManualEntry({ holdings, setHoldings }: {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--border-2)', borderRadius: 'var(--radius-md)', padding: '0 12px', background: 'var(--surface-inset)' }}>
             <span style={{ color: 'var(--text-3)', flexShrink: 0 }}><SearchIcon /></span>
             <input value={query} onChange={e => setQuery(e.target.value)} onFocus={() => results.length && setOpen(true)}
-              placeholder="BTC, ETH, AAPL, GGAL…"
+              placeholder="BTC, ETH, AAPL, GGAL…" type="search" aria-label="Buscar activo"
               style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-1)', fontSize: 'var(--text-sm)', padding: '10px 0' }} />
             {searching && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', flexShrink: 0 }}>…</span>}
           </div>

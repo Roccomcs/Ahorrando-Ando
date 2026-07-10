@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Sidebar />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           <Topbar />
-          <main className="aa-main" style={{ flex: 1, overflowY: 'auto', padding: '28px 40px', minWidth: 0, background: 'var(--surface-canvas)' }}>
+          <main id="main" tabIndex={-1} className="aa-main" style={{ flex: 1, overflowY: 'auto', padding: '28px 40px', minWidth: 0, background: 'var(--surface-canvas)' }}>
             <div style={{ maxWidth: 'var(--content-max)', margin: '0 auto' }}>
               {children}
             </div>

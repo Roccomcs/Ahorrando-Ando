@@ -234,10 +234,25 @@
   .provGrid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 560px) {
-  .navInner { height: 72px; }
-  .wm { font-size: 20px; }
-  .navCta { gap: var(--space-4); }
+  .navInner { height: 72px; gap: var(--space-3); }
+  /* El lockup + los dos CTA no entran en 375px: el logo baja a 36px, el
+     wordmark deja de partirse en dos líneas y "Iniciar sesión" sale del header
+     (sigue disponible en el hero y en el footer). */
+  .lockup { gap: 8px; min-width: 0; }
+  .lockup img, .lockup svg { width: 36px; height: 36px; }
+  .wm { font-size: 18px; white-space: nowrap; }
+  .navLink { display: none; }
+  .navCta { gap: var(--space-3); flex-shrink: 0; }
+  .btnSm { height: 42px; padding: 0 18px; font-size: 15px; }
+  .wrap { padding: 0 var(--space-4); }
   .featGrid { grid-template-columns: 1fr; }
   .provGrid { grid-template-columns: repeat(3, 1fr); }
   .footCols { gap: var(--space-10); }
+  .footBase { gap: var(--space-2); }
+}
+/* Por debajo de ~370px el wordmark queda tapado por "Registrarse": en el header
+   sobrevive sólo el isotipo (el footer conserva el lockup completo). En 375px,
+   el ancho de iPhone, todavía entra entero. */
+@media (max-width: 369px) {
+  .navInner .wm { display: none; }
 }

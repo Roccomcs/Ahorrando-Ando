@@ -118,6 +118,7 @@ export default function LandingPage() {
 
       {/* HERO */}
       <a id="top" />
+      <main id="main">
       <section className={`${s.hero}`}>
         <div className={`${s.wrap} ${s.heroGrid} ${s.reveal}`}>
           <div>
@@ -301,6 +302,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      </main>
 
       {/* FOOTER */}
       <footer className={s.footer}>

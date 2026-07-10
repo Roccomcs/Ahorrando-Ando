@@ -92,11 +92,13 @@ export default function ForgotPasswordPage() {
           </p>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Input label="Email" type="email" placeholder="vos@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
-            {error && (
-              <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
-                {error}
-              </div>
-            )}
+            <div role="alert" aria-live="assertive">
+              {error && (
+                <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
+                  {error}
+                </div>
+              )}
+            </div>
             <Button type="submit" size="lg" full disabled={loading} style={{ marginTop: 4 }}>
               {loading ? 'Enviando…' : 'Enviar código'}
             </Button>

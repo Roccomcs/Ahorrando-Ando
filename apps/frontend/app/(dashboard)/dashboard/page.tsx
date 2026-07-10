@@ -292,29 +292,33 @@ export default function DashboardPage() {
             <span style={OVERLINE}>Principales activos</span>
             <Link href="/history" style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Ver historial completo →</Link>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.8fr', gap: 8, padding: '0 4px 10px', borderBottom: '1px solid var(--border-1)' }}>
-            {['Activo', 'Cantidad', 'Precio', 'Valor', '24h'].map((h, i) => (
-              <span key={h} style={{ ...META, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, textAlign: i === 0 ? 'left' : 'right' }}>{h}</span>
-            ))}
-          </div>
-          {topAssets.map((a, i) => {
-            const price = a.amount > 0 ? a.current_value_usd / a.amount : 0
-            return (
-              <div key={`${a.provider}-${a.asset_symbol}-${i}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.8fr', gap: 8, alignItems: 'center', padding: '14px 4px', borderBottom: '1px solid var(--border-1)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <AssetBadge symbol={a.asset_symbol} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_name || a.asset_symbol}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{label(a.provider)}</div>
-                  </div>
-                </div>
-                <span className="aa-num" style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'right' }}>{a.amount.toLocaleString('es-AR', { maximumFractionDigits: 6 })}</span>
-                <span className="aa-num" style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'right' }}>{price > 0 ? format(price, rate) : '—'}</span>
-                <span className="aa-num" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(a.current_value_usd, rate)}</span>
-                <span style={{ textAlign: 'right' }}>{typeof a.performance_24h === 'number' ? <Delta value={a.performance_24h} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</span>
+          <div className="aa-tablewrap" role="region" aria-label="Principales activos" tabIndex={0}>
+            <div role="table">
+              <div role="row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.8fr', gap: 8, padding: '0 4px 10px', borderBottom: '1px solid var(--border-1)' }}>
+                {['Activo', 'Cantidad', 'Precio', 'Valor', '24h'].map((h, i) => (
+                  <span role="columnheader" key={h} style={{ ...META, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, textAlign: i === 0 ? 'left' : 'right' }}>{h}</span>
+                ))}
               </div>
-            )
-          })}
+              {topAssets.map((a, i) => {
+                const price = a.amount > 0 ? a.current_value_usd / a.amount : 0
+                return (
+                  <div role="row" key={`${a.provider}-${a.asset_symbol}-${i}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.8fr', gap: 8, alignItems: 'center', padding: '14px 4px', borderBottom: '1px solid var(--border-1)' }}>
+                    <div role="cell" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                      <AssetBadge symbol={a.asset_symbol} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_name || a.asset_symbol}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{label(a.provider)}</div>
+                      </div>
+                    </div>
+                    <span role="cell" className="aa-num" style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'right' }}>{a.amount.toLocaleString('es-AR', { maximumFractionDigits: 6 })}</span>
+                    <span role="cell" className="aa-num" style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'right' }}>{price > 0 ? format(price, rate) : '—'}</span>
+                    <span role="cell" className="aa-num" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(a.current_value_usd, rate)}</span>
+                    <span role="cell" style={{ textAlign: 'right' }}>{typeof a.performance_24h === 'number' ? <Delta value={a.performance_24h} /> : <span style={{ color: 'var(--text-3)' }}>—</span>}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </section>
       )}
     </div>
@@ -338,7 +342,7 @@ function Hero({ portfolio, onRefresh, refreshing, deltas }: {
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-bold)', fontStretch: 'var(--display-stretch)', letterSpacing: 'var(--tracking-tight)', color: 'var(--text-1)', margin: 0 }}>
           Patrimonio total
         </h1>
-        <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 52, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: 'var(--text-1)', margin: '10px 0 8px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: 'var(--text-1)', margin: '10px 0 8px', overflowWrap: 'anywhere' }}>
           {format(total, rate)}
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-3)' }}>

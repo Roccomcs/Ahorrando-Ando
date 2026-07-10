@@ -89,7 +89,8 @@ function ResetPasswordInner() {
   }
 
   const digitStyle = (filled: boolean): React.CSSProperties => ({
-    width: 44, height: 52, textAlign: 'center', fontSize: 22, fontWeight: 700,
+    width: 44, minWidth: 0, flex: '1 1 0', maxWidth: 44, height: 52,
+    textAlign: 'center', fontSize: 'clamp(17px, 5.5vw, 22px)', fontWeight: 700,
     fontFamily: 'var(--font-mono)', background: 'var(--surface-inset)',
     border: `2px solid ${filled ? 'var(--text-accent)' : 'var(--border-2)'}`,
     borderRadius: 'var(--radius-md)', color: 'var(--text-1)', outline: 'none',
@@ -107,16 +108,23 @@ function ResetPasswordInner() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div>
-          <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 10 }}>Código de verificación</label>
-          <div style={{ display: 'flex', gap: 8 }} onPaste={handlePaste}>
-            {digits.map((d, i) => (
-              <input key={i} ref={el => { inputs.current[i] = el }} value={d}
-                onChange={e => handleDigit(i, e.target.value)}
-                onKeyDown={e => handleKeyDown(i, e)}
-                maxLength={1} inputMode="numeric" style={digitStyle(!!d)}
-                autoFocus={i === 0} disabled={loading} />
-            ))}
-          </div>
+          {/* fieldset/legend y no <label>: un label suelto no queda asociado a
+              ninguno de los seis inputs. */}
+          <fieldset style={{ border: 'none', margin: 0, padding: 0, minWidth: 0 }}>
+            <legend style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--text-2)', display: 'block', marginBottom: 10, padding: 0 }}>Código de verificación</legend>
+            <div style={{ display: 'flex', gap: 8 }} onPaste={handlePaste}>
+              {digits.map((d, i) => (
+                <input key={i} ref={el => { inputs.current[i] = el }} value={d}
+                  onChange={e => handleDigit(i, e.target.value)}
+                  onKeyDown={e => handleKeyDown(i, e)}
+                  maxLength={1} inputMode="numeric" style={digitStyle(!!d)}
+                  autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                  aria-label={`Dígito ${i + 1} de 6`}
+                  aria-invalid={error ? true : undefined}
+                  autoFocus={i === 0} disabled={loading} />
+              ))}
+            </div>
+          </fieldset>
           <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
             style={{ marginTop: 8, background: 'none', border: 'none', cursor: resendCooldown > 0 ? 'default' : 'pointer', fontSize: 'var(--text-xs)', color: resendCooldown > 0 ? 'var(--text-3)' : 'var(--text-accent)' }}>
             {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
@@ -130,11 +138,13 @@ function ResetPasswordInner() {
         <Input label="Repetir contraseña" type="password" placeholder="••••••••" value={password2}
           onChange={e => setPassword2(e.target.value)} autoComplete="new-password" required />
 
-        {error && (
-          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
-            {error}
-          </div>
-        )}
+        <div role="alert" aria-live="assertive">
+          {error && (
+            <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>
+              {error}
+            </div>
+          )}
+        </div>
         <Button type="submit" size="lg" full disabled={loading}>
           {loading ? 'Guardando…' : 'Guardar nueva contraseña'}
         </Button>

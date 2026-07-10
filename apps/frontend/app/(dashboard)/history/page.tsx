@@ -124,15 +124,35 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {/* Tabla */}
+      {/* Tabla — scroll horizontal en pantallas angostas, focuseable para poder
+          desplazarla con el teclado (WCAG 1.4.10 permite el scroll de tablas). */}
       <section className="aa-sec aa-sec--3">
-        <div style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, padding: '0 4px 10px', borderBottom: '1px solid var(--border-1)' }}>
-          {['Fecha', 'Tipo', 'Detalle', 'Cuenta', 'Monto'].map((h, i) => (
-            <span key={h} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i === 4 ? 'right' : 'left' }}>{h}</span>
-          ))}
-        </div>
+        <div className="aa-tablewrap" role="region" aria-label="Movimientos" tabIndex={0}>
+          <div role="table" aria-rowcount={rows.length}>
+            <div role="row" style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, padding: '0 4px 10px', borderBottom: '1px solid var(--border-1)' }}>
+              {['Fecha', 'Tipo', 'Detalle', 'Cuenta', 'Monto'].map((h, i) => (
+                <span role="columnheader" key={h} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i === 4 ? 'right' : 'left' }}>{h}</span>
+              ))}
+            </div>
 
-        {isLoading && [0, 1, 2, 3, 4].map(i => <div key={i} className="aa-skel" style={{ height: 46, marginTop: 8 }} />)}
+            {isLoading && [0, 1, 2, 3, 4].map(i => <div key={i} className="aa-skel" style={{ height: 46, marginTop: 8 }} />)}
+
+            {rows.map(t => {
+              const positive = t.amount_usd >= 0
+              return (
+                <div role="row" key={t.id} style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, alignItems: 'center', padding: '13px 4px', borderBottom: '1px solid var(--border-1)' }}>
+                  <span role="cell" style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>{fmtDate(t.occurred_at)}</span>
+                  <span role="cell"><TypeBadge type={t.tx_type} /></span>
+                  <span role="cell" style={{ fontSize: 14, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail(t)}</span>
+                  <span role="cell" style={{ fontSize: 13, color: 'var(--text-2)' }}>{t.account}</span>
+                  <span role="cell" style={{ ...MONO, fontSize: 13, fontWeight: 700, textAlign: 'right', color: positive ? 'var(--positive)' : 'var(--text-1)' }}>
+                    {positive ? '+' : '−'}{fmtMoney(t.amount_usd)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
         {!isLoading && rows.length === 0 && (
           <div style={{ padding: '36px 4px', color: 'var(--text-3)', fontSize: 13, lineHeight: 1.6 }}>
@@ -142,23 +162,8 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {rows.map(t => {
-          const positive = t.amount_usd >= 0
-          return (
-            <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, alignItems: 'center', padding: '13px 4px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>{fmtDate(t.occurred_at)}</span>
-              <span><TypeBadge type={t.tx_type} /></span>
-              <span style={{ fontSize: 14, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail(t)}</span>
-              <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{t.account}</span>
-              <span style={{ ...MONO, fontSize: 13, fontWeight: 700, textAlign: 'right', color: positive ? 'var(--positive)' : 'var(--text-1)' }}>
-                {positive ? '+' : '−'}{fmtMoney(t.amount_usd)}
-              </span>
-            </div>
-          )
-        })}
-
         {!isLoading && rows.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 18, gap: 12, flexWrap: 'wrap' }}>
             <span style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>
               {rows.length} movimiento{rows.length !== 1 ? 's' : ''} · últimos 30 días
             </span>

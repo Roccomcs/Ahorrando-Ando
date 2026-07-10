@@ -189,7 +189,7 @@ export default function AlertsPage() {
                         }}>{s}</button>
                     )
                   })}
-                  <input value={customSymbol} placeholder="Otro…"
+                  <input value={customSymbol} placeholder="Otro…" aria-label="Otro símbolo"
                     onChange={e => { setCustomSymbol(e.target.value.toUpperCase()); setSymbol('') }}
                     style={{ width: 90, padding: '6px 12px', borderRadius: 999, background: 'transparent', border: '1px solid var(--border-2)', color: 'var(--text-1)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
                 </div>
@@ -208,7 +208,7 @@ export default function AlertsPage() {
               {/* Umbral */}
               <div>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', display: 'block', marginBottom: 8 }}>Umbral</span>
-                <input className="aa-input aa-input--mono" placeholder="110.000" value={threshold} onChange={e => setThreshold(e.target.value)} />
+                <input className="aa-input aa-input--mono" placeholder="110.000" aria-label="Umbral de precio" inputMode="decimal" value={threshold} onChange={e => setThreshold(e.target.value)} />
                 {currentPrice && (
                   <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 8 }}>
                     Precio actual de {effectiveSymbol}: <span style={{ ...MONO, color: 'var(--text-1)', fontWeight: 700 }}>{fmtUsd(currentPrice)}</span>

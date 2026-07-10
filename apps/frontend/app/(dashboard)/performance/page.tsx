@@ -216,31 +216,39 @@ export default function PerformancePage() {
       {/* RESUMEN POR CUENTA */}
       <section className="aa-sec aa-sec--2">
         <span style={{ ...OVERLINE_MUTED, display: 'block', marginBottom: 14 }}>Resumen por cuenta</span>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, padding: '0 0 10px', borderBottom: '1px solid var(--border-1)' }}>
-          {['Cuenta', '', 'Actual', '24h', '7d', '30d'].map((h, i) => (
-            <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i >= 2 ? 'right' : 'left' }}>{h}</span>
-          ))}
+        <div className="aa-tablewrap" role="region" aria-label="Resumen por cuenta" tabIndex={0}>
+          <div role="table">
+            <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, padding: '0 0 10px', borderBottom: '1px solid var(--border-1)' }}>
+              {['Cuenta', 'Evolución', 'Actual', '24h', '7d', '30d'].map((h, i) => (
+                <span role="columnheader" key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i >= 2 ? 'right' : 'left' }}>
+                  {/* La columna del sparkline no mostraba encabezado: visualmente
+                      está bien, pero un lector de pantalla necesita nombrarla. */}
+                  <span className={i === 1 ? 'aa-sr-only' : undefined}>{h}</span>
+                </span>
+              ))}
+            </div>
+            {providers.map((p: ProviderPerformanceItem, i: number) => (
+              <div role="row" key={p.provider} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border-1)' }}>
+                <div role="cell" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <div aria-hidden style={{ width: 9, height: 9, borderRadius: 2.5, background: pColor(p.provider, i), flexShrink: 0 }} />
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label}</span>
+                </div>
+                <span role="cell"><Sparkline series={p.history.map(h => h.balance_usd)} /></span>
+                <span role="cell" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(p.current_usd, rate)}</span>
+                {[p.change_pct_24h, p.change_pct_7d, p.change_pct_30d].map((v, j) => (
+                  <span role="cell" key={j} style={{ textAlign: 'right' }}>
+                    {v !== null ? <Delta value={v} /> : <span style={{ ...MONO, color: 'var(--text-3)', fontSize: 13 }}>—</span>}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
         {providers.length === 0 && (
           <div style={{ padding: '28px 0', color: 'var(--text-3)', fontSize: 13 }}>
             No hay datos de performance todavía. Conectá cuentas en Integraciones.
           </div>
         )}
-        {providers.map((p: ProviderPerformanceItem, i: number) => (
-          <div key={p.provider} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border-1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-              <div style={{ width: 9, height: 9, borderRadius: 2.5, background: pColor(p.provider, i), flexShrink: 0 }} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label}</span>
-            </div>
-            <Sparkline series={p.history.map(h => h.balance_usd)} />
-            <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(p.current_usd, rate)}</span>
-            {[p.change_pct_24h, p.change_pct_7d, p.change_pct_30d].map((v, j) => (
-              <span key={j} style={{ textAlign: 'right' }}>
-                {v !== null ? <Delta value={v} /> : <span style={{ ...MONO, color: 'var(--text-3)', fontSize: 13 }}>—</span>}
-              </span>
-            ))}
-          </div>
-        ))}
       </section>
 
       {/* PNL MENSUAL */}

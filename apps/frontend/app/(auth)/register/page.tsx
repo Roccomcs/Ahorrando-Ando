@@ -83,7 +83,9 @@ export default function RegisterPage() {
         <PillInput leftIcon={<MailIcon />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required error={errors.email} />
         <PillInput leftIcon={<LockIcon />} type="password" placeholder="Contraseña (mín. 12 caracteres)" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required error={errors.password} />
         <PillInput leftIcon={<LockIcon />} type="password" placeholder="Repetir contraseña" value={password2} onChange={e => setPassword2(e.target.value)} autoComplete="new-password" required error={errors.password2} />
-        {errors.form && <div className={a.errorBox}>{errors.form}</div>}
+        <div role="alert" aria-live="assertive">
+          {errors.form && <div className={a.errorBox}>{errors.form}</div>}
+        </div>
         <button type="submit" className={a.submit} disabled={loading}>
           {loading ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>

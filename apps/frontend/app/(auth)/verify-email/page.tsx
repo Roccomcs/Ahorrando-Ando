@@ -113,8 +113,10 @@ function VerifyEmailInner() {
   }
 
   const digitStyle = (filled: boolean): React.CSSProperties => ({
-    width: 48, height: 56,
-    textAlign: 'center', fontSize: 24, fontWeight: 700,
+    // Los 6 dígitos tienen que entrar en una sola fila hasta en 320px de ancho:
+    // se encogen en vez de envolverse.
+    width: 48, minWidth: 0, flex: '1 1 0', maxWidth: 48, height: 56,
+    textAlign: 'center', fontSize: 'clamp(18px, 6vw, 24px)', fontWeight: 700,
     fontFamily: 'var(--font-mono)',
     background: 'var(--surface-inset)',
     border: `2px solid ${filled ? 'var(--text-accent)' : 'var(--border-2)'}`,
@@ -142,32 +144,46 @@ function VerifyEmailInner() {
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }} onPaste={handlePaste}>
-        {digits.map((d, i) => (
-          <input
-            key={i}
-            ref={el => { inputs.current[i] = el }}
-            value={d}
-            onChange={e => handleDigit(i, e.target.value)}
-            onKeyDown={e => handleKeyDown(i, e)}
-            maxLength={1}
-            inputMode="numeric"
-            style={digitStyle(!!d)}
-            autoFocus={i === 0}
-            disabled={loading}
-          />
-        ))}
+      {/* minWidth:0 — el fieldset trae min-inline-size:min-content y sin esto
+          no se encoge, empujando los dígitos fuera de la tarjeta. */}
+      <fieldset style={{ border: 'none', margin: 0, padding: 0, minWidth: 0 }}>
+        <legend className="aa-sr-only">Código de verificación de 6 dígitos</legend>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 }} onPaste={handlePaste}>
+          {digits.map((d, i) => (
+            <input
+              key={i}
+              ref={el => { inputs.current[i] = el }}
+              value={d}
+              onChange={e => handleDigit(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(i, e)}
+              maxLength={1}
+              inputMode="numeric"
+              // one-time-code deja que iOS/Android ofrezcan el código del SMS/mail.
+              autoComplete={i === 0 ? 'one-time-code' : 'off'}
+              aria-label={`Dígito ${i + 1} de 6`}
+              aria-invalid={error ? true : undefined}
+              style={digitStyle(!!d)}
+              autoFocus={i === 0}
+              disabled={loading}
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      {/* role=alert: el error tiene que anunciarse solo, sin mover el foco. */}
+      <div role="alert" aria-live="assertive">
+        {error && (
+          <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)', marginBottom: 16, textAlign: 'center' }}>
+            {error}
+          </div>
+        )}
       </div>
 
-      {error && (
-        <div style={{ background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: 'var(--text-sm)', color: 'var(--down)', marginBottom: 16, textAlign: 'center' }}>
-          {error}
-        </div>
-      )}
-
-      {loading && (
-        <p style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 'var(--text-sm)', marginBottom: 16 }}>Verificando…</p>
-      )}
+      <div aria-live="polite">
+        {loading && (
+          <p style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 'var(--text-sm)', marginBottom: 16 }}>Verificando…</p>
+        )}
+      </div>
 
       <div style={{ textAlign: 'center' }}>
         <button

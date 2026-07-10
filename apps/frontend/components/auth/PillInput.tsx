@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, ReactNode } from 'react'
+import { useId, useState, ReactNode } from 'react'
 import s from './PillInput.module.css'
 
 interface Props {
@@ -26,19 +26,25 @@ export function PillInput({ leftIcon, type = 'text', placeholder, value, onChang
   const [show, setShow] = useState(false)
   const isPw = type === 'password'
   const inputType = isPw ? (show ? 'text' : 'password') : type
+  const errId = useId()
 
   return (
     <div className={s.wrap}>
       <div className={s.field}>
-        <span className={s.lead}>{leftIcon}</span>
+        <span className={s.lead} aria-hidden>{leftIcon}</span>
+        {/* El placeholder desaparece al tipear, así que no sirve de nombre
+            accesible: el aria-label es el que queda. */}
         <input
           className={`${s.input} ${error ? s.inputError : ''}`}
           type={inputType}
+          aria-label={placeholder}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
           autoComplete={autoComplete}
           required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errId : undefined}
         />
         {isPw && (
           <button type="button" className={s.toggle} onClick={() => setShow(v => !v)} aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
@@ -46,7 +52,7 @@ export function PillInput({ leftIcon, type = 'text', placeholder, value, onChang
           </button>
         )}
       </div>
-      {error && <p className={s.errText}>{error}</p>}
+      {error && <p id={errId} className={s.errText}>{error}</p>}
     </div>
   )
 }

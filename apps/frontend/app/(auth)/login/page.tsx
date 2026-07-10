@@ -109,14 +109,16 @@ export default function LoginPage() {
         <PillInput leftIcon={<MailIcon />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
         <PillInput leftIcon={<LockIcon />} type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
         <div className={a.forgot}><Link href="/forgot-password">¿Olvidaste tu contraseña?</Link></div>
-        {error && (
-          <div className={a.errorBox}>
-            {error}
-            {showResend && !resendSent && (
-              <button type="button" onClick={handleResend}>Reenviar código de verificación →</button>
-            )}
-          </div>
-        )}
+        <div role="alert" aria-live="assertive">
+          {error && (
+            <div className={a.errorBox}>
+              {error}
+              {showResend && !resendSent && (
+                <button type="button" onClick={handleResend}>Reenviar código de verificación →</button>
+              )}
+            </div>
+          )}
+        </div>
         <button type="submit" className={a.submit} disabled={loading}>
           {loading ? 'Entrando…' : 'Entrar'}
         </button>

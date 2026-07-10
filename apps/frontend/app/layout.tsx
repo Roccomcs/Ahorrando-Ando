@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import { Stack_Sans_Headline, Noto_Serif, Gelasio, JetBrains_Mono } from 'next/font/google'
@@ -31,6 +31,14 @@ export const metadata: Metadata = {
   description: 'Tu portfolio financiero unificado en dólares',
 }
 
+// Sin maximumScale ni userScalable: el zoom hasta 200% es obligatorio (WCAG 1.4.4).
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0A0A0F',
+  colorScheme: 'dark',
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -39,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${stackSans.variable} ${notoSerif.variable} ${gelasio.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        <a href="#main" className="aa-skip-link">Saltar al contenido</a>
         <Providers>{children}</Providers>
       </body>
     </html>

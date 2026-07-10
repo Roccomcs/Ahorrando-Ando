@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { AppLogo } from '@/components/ds/AppLogo'
 
@@ -40,6 +40,7 @@ function NavIcon({ name, size = 18 }: { name: string; size?: number }) {
 export function Sidebar() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
 
   // Close on route change (navigation)
   useEffect(() => { setOpen(false) }, [pathname])
@@ -51,13 +52,30 @@ export function Sidebar() {
     return () => { document.body.style.overflow = '' }
   }, [open])
 
+  // Escape cierra el menú y devuelve el foco al hamburger: sin esto, quien
+  // navega con teclado abre el panel y no tiene forma de salir.
+  useEffect(() => {
+    if (!open) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        hamburgerRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+
   return (
     <>
       {/* Mobile hamburger button */}
       <button
+        ref={hamburgerRef}
         className="aa-side__hamburger"
         onClick={() => setOpen(o => !o)}
-        aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+        aria-label={open ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
+        aria-expanded={open}
+        aria-controls="aa-sidebar-nav"
       >
         <NavIcon name={open ? 'x' : 'menu'} size={20} />
       </button>
@@ -76,18 +94,25 @@ export function Sidebar() {
           <AppLogo size={26} />
           <div className="aa-side__wm" style={{ fontSize: 17, whiteSpace: 'nowrap' }}>Ahorrando Ando</div>
         </div>
-        <nav className="aa-side__nav">
-          {NAV.map(item => (
-            <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-              <button
-                className={`aa-side__item${pathname.startsWith(item.href) ? ' aa-side__item--on' : ''}`}
+        {/* El <Link> ES el ítem. Antes había un <button> adentro del <a>, que es
+            HTML inválido y los lectores de pantalla anuncian de forma errática. */}
+        <nav id="aa-sidebar-nav" className="aa-side__nav" aria-label="Navegación principal">
+          {NAV.map(item => {
+            const active = pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={`aa-side__item${active ? ' aa-side__item--on' : ''}`}
+                style={{ textDecoration: 'none' }}
               >
                 <NavIcon name={item.icon} size={18} />
                 {item.label}
-                {pathname.startsWith(item.href) && <span className="aa-side__dot" aria-hidden />}
-              </button>
-            </Link>
-          ))}
+                {active && <span className="aa-side__dot" aria-hidden />}
+              </Link>
+            )
+          })}
         </nav>
       </aside>
     </>

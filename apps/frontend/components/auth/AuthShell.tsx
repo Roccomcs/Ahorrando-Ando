@@ -61,7 +61,7 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
         </svg>
       </Link>
 
-      <main className={s.shell}>
+      <main id="main" className={s.shell}>
         <div className={s.card}>
           <Link href="/" className={s.brand}>
             <AppLogo size={30} />
