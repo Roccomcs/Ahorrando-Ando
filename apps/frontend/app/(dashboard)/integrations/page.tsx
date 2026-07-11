@@ -9,6 +9,7 @@ import {
   useUpdateIntegration, searchAssets, quoteAsset, usePortfolio,
 } from '@/hooks/usePortfolio'
 import { AssetAvatar, CATEGORY_LABEL } from '@/components/ds/AssetAvatar'
+import { useToast } from '@/components/ds/Toast'
 import { useCurrency } from '@/lib/currency-context'
 import type { ProviderType, AssetSearchResult, AssetCategory, HoldingDTO } from '@/lib/types'
 
@@ -108,6 +109,10 @@ function decimalsFor(h: { category: AssetCategory }): boolean {
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function CheckIcon({ s = 16 }: { s?: number }) { return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg> }
+// Íconos de acción de edición (estilo Material, más claros que un simple check/X).
+function SaveIcon({ s = 16 }: { s?: number }) { return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> }
+function CancelIcon({ s = 16 }: { s?: number }) { return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg> }
+function BookIcon({ s = 22 }: { s?: number }) { return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> }
 function RefreshIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> }
 function TrashIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> }
 function EditIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> }
@@ -169,21 +174,29 @@ function ProviderPickerCard({ config, connectedId, onClick, onRemove }: { config
   const syncMutation = useSyncIntegration()
   const connected = !!connectedId
 
+  const isManual = config.value === 'manual'
+
   return (
     <div
-      style={{ borderRadius: 'var(--radius-lg)', border: '1px solid', padding: 14, background: connected ? 'rgba(61,217,147,0.04)' : hovered ? 'var(--surface-hover)' : 'var(--surface-card)', borderColor: connected ? 'rgba(61,217,147,0.25)' : hovered ? 'var(--border-2)' : 'var(--border-1)', transition: 'all var(--dur-fast) var(--ease-out)', cursor: connected ? 'default' : 'pointer' }}
+      style={{ borderRadius: 'var(--radius-lg)', border: '1px solid', padding: 14, background: hovered && !connected ? 'var(--surface-hover)' : 'var(--surface-card)', borderColor: connected ? 'var(--border-2)' : hovered ? 'var(--border-2)' : 'var(--border-1)', transition: 'all var(--dur-fast) var(--ease-out)', cursor: connected ? 'default' : 'pointer' }}
       onClick={connected ? undefined : onClick}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <ProviderLogo logoUrl={config.logoUrl} label={config.label} color={config.color} size={36} />
+        {isManual
+          ? <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-inset)', border: '1px solid var(--border-2)', color: 'var(--text-2)' }}><BookIcon s={20} /></div>
+          : <ProviderLogo logoUrl={config.logoUrl} label={config.label} color={config.color} size={36} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: 0 }}>{config.label}</p>
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-3)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {connected ? 'Conectada' : config.tagline}
+            {config.tagline}
           </p>
         </div>
         {!connected && <span style={{ flexShrink: 0, color: 'var(--text-3)' }}><ChevRight /></span>}
-        {connected && <span style={{ flexShrink: 0, color: 'var(--up)' }}><CheckIcon /></span>}
+        {connected && (
+          <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, color: 'var(--positive)', background: 'color-mix(in srgb, var(--positive) 12%, transparent)' }}>
+            <CheckIcon s={13} /> Conectada
+          </span>
+        )}
       </div>
 
       {connected && (
@@ -524,12 +537,12 @@ function WizardModal({ config, editId, initialManual, onClose, onSuccess }: {
 
 type FlatHolding = HoldingDTO & { _key: string; provider_type: string; integration_id: string }
 
-function AssetRow({ h, rate, format, onSave, onDelete }: {
+function AssetRow({ h, rate, format, onSave, onRequestDelete }: {
   h: FlatHolding
   rate: number | undefined
   format: (n: number, rate?: number) => string
   onSave: (h: FlatHolding, amount: number) => Promise<void>
-  onDelete: (h: FlatHolding) => Promise<void>
+  onRequestDelete: (h: FlatHolding) => void
 }) {
   const isManual = h.provider_type === 'manual'
   const [editing, setEditing] = useState(false)
@@ -542,10 +555,6 @@ function AssetRow({ h, rate, format, onSave, onDelete }: {
     if (!Number.isFinite(n) || n < 0) return
     setBusy(true)
     try { await onSave(h, n); setEditing(false) } finally { setBusy(false) }
-  }
-  async function remove() {
-    setBusy(true)
-    try { await onDelete(h) } finally { setBusy(false) }
   }
 
   const iconBtn = (title: string, on: () => void, node: ReactNode, danger = false) => (
@@ -568,8 +577,8 @@ function AssetRow({ h, rate, format, onSave, onDelete }: {
           <Stepper value={amount} onChange={setAmount}
             step={stepFor({ category: category ?? 'fx', ref: h.asset_symbol })}
             decimals={decimalsFor({ category: category ?? 'fx' })} />
-          {iconBtn('Guardar', save, <CheckIcon s={15} />)}
-          {iconBtn('Cancelar', () => { setAmount(String(h.amount)); setEditing(false) }, <XIcon />)}
+          {iconBtn('Guardar', save, <SaveIcon s={16} />)}
+          {iconBtn('Cancelar', () => { setAmount(String(h.amount)); setEditing(false) }, <CancelIcon s={16} />)}
         </>
       ) : (
         <>
@@ -580,7 +589,7 @@ function AssetRow({ h, rate, format, onSave, onDelete }: {
           {isManual && (
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               {iconBtn('Editar cantidad', () => setEditing(true), <EditIcon />)}
-              {iconBtn('Borrar activo', remove, <TrashIcon />, true)}
+              {iconBtn('Borrar activo', () => onRequestDelete(h), <TrashIcon />, true)}
             </div>
           )}
         </>
@@ -595,11 +604,45 @@ export default function IntegrationsPage() {
   const { data: integrations, isLoading } = useIntegrations()
   const { data: portfolio } = usePortfolio()
   const { format } = useCurrency()
+  const toast = useToast()
   const deleteMutation = useDeleteIntegration()
   const updateMutation = useUpdateIntegration()
   const rate = portfolio?.usd_to_ars ?? undefined
   const [activeWizard, setActiveWizard] = useState<ProviderConfig | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [confirmDeleteHolding, setConfirmDeleteHolding] = useState<FlatHolding | null>(null)
+  const [deletingHolding, setDeletingHolding] = useState(false)
+
+  // Borra un activo manual con confirmación previa + toast de progreso.
+  async function confirmDeleteAsset() {
+    const h = confirmDeleteHolding
+    if (!h) return
+    setDeletingHolding(true)
+    const tid = toast.show('loading', `Eliminando ${h.asset_symbol}…`)
+    try {
+      await patchManual(h, null)
+      toast.update(tid, 'success', `${h.asset_symbol} eliminado`)
+      setConfirmDeleteHolding(null)
+    } catch {
+      toast.update(tid, 'error', `No se pudo eliminar ${h.asset_symbol}`)
+    } finally {
+      setDeletingHolding(false)
+    }
+  }
+
+  // Borra una conexión completa con toast de progreso.
+  async function confirmDeleteConnection() {
+    if (!confirmDeleteId) return
+    const tid = toast.show('loading', 'Eliminando conexión…')
+    try {
+      await deleteMutation.mutateAsync(confirmDeleteId)
+      toast.update(tid, 'success', 'Conexión eliminada')
+    } catch {
+      toast.update(tid, 'error', 'No se pudo eliminar la conexión')
+    } finally {
+      setConfirmDeleteId(null)
+    }
+  }
 
   const apiProviders = PROVIDERS.filter(p => p.group === 'api')
   const manualProviders = PROVIDERS.filter(p => p.group === 'manual')
@@ -653,7 +696,7 @@ export default function IntegrationsPage() {
             {allHoldings.map(h => (
               <AssetRow key={h._key} h={h} rate={rate} format={format}
                 onSave={(hh, amount) => patchManual(hh, amount)}
-                onDelete={(hh) => patchManual(hh, null)} />
+                onRequestDelete={setConfirmDeleteHolding} />
             ))}
           </div>
         </section>
@@ -702,9 +745,31 @@ export default function IntegrationsPage() {
               Se eliminarán las credenciales almacenadas. Podés volver a conectar cuando quieras.
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
-              <Button variant="danger" onClick={() => { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null) }} disabled={deleteMutation.isPending}>
+              <Button variant="secondary" onClick={() => setConfirmDeleteId(null)} disabled={deleteMutation.isPending}>Cancelar</Button>
+              <Button variant="danger" onClick={confirmDeleteConnection} disabled={deleteMutation.isPending}>
                 {deleteMutation.isPending ? 'Eliminando…' : 'Eliminar'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmación de borrado de un activo manual */}
+      {confirmDeleteHolding && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', padding: 24 }}>
+          <Card padding="lg" raised style={{ width: '100%', maxWidth: 380 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <AssetAvatar logoUrl={confirmDeleteHolding.logo_url} symbol={confirmDeleteHolding.asset_symbol} category={(confirmDeleteHolding.category as AssetCategory) ?? undefined} size={40} />
+              <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-semibold)', color: 'var(--text-1)', margin: 0 }}>¿Eliminar este activo?</h2>
+            </div>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: '0 0 20px' }}>
+              Vas a eliminar <strong style={{ color: 'var(--text-1)' }}>{confirmDeleteHolding.asset_symbol}</strong>
+              {confirmDeleteHolding.asset_name ? ` (${confirmDeleteHolding.asset_name})` : ''} de tu cartera. Esta acción se puede volver a cargar manualmente.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setConfirmDeleteHolding(null)} disabled={deletingHolding}>Cancelar</Button>
+              <Button variant="danger" onClick={confirmDeleteAsset} disabled={deletingHolding}>
+                {deletingHolding ? 'Eliminando…' : 'Sí, eliminar'}
               </Button>
             </div>
           </Card>
