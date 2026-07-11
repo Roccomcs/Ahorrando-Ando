@@ -21,6 +21,31 @@ class AssetsController:
         price = await self._quote.execute(category, ref)
         return {"category": category, "ref": ref, "price_usd": price}
 
+    async def asset_history(self, category: str, ref: str, days: int) -> dict:
+        """Serie histórica de precios USD del activo para el gráfico de Analytics.
+
+        Cripto: CoinGecko market_chart (gratis). Acciones/CEDEARs/bonos AR y
+        efectivo: no hay fuente histórica gratuita → serie vacía + available=False,
+        y el frontend muestra sólo el valor actual."""
+        cat = (category or "").lower()
+        points: list[dict] = []
+        available = False
+        if cat == "crypto":
+            # `ref` puede venir como símbolo (BTC) o como id de CoinGecko
+            # (bitcoin). Resolvemos el id por símbolo; si no matchea, usamos ref
+            # tal cual (ya era un id válido).
+            coin_id = ref
+            try:
+                for c in await self._coingecko.search(ref, limit=10):
+                    if c.get("symbol", "").upper() == (ref or "").upper() and c.get("id"):
+                        coin_id = c["id"]
+                        break
+            except Exception:
+                pass
+            points = await self._coingecko.market_chart(coin_id, days=days)
+            available = len(points) > 0
+        return {"category": cat, "ref": ref, "days": days, "available": available, "points": points}
+
     async def asset_logo(self, symbol: str, category: str) -> dict:
         """Logo de un activo. Cripto vía CoinGecko, acciones/CEDEARs/bonos vía
         TradingView. `fx` no tiene logo acá (el frontend usa la bandera).

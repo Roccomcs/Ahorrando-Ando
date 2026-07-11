@@ -44,6 +44,19 @@ export interface HistoryPoint {
   total_usd: number
 }
 
+export interface AssetHistoryPoint {
+  t: number
+  price_usd: number
+}
+
+export interface AssetHistoryResponse {
+  category: string
+  ref: string
+  days: number
+  available: boolean
+  points: AssetHistoryPoint[]
+}
+
 export interface PortfolioHistoryDTO {
   points: HistoryPoint[]
   usd_to_ars: number | null

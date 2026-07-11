@@ -26,6 +26,18 @@ async def quote_asset(
     return await controller.quote_asset(category=category, ref=ref)
 
 
+@router.get("/history")
+async def asset_history(
+    category: str = Query(..., description="crypto | stock | cedear | bond | fx"),
+    ref: str = Query(..., description="Identificador (coingecko_id o símbolo)"),
+    days: int = Query(30, ge=1, le=365, description="Ventana en días"),
+    current_user=Depends(get_current_user),
+    controller: AssetsController = Depends(),
+):
+    """Serie histórica de precios USD del activo (cripto vía CoinGecko)."""
+    return await controller.asset_history(category=category, ref=ref, days=days)
+
+
 @router.get("/logo")
 async def asset_logo(
     symbol: str = Query(..., min_length=1, max_length=20),

@@ -1,9 +1,42 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useAllocation, useBenchmark, usePortfolio } from '@/hooks/usePortfolio'
+import { useMemo, useState } from 'react'
+import { useAllocation, useBenchmark, usePortfolio, useAssetHistory } from '@/hooks/usePortfolio'
+import { AssetAvatar } from '@/components/ds/AssetAvatar'
 import { useCurrency } from '@/lib/currency-context'
-import type { AllocationItem } from '@/lib/types'
+import type { AllocationItem, AssetCategory, AssetHistoryPoint } from '@/lib/types'
+
+// Activo elegible para el gráfico (derivado de los holdings del portfolio).
+interface AssetOption {
+  symbol: string; name: string; category?: AssetCategory | null
+  logo_url?: string | null; price_usd: number; value_usd: number
+}
+
+/* ── Gráfico de precio histórico (área, estilo TradingView) ──── */
+function PriceChart({ points, up }: { points: AssetHistoryPoint[]; up: boolean }) {
+  const W = 720, H = 240, PAD = 8
+  if (points.length < 2) return null
+  const prices = points.map(p => p.price_usd)
+  const min = Math.min(...prices), max = Math.max(...prices), range = max - min || 1
+  const stroke = up ? 'var(--positive)' : 'var(--negative)'
+  const x = (i: number) => PAD + (i / (points.length - 1)) * (W - PAD * 2)
+  const y = (v: number) => PAD + (1 - (v - min) / range) * (H - PAD * 2)
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.price_usd).toFixed(1)}`).join(' ')
+  const area = `${line} L${x(points.length - 1).toFixed(1)},${H - PAD} L${x(0).toFixed(1)},${H - PAD} Z`
+  const gid = up ? 'aa-pc-up' : 'aa-pc-dn'
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" style={{ display: 'block' }} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={stroke} stopOpacity="0.28" />
+          <stop offset="1" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${gid})`} />
+      <path d={line} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  )
+}
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
 const OVERLINE_MUTED: React.CSSProperties = {
@@ -45,6 +78,37 @@ export default function AnalyticsPage() {
   const { data: ethBench } = useBenchmark('ETH', '30d')
   const { format } = useCurrency()
   const rate = portfolio?.usd_to_ars
+
+  // Activos elegibles para el gráfico: los que el usuario tiene, únicos por símbolo.
+  const assetOptions = useMemo<AssetOption[]>(() => {
+    const map = new Map<string, AssetOption>()
+    for (const p of portfolio?.providers ?? []) {
+      for (const h of p.holdings) {
+        if (h.amount <= 0 || h.category === 'fx') continue  // el efectivo no tiene gráfico
+        const price = h.amount > 0 ? h.current_value_usd / h.amount : 0
+        const prev = map.get(h.asset_symbol)
+        if (prev) { prev.value_usd += h.current_value_usd; continue }
+        map.set(h.asset_symbol, {
+          symbol: h.asset_symbol, name: h.asset_name, category: h.category,
+          logo_url: h.logo_url, price_usd: price, value_usd: h.current_value_usd,
+        })
+      }
+    }
+    return [...map.values()].sort((a, b) => b.value_usd - a.value_usd)
+  }, [portfolio])
+
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
+  const [chartDays, setChartDays] = useState(30)
+  const selected = assetOptions.find(a => a.symbol === selectedSymbol) ?? assetOptions[0] ?? null
+  const { data: history, isLoading: historyLoading } = useAssetHistory(selected?.category, selected?.symbol, chartDays)
+
+  const chart = useMemo(() => {
+    const pts = history?.available ? history.points : []
+    if (pts.length < 2) return null
+    const first = pts[0].price_usd, last = pts[pts.length - 1].price_usd
+    const changePct = first > 0 ? ((last - first) / first) * 100 : 0
+    return { pts, up: last >= first, changePct }
+  }, [history])
 
   const types = useMemo(() => {
     const items = allocation?.by_type ?? []
@@ -104,6 +168,61 @@ export default function AnalyticsPage() {
           Entendé en qué estás parado
         </h1>
       </div>
+
+      {/* ANÁLISIS DE UN ACTIVO — valor actual + histórico de mercado */}
+      {selected && (
+        <section className="aa-sec aa-sec--2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+            <span style={OVERLINE_MUTED}>Analizá un activo</span>
+            <div className="aa-seg">
+              {[7, 30, 90].map(d => (
+                <button key={d} className={`aa-seg__opt${chartDays === d ? ' aa-seg__opt--on' : ''}`} onClick={() => setChartDays(d)}>{d}d</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Selector de activo (chips de los que tenés) */}
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 18 }}>
+            {assetOptions.map(a => {
+              const on = a.symbol === selected.symbol
+              return (
+                <button key={a.symbol} onClick={() => setSelectedSymbol(a.symbol)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px 7px 8px', borderRadius: 999, flexShrink: 0, cursor: 'pointer',
+                    background: on ? 'var(--accent-bg)' : 'var(--surface-inset)',
+                    border: `1px solid ${on ? 'var(--border-focus)' : 'var(--border-2)'}`,
+                    color: on ? 'var(--text-accent)' : 'var(--text-1)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-ui)' }}>
+                  <AssetAvatar symbol={a.symbol} category={a.category} logoUrl={a.logo_url} size={22} />
+                  {a.symbol}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Valor actual + variación del período */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 2 }}>{selected.name || selected.symbol}</div>
+              <div style={{ ...MONO, fontSize: 30, fontWeight: 700, color: 'var(--text-1)' }}>{format(selected.price_usd, rate)}</div>
+            </div>
+            {chart && (
+              <div style={{ ...MONO, fontSize: 15, fontWeight: 700, color: chart.up ? 'var(--positive)' : 'var(--negative)', paddingBottom: 4 }}>
+                {chart.up ? '+' : '−'}{Math.abs(chart.changePct).toFixed(1).replace('.', ',')}% · {chartDays}d
+              </div>
+            )}
+          </div>
+
+          {/* Gráfico */}
+          {historyLoading ? (
+            <div className="aa-skel" style={{ height: 240 }} />
+          ) : chart ? (
+            <PriceChart points={chart.pts} up={chart.up} />
+          ) : (
+            <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-3)', fontSize: 13, border: '1px dashed var(--border-2)', borderRadius: 'var(--radius-md)', padding: '0 20px' }}>
+              El gráfico histórico está disponible para cripto. Para {selected.name || selected.symbol} mostramos el valor actual; el histórico de acciones/CEDEARs argentinos todavía no tiene una fuente gratuita.
+            </div>
+          )}
+        </section>
+      )}
 
       {/* DISTRIBUCIÓN POR TIPO DE ACTIVO */}
       <section className="aa-sec aa-sec--2">

@@ -14,6 +14,7 @@ import type {
   AssetCategory,
   ManualHoldingDTO,
   TransactionDTO,
+  AssetHistoryResponse,
 } from '@/lib/types'
 
 /** Las queries autenticadas esperan a que el bootstrap de auth tenga token:
@@ -62,6 +63,20 @@ export async function searchAssets(query: string): Promise<AssetSearchResult[]> 
   if (!query.trim()) return []
   const r = await api.get<AssetSearchResult[]>(`/api/v1/assets/search?q=${encodeURIComponent(query)}`)
   return r.data
+}
+
+// Serie histórica de precios de un activo (para el gráfico de Analytics).
+export function useAssetHistory(category?: AssetCategory | null, ref?: string | null, days = 30) {
+  const ready = useAuthReady()
+  return useQuery<AssetHistoryResponse>({
+    queryKey: ['asset-history', category, ref, days],
+    queryFn: () =>
+      api
+        .get(`/api/v1/assets/history?category=${encodeURIComponent(category!)}&ref=${encodeURIComponent(ref!)}&days=${days}`)
+        .then((r) => r.data),
+    enabled: ready && !!category && !!ref,
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
 // Cotiza un activo ya elegido (por category + ref) → precio USD actual.

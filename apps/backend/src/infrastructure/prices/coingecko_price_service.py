@@ -40,6 +40,26 @@ class CoinGeckoPriceService(IPriceService, BaseHttpClient):
             })
         return out
 
+    async def market_chart(self, coin_id: str, days: int = 30) -> list[dict]:
+        """Serie histórica de precios USD de una cripto (por id de CoinGecko).
+
+        Devuelve [{"t": epoch_ms, "price_usd": float}, …]. Lista vacía si falla."""
+        cid = (coin_id or "").strip().lower()
+        if not cid:
+            return []
+        try:
+            data = await self.get(f"/coins/{cid}/market_chart?vs_currency=usd&days={days}")
+        except Exception:
+            return []
+        prices = data.get("prices", []) if isinstance(data, dict) else []
+        out: list[dict] = []
+        for p in prices:
+            try:
+                out.append({"t": int(p[0]), "price_usd": float(p[1])})
+            except (TypeError, ValueError, IndexError):
+                continue
+        return out
+
     async def logo_for_symbol(self, symbol: str) -> str | None:
         """Logo de una cripto por símbolo (ej: BTC). Cachea el resultado (incl. negativos)."""
         key = (symbol or "").strip().upper()
