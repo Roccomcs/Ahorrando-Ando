@@ -40,7 +40,7 @@ export default function RegisterPage() {
     e.preventDefault()
     const errs: Record<string, string> = {}
     if (!/.+@.+\..+/.test(email)) errs.email = 'Ingresá un email válido'
-    if (password.length < 12) errs.password = 'Mínimo 12 caracteres'
+    if (password.length < 8) errs.password = 'Mínimo 8 caracteres'
     if (password2 !== password) errs.password2 = 'Las contraseñas no coinciden'
     setErrors(errs)
     if (Object.keys(errs).length) return
@@ -81,7 +81,7 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit}>
         <PillInput leftIcon={<MailIcon />} type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required error={errors.email} />
-        <PillInput leftIcon={<LockIcon />} type="password" placeholder="Contraseña (mín. 12 caracteres)" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required error={errors.password} />
+        <PillInput leftIcon={<LockIcon />} type="password" placeholder="Contraseña (mín. 8 caracteres)" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required error={errors.password} />
         <PillInput leftIcon={<LockIcon />} type="password" placeholder="Repetir contraseña" value={password2} onChange={e => setPassword2(e.target.value)} autoComplete="new-password" required error={errors.password2} />
         <div role="alert" aria-live="assertive">
           {errors.form && <div className={a.errorBox}>{errors.form}</div>}

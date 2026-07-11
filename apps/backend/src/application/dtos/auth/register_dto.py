@@ -15,8 +15,8 @@ class RegisterDTO(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if len(v) < 12:
-            raise ValueError("La contraseña debe tener al menos 12 caracteres")
+        if len(v) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres")
         if not re.search(r"[A-Za-z]", v):
             raise ValueError("La contraseña debe contener al menos una letra")
         if not re.search(r"[0-9]", v):
