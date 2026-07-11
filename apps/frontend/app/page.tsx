@@ -54,6 +54,153 @@ function Check() {
   )
 }
 
+// ── "Cómo trabajamos": acordeón horizontal. Al pasar el mouse (o enfocar con
+// teclado) se expande el panel y aparece un mini-preview de esa parte de la app,
+// en la misma paleta gris del fondo. En mobile se apila y muestra todo abierto.
+type HowItem = { key: string; title: string; desc: string; gold?: boolean; icon: React.ReactNode; visual: React.ReactNode }
+
+const CIELO = 'var(--cielo-400)'
+const G1 = 'rgba(255,255,255,0.22)', G2 = 'rgba(255,255,255,0.14)', G3 = 'rgba(255,255,255,0.09)'
+
+const HOW_ITEMS: HowItem[] = [
+  {
+    key: 'portfolio', title: 'Portfolio unificado',
+    desc: 'Todas tus cuentas sumadas en un patrimonio único, en pesos y dólares al instante.',
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7.5" height="7.5" x="3" y="3" rx="1"/><rect width="7.5" height="7.5" x="13.5" y="3" rx="1"/><rect width="7.5" height="7.5" x="3" y="13.5" rx="1"/><rect width="7.5" height="7.5" x="13.5" y="13.5" rx="1"/></svg>,
+    visual: (
+      <div className={s.accCard}>
+        <span className={s.accCardLabel}>Patrimonio total</span>
+        <span className={s.accCardNum}>US$ 48.320</span>
+        <div className={s.accBar}>
+          <span style={{ flex: 5, background: CIELO }} />
+          <span style={{ flex: 3, background: G1 }} />
+          <span style={{ flex: 2, background: G2 }} />
+          <span style={{ flex: 1.4, background: G3 }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'alertas', title: 'Alertas de precio',
+    desc: 'Poné un umbral y enterate cuando un activo lo cruza. Ni antes ni después.',
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+    visual: (
+      <div className={s.accCard}>
+        <div className={s.accRow}><span>BTC cruza</span><span className={s.accRowMono}>US$ 110.000</span></div>
+        <svg viewBox="0 0 300 46" width="100%" height="46" preserveAspectRatio="none" aria-hidden>
+          <line x1="0" y1="30" x2="300" y2="30" stroke={G2} strokeWidth="1" strokeDasharray="4 4" />
+          <polyline points="0,38 60,34 110,36 160,22 210,26 260,10 300,14" fill="none" stroke={G1} strokeWidth="1.5" />
+          <circle cx="235" cy="18" r="4" fill={CIELO} />
+        </svg>
+        <div className={s.accRow}><span>Estado</span><span style={{ color: CIELO, fontFamily: 'var(--font-mono)' }}>● activa</span></div>
+      </div>
+    ),
+  },
+  {
+    key: 'exchanges', title: 'Múltiples exchanges',
+    desc: 'Binance, Lemon, IOL, Bull Market, Balanz, Mercado Pago y wallets on-chain.',
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h14"/><path d="M15 4l4 4-4 4"/><path d="M20 16H6"/><path d="M9 12l-4 4 4 4"/></svg>,
+    visual: (
+      <div className={s.accCard}>
+        <span className={s.accCardLabel}>Cuentas conectadas</span>
+        <div className={s.accChips}>
+          {['Binance', 'Lemon', 'IOL', 'Bull Market', 'Balanz', 'Mercado Pago'].map(n => (
+            <span key={n} className={s.accChip}>{n}</span>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'historial', title: 'Historial completo',
+    desc: 'Cada movimiento, fechado y trazable. Mirá cómo evolucionó tu plata en el tiempo.',
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>,
+    visual: (
+      <div className={s.accCard}>
+        {[['12 jun', 'Compra BTC', '+0,012'], ['10 jun', 'Depósito ARS', '+150.000'], ['7 jun', 'Venta ETH', '−0,4']].map(([d, t, v]) => (
+          <div key={d} className={s.accRow}>
+            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--ll-text-3)' }}>{d}</span>
+            <span style={{ flex: 1, color: 'var(--ll-text-2)' }}>{t}</span>
+            <span className={s.accRowMono}>{v}</span>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    key: 'analytics', title: 'Analytics',
+    desc: 'Distribución por activo, rendimiento y exposición. Los números que importan, claros.',
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="19" y1="20" x2="19" y2="9"/></svg>,
+    visual: (
+      <div className={s.accCard}>
+        <span className={s.accCardLabel}>Rendimiento · 30d</span>
+        <div className={s.accMiniBars}>
+          <span style={{ height: '45%' }} />
+          <span style={{ height: '70%' }} />
+          <span style={{ height: '35%' }} />
+          <span style={{ height: '90%', background: CIELO }} />
+          <span style={{ height: '60%' }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'lectura', title: 'Solo lectura', gold: true,
+    desc: 'Nunca ejecutamos órdenes. Conectamos con permisos de lectura: vemos, no movemos.',
+    icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>,
+    visual: (
+      <div className={s.accCard}>
+        <div className={s.accRow}>
+          <span>Permiso de la API</span>
+          <span className={s.accChip} style={{ color: 'var(--sol-400)', borderColor: 'rgba(232,194,104,0.35)' }}>lectura</span>
+        </div>
+        <div className={s.accRow}><span>Retirar fondos</span><span style={{ color: 'var(--ll-text-3)', fontFamily: 'var(--font-mono)' }}>✕ nunca</span></div>
+      </div>
+    ),
+  },
+]
+
+function HowItWorks() {
+  const [active, setActive] = useState(0)
+  return (
+    <div className={s.acc}>
+      {HOW_ITEMS.map((it, i) => {
+        const on = i === active
+        const num = String(i + 1).padStart(2, '0')
+        return (
+          <div
+            key={it.key}
+            className={`${s.accPanel}${on ? ' ' + s.accPanelActive : ''}${it.gold ? ' ' + s.accGold : ''}`}
+            onMouseEnter={() => setActive(i)}
+            onFocus={() => setActive(i)}
+            tabIndex={0}
+            role="button"
+            aria-expanded={on}
+            aria-label={it.title}
+          >
+            <div className={s.accCollapsed} aria-hidden>
+              <span className={s.accNum}>{num}</span>
+              <span className={s.accVTitle}>{it.title}</span>
+            </div>
+            <div className={s.accExpanded}>
+              <div className={s.accTop}>
+                <span className={s.accIco}>{it.icon}</span>
+                <span className={s.accCount}>{num} / 06</span>
+              </div>
+              <div className={s.accVisual}>{it.visual}</div>
+              <div className={s.accBody}>
+                <h3>{it.title}</h3>
+                <p>{it.desc}</p>
+              </div>
+            </div>
+            <div className={s.accLine} />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function countUp(el: HTMLElement) {
   const target = parseFloat(el.dataset.count ?? '')
   if (Number.isNaN(target)) return
@@ -146,22 +293,7 @@ export default function LandingPage() {
             <h2 className={s.secTitle}>Tu portafolio en un único lugar</h2>
             <p className={s.secSub}>Todas tus aplicaciones de inversión favoritas en un único lugar, con gráficos para entender de manera práctica y sencilla cómo te está yendo.</p>
           </div>
-          <div className={s.featGrid}>
-            {[
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>, title: 'Portfolio unificado', desc: 'Todas tus cuentas sumadas en un patrimonio único, en pesos y dólares al instante.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/><path d="M22 8c0-2.3-.8-4.3-2-6"/></svg>, title: 'Alertas de precio', desc: 'Poné un umbral y enterate cuando un activo lo cruza. Ni antes ni después.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V11"/><path d="m15 8-3-3-3 3"/><path d="M8 22H5a2 2 0 0 1-2-2V6l3-2 3 2V4"/><path d="M18 11v11"/><path d="m21 14-3-3-3 3"/></svg>, title: 'Múltiples exchanges', desc: 'Binance, Lemon, IOL, Bull Market, Balanz, Mercado Pago y wallets on-chain.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>, title: 'Historial completo', desc: 'Cada movimiento, fechado y trazable. Mirá cómo evolucionó tu plata en el tiempo.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>, title: 'Analytics', desc: 'Distribución por activo, rendimiento y exposición. Los números que importan, claros.' },
-              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>, title: 'Solo lectura', desc: 'Nunca ejecutamos órdenes. Conectamos con permisos de lectura: vemos, no movemos.', gold: true },
-            ].map(f => (
-              <div key={f.title} className={`${s.feat} ${f.gold ? s.featGold : ''}`}>
-                <div className={s.featIco}>{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            ))}
-          </div>
+          <HowItWorks />
         </div>
       </section>
 

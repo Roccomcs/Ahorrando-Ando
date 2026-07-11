@@ -1,6 +1,10 @@
 /* Landing — paleta estilo Revolut (dark fijo) */
 .page { background: var(--ll-black); color: var(--ll-text-1); overflow-x: hidden; }
-.wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--space-6); }
+/* width:100% además de max-width+margin auto: dentro de .section (flex column),
+   el margin auto hace que .wrap se achique al contenido en vez de estirarse.
+   Las grillas tienen ancho intrínseco y no se notaba; el acordeón (hijos
+   position:absolute) tiene ancho intrínseco ~0 y colapsaba a 0px. */
+.wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 var(--space-6); box-sizing: border-box; }
 
 /* Botones */
 .btn {
@@ -192,6 +196,94 @@
 .featGold .featIco { background: rgba(232,194,104,0.12); border-color: rgba(232,194,104,0.20); color: var(--sol-400); }
 .feat h3 { margin: 0 0 8px; font-size: var(--text-lg); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); color: var(--ll-text-1); }
 .feat p { margin: 0; font-size: var(--text-base); color: var(--ll-text-2); line-height: var(--leading-body); }
+
+/* ── Cómo trabajamos: acordeón horizontal (hover para expandir) ── */
+.acc {
+  display: flex;
+  height: 440px;
+  border-top: 1px solid var(--ll-border);
+  border-bottom: 1px solid var(--ll-border);
+}
+.accPanel {
+  position: relative; overflow: hidden; min-width: 0;
+  flex: 1 1 0%;
+  background: transparent;
+  transition: flex-grow 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease;
+}
+.accPanel + .accPanel { border-left: 1px solid var(--ll-border); }
+.accPanelActive { flex-grow: 3.4; background: #101013; }
+.accPanel:focus-visible { outline: 2px solid var(--cielo-400); outline-offset: -2px; }
+
+/* Capa colapsada: número arriba, título vertical abajo. */
+.accCollapsed {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 30px 0; opacity: 1; transition: opacity 0.3s ease; pointer-events: none;
+}
+.accPanelActive .accCollapsed { opacity: 0; }
+.accNum { font-family: var(--font-mono); font-size: 12px; color: var(--ll-text-3); }
+.accVTitle {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-size: 15px; font-weight: var(--weight-medium); letter-spacing: 0.01em;
+  color: var(--ll-text-2); white-space: nowrap;
+}
+
+/* Capa expandida: aparece con fade + subida cuando el panel está activo. */
+.accExpanded {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 34px 36px; box-sizing: border-box; width: 100%; min-width: 300px;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.45s ease 0.12s, transform 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.08s;
+  pointer-events: none;
+}
+.accPanelActive .accExpanded { opacity: 1; transform: none; }
+.accTop { display: flex; align-items: flex-start; justify-content: space-between; }
+.accIco { color: var(--cielo-400); display: flex; }
+.accPanelActive.accGold .accIco { color: var(--sol-400); }
+.accCount { font-family: var(--font-mono); font-size: 12px; color: var(--ll-text-3); }
+.accVisual { flex: 1; display: flex; align-items: center; justify-content: flex-start; padding: 20px 0; min-height: 0; }
+.accBody { display: flex; flex-direction: column; gap: 10px; }
+.accBody h3 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); color: var(--ll-text-1); }
+.accBody p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ll-text-2); max-width: 340px; }
+.accLine { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--cielo-400); opacity: 0; transition: opacity 0.4s ease; }
+.accPanelActive .accLine { opacity: 1; }
+.accPanelActive.accGold .accLine { background: var(--sol-400); }
+
+/* Mini-mockups de la app dentro de la zona expandida (en grises). */
+.accCard {
+  width: 100%; max-width: 300px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.accCardLabel { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ll-text-3); }
+.accCardNum { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--ll-text-1); letter-spacing: -0.01em; }
+.accBar { display: flex; gap: 3px; height: 8px; }
+.accBar > span { border-radius: 3px; }
+.accRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; }
+.accRow > span:first-child { color: var(--ll-text-2); }
+.accRowMono { font-family: var(--font-mono); color: var(--ll-text-1); }
+.accChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.accChip { font-size: 11px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); color: var(--ll-text-2); font-family: var(--font-mono); }
+.accMiniBars { display: flex; align-items: flex-end; gap: 8px; height: 60px; }
+.accMiniBars > span { width: 20px; border-radius: 4px 4px 0 0; background: rgba(255,255,255,0.14); }
+
+/* Mobile: se apila; todos los paneles abiertos, sin título vertical. */
+@media (max-width: 768px) {
+  .acc { flex-direction: column; height: auto; border: none; gap: 10px; }
+  .accPanel, .accPanelActive {
+    flex: none; background: rgba(255,255,255,0.03);
+    border: 1px solid var(--ll-border); border-radius: var(--radius-lg);
+  }
+  .accPanel + .accPanel { border-left: 1px solid var(--ll-border); }
+  .accCollapsed { display: none; }
+  /* .accPanel .accExpanded (0,2,0) para ganarle sí o sí a la regla del estado
+     activo y mostrar TODOS los paneles abiertos al apilarse. */
+  .accPanel .accExpanded { position: relative; opacity: 1; transform: none; padding: 22px 20px; min-width: 0; gap: 14px; }
+  .accVisual { display: none; }
+  .accBody p { max-width: none; }
+}
 
 /* Bloque de feature con visual (Performance / Historial / Analytics) */
 .featureRow { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-16); align-items: center; }
