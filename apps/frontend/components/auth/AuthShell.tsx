@@ -51,6 +51,19 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
       <div className={s.aurora} aria-hidden="true">
         <div className={`${s.blob} ${s.b1}`} />
         <div className={`${s.blob} ${s.b2}`} />
+        {/* Onda azul que se desplaza en el ángulo superior-izquierdo. */}
+        <svg className={s.wave} viewBox="0 0 2400 220" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="aa-wave-grad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#3d7fce" stopOpacity="0.6" />
+              <stop offset="1" stopColor="#3d7fce" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path className={s.waveA} fill="url(#aa-wave-grad)"
+            d="M0,110 Q150,50 300,110 T600,110 T900,110 T1200,110 T1500,110 T1800,110 T2100,110 T2400,110 L2400,220 L0,220 Z" />
+          <path className={s.waveB} fill="url(#aa-wave-grad)"
+            d="M0,110 Q150,170 300,110 T600,110 T900,110 T1200,110 T1500,110 T1800,110 T2100,110 T2400,110 L2400,220 L0,220 Z" />
+        </svg>
       </div>
 
       <LogoRain />

@@ -31,21 +31,27 @@ function useHideOnScroll() {
   return hidden
 }
 
-const PROVIDERS: { name: string; chartVar: string; initials: string; logo?: string }[] = [
-  { name: 'Binance',      chartVar: '--chart-1', initials: 'BI', logo: '/providers/binance.svg' },
-  { name: 'Mercado Pago', chartVar: '--chart-2', initials: 'MP', logo: '/providers/mercado-pago.svg' },
-  { name: 'Lemon',        chartVar: '--chart-5', initials: 'L',  logo: '/providers/lemon.svg' },
-  { name: 'IOL',          chartVar: '--chart-3', initials: 'I',  logo: '/providers/iol.svg' },
-  { name: 'Bull Market',  chartVar: '--chart-4', initials: 'BM', logo: '/providers/bullmarket.png' },
-  { name: 'Balanz',       chartVar: '--chart-8', initials: 'B',  logo: '/providers/balanz.svg' },
-  { name: 'Wallets EVM',  chartVar: '--chart-6', initials: 'WE', logo: '/providers/ethereum.svg' },
+// Logos de la tira de Conexiones. Meta/Google/IOL vía el servicio de íconos
+// (igual que resuelve la app); el resto son assets locales.
+const CONNECTIONS: { name: string; src: string }[] = [
+  { name: 'Binance',     src: '/providers/binance.svg' },
+  { name: 'Bull Market', src: '/providers/bullmarket.png' },
+  { name: 'IOL',         src: 'https://icons.duckduckgo.com/ip3/invertironline.com.ico' },
+  { name: 'Balanz',      src: '/providers/balanz.svg' },
+  { name: 'Ethereum',    src: '/crypto/eth.svg' },
+  { name: 'ARS',         src: '/providers/ars.svg' },
+  { name: 'USDT',        src: '/crypto/usdt.svg' },
+  { name: 'Lemon',       src: '/providers/lemon.svg' },
+  { name: 'Bitcoin',     src: '/crypto/btc.svg' },
+  { name: 'Meta',        src: 'https://icons.duckduckgo.com/ip3/meta.com.ico' },
+  { name: 'Google',      src: 'https://icons.duckduckgo.com/ip3/google.com.ico' },
 ]
 
 const MOCK_ROWS = [
-  { name: 'Binance',      logo: '/providers/binance.svg',      amount: 'US$ 21.940,12', pct: '+1,8%', dir: 'up' },
-  { name: 'IOL',          logo: '/providers/iol.svg',          amount: 'US$ 14.875,40', pct: '+3,2%', dir: 'up' },
-  { name: 'Mercado Pago', logo: '/providers/mercado-pago.svg', amount: 'US$  6.281,05', pct: '−0,4%', dir: 'dn' },
-  { name: 'Wallets EVM',  logo: '/providers/ethereum.svg',     amount: 'US$  5.134,00', pct: '+0,9%', dir: 'up' },
+  { name: 'Binance',     logo: '/providers/binance.svg',                              amount: 'US$ 21.940,12', pct: '+1,8%', dir: 'up' },
+  { name: 'IOL',         logo: 'https://icons.duckduckgo.com/ip3/invertironline.com.ico', amount: 'US$ 14.875,40', pct: '+3,2%', dir: 'up' },
+  { name: 'Bitcoin',     logo: '/crypto/btc.svg',                                     amount: 'US$  6.281,05', pct: '−0,4%', dir: 'dn' },
+  { name: 'Wallets EVM', logo: '/providers/ethereum.svg',                             amount: 'US$  5.134,00', pct: '+0,9%', dir: 'up' },
 ]
 
 function Check() {
@@ -258,7 +264,10 @@ export default function LandingPage() {
           </a>
           <div className={s.navCta}>
             <Link href="/login" className={s.navLink}>Iniciar sesión</Link>
-            <Link href="/register" className={`${s.btn} ${s.btnSm} ${s.btnPill}`}>Registrarse</Link>
+            {/* En mobile mostramos solo "Iniciar sesión" (desde ahí se puede
+                registrar igual); "Registrarse" se oculta por espacio. */}
+            <Link href="/login" className={`${s.btn} ${s.btnSm} ${s.btnPill} ${s.navLoginBtn}`}>Iniciar sesión</Link>
+            <Link href="/register" className={`${s.btn} ${s.btnSm} ${s.btnPill} ${s.navSignup}`}>Registrarse</Link>
           </div>
         </div>
       </header>
@@ -298,28 +307,30 @@ export default function LandingPage() {
       </section>
 
       {/* CONEXIONES */}
-      <section id="providers" className={`${s.section}`}>
+      <section id="providers" className={`${s.section} ${s.sectionFlush}`}>
         <div className={`${s.wrap} ${s.reveal}`}>
           <div className={s.secHead}>
             <div className={s.secOverline}>Conexiones</div>
             <h2 className={s.secTitle}>Conectá lo que ya usás</h2>
             <p className={s.secSub}>Exchanges, brokers, billeteras y wallets on-chain. Sumás una cuenta en segundos con tu clave API de solo lectura.</p>
           </div>
-          <div className={s.provGrid}>
-            {PROVIDERS.map(p => (
-              <div key={p.name} className={s.provTile}>
-                {p.logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.logo} alt={p.name} className={s.provLogo} />
-                ) : (
-                  <span className={s.pmark} style={{ width: 48, height: 48, borderRadius: 14, background: `color-mix(in srgb,var(${p.chartVar}) 16%,transparent)`, color: `var(${p.chartVar})`, border: `1px solid color-mix(in srgb,var(${p.chartVar}) 35%,transparent)`, fontSize: 18 }}>
-                    {p.initials}
-                  </span>
-                )}
-                <span className={s.nm}>{p.name}</span>
+        </div>
+
+        {/* Tira full-bleed con marquee. Se duplica la lista para un loop sin cortes. */}
+        <div className={`${s.marquee} ${s.reveal}`}>
+          <div className={s.marqueeTrack}>
+            {[...CONNECTIONS, ...CONNECTIONS].map((c, i) => (
+              <div key={`${c.name}-${i}`} className={s.marqueeItem} aria-hidden={i >= CONNECTIONS.length}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.src} alt={i < CONNECTIONS.length ? c.name : ''} className={s.marqueeLogo} />
+                <span className={s.marqueeName}>{c.name}</span>
               </div>
             ))}
           </div>
+        </div>
+
+        <div className={`${s.wrap} ${s.reveal}`}>
+          <span className={s.marqueeFoot}>API keys de solo lectura · vemos, no movemos</span>
         </div>
       </section>
 
