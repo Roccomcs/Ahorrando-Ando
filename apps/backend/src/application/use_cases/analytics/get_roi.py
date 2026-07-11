@@ -43,6 +43,8 @@ class GetROI:
                     "performance_24h": h.performance_24h,
                     "performance_30d": h.performance_30d,
                     "roi_pct": round(roi_pct, 2) if roi_pct is not None else None,
+                    "category": getattr(h, "category", None),
+                    "logo_url": getattr(h, "logo_url", None),
                 })
 
         return sorted(results, key=lambda x: x["current_value_usd"], reverse=True)

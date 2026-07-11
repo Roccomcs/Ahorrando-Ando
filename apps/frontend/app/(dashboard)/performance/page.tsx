@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react'
 import { Delta } from '@/components/ds/Delta'
+import { AssetAvatar } from '@/components/ds/AssetAvatar'
 import { useProviderPerformance, usePortfolio, usePortfolioHistory, useROI } from '@/hooks/usePortfolio'
 import { useCurrency } from '@/lib/currency-context'
-import type { ProviderPerformanceItem } from '@/lib/types'
+import type { ProviderPerformanceItem, AssetCategory } from '@/lib/types'
 
 // Colores de marca por cuenta (mismos que el dashboard).
 const PROVIDER_COLORS: Record<string, string> = {
@@ -77,26 +78,12 @@ function MonthlyBars({ months, format, rate }: { months: MonthPnl[]; format: (v:
   )
 }
 
-/* ── Badge de activo ────────────────────────────────────────── */
-function AssetBadge({ symbol }: { symbol: string }) {
-  const colors = ['#41A4EF', '#00C896', '#FFB454', '#B6FF3C', '#8FC8F6', '#FF9DAE', '#5DE9C4']
-  const c = colors[symbol.charCodeAt(0) % colors.length]
-  return (
-    <div style={{
-      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-      background: `color-mix(in srgb, ${c} 18%, transparent)`, color: c,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
-    }}>{symbol.slice(0, 4)}</div>
-  )
-}
-
-function MoverRow({ name, symbol, pct, maxAbs, kind }: { name: string; symbol: string; pct: number; maxAbs: number; kind: 'up' | 'down' }) {
+function MoverRow({ name, symbol, category, logoUrl, pct, maxAbs, kind }: { name: string; symbol: string; category?: AssetCategory | null; logoUrl?: string | null; pct: number; maxAbs: number; kind: 'up' | 'down' }) {
   const color = kind === 'up' ? 'var(--positive)' : 'var(--negative)'
   const width = Math.max(6, (Math.abs(pct) / (maxAbs || 1)) * 100)
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0' }}>
-      <AssetBadge symbol={symbol} />
+      <AssetAvatar symbol={symbol} category={category} logoUrl={logoUrl} size={34} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>{name}</div>
         <div style={{ height: 5, background: 'var(--surface-hover)', borderRadius: 999, overflow: 'hidden' }}>
@@ -264,14 +251,14 @@ export default function PerformancePage() {
             <span style={{ ...OVERLINE, color: 'var(--positive)', display: 'block', marginBottom: 8 }}>Ganadores · 30d</span>
             {movers.winners.length === 0 && <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Sin activos en positivo este mes.</span>}
             {movers.winners.map(w => (
-              <MoverRow key={w.asset_symbol + w.provider} name={w.asset_name || w.asset_symbol} symbol={w.asset_symbol} pct={w.performance_30d} maxAbs={movers.maxAbs} kind="up" />
+              <MoverRow key={w.asset_symbol + w.provider} name={w.asset_name || w.asset_symbol} symbol={w.asset_symbol} category={w.category} logoUrl={w.logo_url} pct={w.performance_30d} maxAbs={movers.maxAbs} kind="up" />
             ))}
           </div>
           <div>
             <span style={{ ...OVERLINE, color: 'var(--negative)', display: 'block', marginBottom: 8 }}>Rezagados · 30d</span>
             {movers.laggards.length === 0 && <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Sin activos en negativo este mes.</span>}
             {movers.laggards.map(l => (
-              <MoverRow key={l.asset_symbol + l.provider} name={l.asset_name || l.asset_symbol} symbol={l.asset_symbol} pct={l.performance_30d} maxAbs={movers.maxAbs} kind="down" />
+              <MoverRow key={l.asset_symbol + l.provider} name={l.asset_name || l.asset_symbol} symbol={l.asset_symbol} category={l.category} logoUrl={l.logo_url} pct={l.performance_30d} maxAbs={movers.maxAbs} kind="down" />
             ))}
           </div>
         </section>

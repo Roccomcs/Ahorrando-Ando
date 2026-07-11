@@ -7,6 +7,7 @@ import { Button } from '@/components/ds/Button'
 import { EmptyState } from '@/components/ds/EmptyState'
 import { Delta, formatPct } from '@/components/ds/Delta'
 import { formatMoney } from '@/components/ds/Stat'
+import { AssetAvatar, CATEGORY_LABEL } from '@/components/ds/AssetAvatar'
 import { useCurrency } from '@/lib/currency-context'
 import type { PortfolioSummaryDTO } from '@/lib/types'
 
@@ -151,20 +152,6 @@ function AreaChart({ points: rawPoints, symbol }: { points: { date: string; usd:
   )
 }
 
-/* ── Asset badge ────────────────────────────────────────────── */
-function AssetBadge({ symbol }: { symbol: string }) {
-  const colors = ['#41A4EF', '#00C896', '#FFB454', '#B6FF3C', '#8FC8F6', '#FF9DAE', '#5DE9C4']
-  const c = colors[symbol.charCodeAt(0) % colors.length]
-  return (
-    <div style={{
-      width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-      background: `color-mix(in srgb, ${c} 18%, transparent)`, color: c,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
-    }}>{symbol.slice(0, 4)}</div>
-  )
-}
-
 function RefreshIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6M1 20v-6h6" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
 }
@@ -304,10 +291,10 @@ export default function DashboardPage() {
                 return (
                   <div role="row" key={`${a.provider}-${a.asset_symbol}-${i}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 0.8fr', gap: 8, alignItems: 'center', padding: '14px 4px', borderBottom: '1px solid var(--border-1)' }}>
                     <div role="cell" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                      <AssetBadge symbol={a.asset_symbol} />
+                      <AssetAvatar logoUrl={a.logo_url} symbol={a.asset_symbol} category={a.category} size={34} />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_name || a.asset_symbol}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{label(a.provider)}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{a.category ? CATEGORY_LABEL[a.category] : label(a.provider)}</div>
                       </div>
                     </div>
                     <span role="cell" className="aa-num" style={{ fontSize: 13, color: 'var(--text-2)', textAlign: 'right' }}>{a.amount.toLocaleString('es-AR', { maximumFractionDigits: 6 })}</span>
@@ -358,7 +345,7 @@ function Hero({ portfolio, onRefresh, refreshing, deltas }: {
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <Link href="/integrations"><Button variant="secondary" size="sm">+ Agregar cuenta</Button></Link>
+        <Link href="/integrations"><Button variant="secondary" size="sm">+ Agregar activo</Button></Link>
         <Button variant="primary" size="sm" icon={<RefreshIcon />} onClick={onRefresh} disabled={refreshing}>
           {refreshing ? 'Actualizando…' : 'Actualizar'}
         </Button>

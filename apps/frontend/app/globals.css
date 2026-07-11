@@ -651,6 +651,12 @@ img, svg, video { max-width: 100%; }
   background-size: 200% 100%;
   animation: aa-shimmer 1.6s linear infinite;
 }
+/* Skeleton circular para AssetAvatar (usado en dashboard, performance, etc.). */
+.aa-skel-circle {
+  background: linear-gradient(90deg, var(--surface-card) 25%, var(--surface-hover) 50%, var(--surface-card) 75%);
+  background-size: 200% 100%;
+  animation: aa-shimmer 1.4s ease-in-out infinite;
+}
 
 /* Reduce motion — SÓLO las animaciones utilitarias del chrome (entradas de
    sección, shimmer, transiciones de hover). Las animaciones de marca del login

@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useTransactions } from '@/hooks/usePortfolio'
+import { useTransactions, usePortfolio } from '@/hooks/usePortfolio'
 import { Button } from '@/components/ds/Button'
-import type { TransactionDTO, TransactionType } from '@/lib/types'
+import { AssetAvatar } from '@/components/ds/AssetAvatar'
+import type { TransactionDTO, TransactionType, AssetCategory } from '@/lib/types'
+
+type AssetMeta = { category?: AssetCategory | null; logo_url?: string | null }
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
 
@@ -78,6 +81,18 @@ export default function HistoryPage() {
   const [tab, setTab] = useState<TransactionType | null>(null)
   const [account, setAccount] = useState<string | null>(null)
   const { data, isLoading } = useTransactions(30)
+  const { data: portfolio } = usePortfolio()
+
+  // Símbolo → categoría/logo (de los activos que tiene) para el logo real.
+  const assetMeta = useMemo(() => {
+    const map = new Map<string, AssetMeta>()
+    for (const p of portfolio?.providers ?? []) {
+      for (const h of p.holdings) {
+        if (!map.has(h.asset_symbol)) map.set(h.asset_symbol, { category: h.category, logo_url: h.logo_url })
+      }
+    }
+    return map
+  }, [portfolio])
 
   const all = useMemo(() => data ?? [], [data])
   const accounts = useMemo(() => [...new Set(all.map(t => t.account))], [all])
@@ -143,7 +158,10 @@ export default function HistoryPage() {
                 <div role="row" key={t.id} style={{ display: 'grid', gridTemplateColumns: '80px 130px 1fr 180px 140px', gap: 8, alignItems: 'center', padding: '13px 4px', borderBottom: '1px solid var(--border-1)' }}>
                   <span role="cell" style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>{fmtDate(t.occurred_at)}</span>
                   <span role="cell"><TypeBadge type={t.tx_type} /></span>
-                  <span role="cell" style={{ fontSize: 14, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail(t)}</span>
+                  <span role="cell" style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0, fontSize: 14, color: 'var(--text-1)' }}>
+                    {t.asset_symbol && <AssetAvatar symbol={t.asset_symbol} category={assetMeta.get(t.asset_symbol)?.category} logoUrl={assetMeta.get(t.asset_symbol)?.logo_url} size={26} />}
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail(t)}</span>
+                  </span>
                   <span role="cell" style={{ fontSize: 13, color: 'var(--text-2)' }}>{t.account}</span>
                   <span role="cell" style={{ ...MONO, fontSize: 13, fontWeight: 700, textAlign: 'right', color: positive ? 'var(--positive)' : 'var(--text-1)' }}>
                     {positive ? '+' : '−'}{fmtMoney(t.amount_usd)}

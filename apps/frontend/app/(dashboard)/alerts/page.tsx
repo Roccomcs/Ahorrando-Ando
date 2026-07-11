@@ -3,7 +3,10 @@
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ds/Button'
 import { useAlerts, useCreateAlert, useDeleteAlert, useToggleAlert, usePortfolio } from '@/hooks/usePortfolio'
-import type { PriceAlertDTO } from '@/lib/types'
+import { AssetAvatar } from '@/components/ds/AssetAvatar'
+import type { PriceAlertDTO, AssetCategory } from '@/lib/types'
+
+type AssetMeta = { category?: AssetCategory | null; logo_url?: string | null }
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
 
@@ -16,17 +19,6 @@ function fmtUsd(v: number) {
 }
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }).replace('.', '')
-}
-
-function SymbolBadge({ symbol }: { symbol: string }) {
-  return (
-    <div style={{
-      width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-      background: 'var(--surface-2)', border: '1px solid var(--border-2)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text-1)',
-    }}>{symbol.slice(0, 4)}</div>
-  )
 }
 
 function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -49,8 +41,9 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   )
 }
 
-function AlertRow({ alert, onToggle, onDelete }: {
+function AlertRow({ alert, meta, onToggle, onDelete }: {
   alert: PriceAlertDTO
+  meta?: AssetMeta
   onToggle: (id: string, active: boolean) => void
   onDelete: (id: string) => void
 }) {
@@ -58,7 +51,7 @@ function AlertRow({ alert, onToggle, onDelete }: {
   const triggeredToday = alert.triggered_at && new Date(alert.triggered_at).toDateString() === new Date().toDateString()
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 0', borderBottom: '1px solid var(--border-1)' }}>
-      <SymbolBadge symbol={alert.asset_symbol} />
+      <AssetAvatar symbol={alert.asset_symbol} category={meta?.category} logoUrl={meta?.logo_url} size={38} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {alert.asset_symbol} {dirText} <span style={MONO}>{fmtUsd(alert.threshold_usd)}</span>
@@ -110,6 +103,18 @@ export default function AlertsPage() {
   }, [portfolio])
   const chipSymbols = useMemo(() => [...holdings.keys()].slice(0, 8), [holdings])
 
+  // Mapa símbolo → categoría/logo (de los activos que el usuario tiene) para que
+  // las alertas muestren el logo real del activo, no las iniciales.
+  const assetMeta = useMemo(() => {
+    const map = new Map<string, AssetMeta>()
+    for (const p of portfolio?.providers ?? []) {
+      for (const h of p.holdings) {
+        if (!map.has(h.asset_symbol)) map.set(h.asset_symbol, { category: h.category, logo_url: h.logo_url })
+      }
+    }
+    return map
+  }, [portfolio])
+
   const effectiveSymbol = (symbol || customSymbol).trim().toUpperCase()
   const currentPrice = holdings.get(effectiveSymbol)
 
@@ -158,7 +163,7 @@ export default function AlertsPage() {
         )}
 
         {list.map(a => (
-          <AlertRow key={a.id} alert={a}
+          <AlertRow key={a.id} alert={a} meta={assetMeta.get(a.asset_symbol)}
             onToggle={(id, active) => toggleMutation.mutate({ id, is_active: active })}
             onDelete={id => deleteMutation.mutate(id)} />
         ))}

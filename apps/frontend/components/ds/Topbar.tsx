@@ -1,15 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { UserMenu } from '@/components/ds/UserMenu'
 import { useCurrency } from '@/lib/currency-context'
-
-function SearchIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-    </svg>
-  )
-}
 
 function BellIcon() {
   return (
@@ -23,36 +16,7 @@ export function Topbar() {
   const { currency, setCurrency } = useCurrency()
 
   return (
-    <header className="aa-topbar">
-      {/* Buscador */}
-      <div className="aa-topbar__search">
-        <span aria-hidden style={{ position: 'absolute', left: 14, color: 'var(--text-3)', display: 'flex' }}><SearchIcon /></span>
-        <label htmlFor="aa-topsearch" className="aa-sr-only">Buscar activos, cuentas y movimientos</label>
-        <input
-          id="aa-topsearch"
-          type="search"
-          className="aa-topsearch"
-          placeholder="Buscar activos, cuentas, movimientos…"
-          style={{
-            width: '100%', height: 40, borderRadius: 'var(--radius-full)',
-            background: 'var(--surface-2)', border: '1px solid var(--border-1)',
-            color: 'var(--text-1)', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)',
-            padding: '0 44px 0 40px',
-          }}
-        />
-        <kbd
-          className="aa-topbar__kbd"
-          aria-hidden
-          style={{
-            position: 'absolute', right: 10, fontSize: 11, color: 'var(--text-3)',
-            fontFamily: 'var(--font-mono)', background: 'var(--surface-1)',
-            border: '1px solid var(--border-1)', borderRadius: 6, padding: '2px 6px',
-          }}
-        >⌘K</kbd>
-      </div>
-
-      <div style={{ flex: 1 }} />
-
+    <header className="aa-topbar" style={{ justifyContent: 'flex-end' }}>
       {/* Toggle de moneda */}
       <div className="aa-seg" style={{ padding: 3 }} role="group" aria-label="Moneda de visualización">
         {(['USD', 'ARS'] as const).map(c => (
@@ -70,14 +34,15 @@ export function Topbar() {
         ))}
       </div>
 
-      {/* Notificaciones */}
-      <button
+      {/* Notificaciones → Alertas */}
+      <Link
+        href="/alerts"
         className="aa-icon-btn aa-icon-btn--md"
-        aria-label="Notificaciones"
+        aria-label="Alertas"
         style={{ borderRadius: '50%', border: '1px solid var(--border-2)', width: 38, height: 38 }}
       >
         <BellIcon />
-      </button>
+      </Link>
 
       <UserMenu />
     </header>

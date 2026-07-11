@@ -108,6 +108,8 @@ export interface ROIItem {
   performance_24h: number
   performance_30d: number
   roi_pct: number | null
+  category?: AssetCategory | null
+  logo_url?: string | null
 }
 
 export interface ProviderPerformancePoint {
