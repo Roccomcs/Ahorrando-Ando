@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { Delta } from '@/components/ds/Delta'
 import { AssetAvatar, CATEGORY_LABEL } from '@/components/ds/AssetAvatar'
-import { useProviderPerformance, usePortfolio, usePortfolioHistory, useROI } from '@/hooks/usePortfolio'
+import { useProviderPerformance, usePortfolio, useROI } from '@/hooks/usePortfolio'
 import { useCurrency } from '@/lib/currency-context'
 import type { AssetCategory } from '@/lib/types'
 
@@ -12,44 +12,6 @@ const OVERLINE: React.CSSProperties = {
 }
 const OVERLINE_MUTED: React.CSSProperties = { ...OVERLINE, color: 'var(--text-3)' }
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }
-
-function isoFrom(days: number) {
-  const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString()
-}
-
-/* ── Barras de PnL mensual ──────────────────────────────────── */
-interface MonthPnl { label: string; pnl: number }
-
-function MonthlyBars({ months, format, rate }: { months: MonthPnl[]; format: (v: number, r?: number | null) => string; rate?: number | null }) {
-  if (months.length === 0) {
-    return <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>El PnL mensual se construye a medida que se acumula historial.</div>
-  }
-  const maxAbs = Math.max(...months.map(m => Math.abs(m.pnl)), 1)
-  const H = 210, BAR_MAX = 150
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, height: H, paddingTop: 24 }}>
-      {months.map(m => {
-        const positive = m.pnl >= 0
-        const hgt = Math.max(8, (Math.abs(m.pnl) / maxAbs) * BAR_MAX)
-        const color = positive ? 'var(--positive)' : 'var(--negative)'
-        return (
-          <div key={m.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1, maxWidth: 96 }}>
-            <span style={{ ...MONO, fontSize: 12, fontWeight: 600, color }}>
-              {positive ? '+' : '−'}{format(Math.abs(m.pnl), rate)}
-            </span>
-            <div style={{
-              width: '100%', maxWidth: 64, height: hgt, borderRadius: '8px 8px 3px 3px',
-              background: positive
-                ? 'linear-gradient(180deg, #00C896 0%, rgba(0,200,150,0.45) 100%)'
-                : 'linear-gradient(180deg, #FF4D6D 0%, rgba(255,77,109,0.45) 100%)',
-            }} />
-            <span style={{ ...MONO, fontSize: 12, color: 'var(--text-3)' }}>{m.label}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 function MoverRow({ name, symbol, category, logoUrl, pct, maxAbs, kind }: { name: string; symbol: string; category?: AssetCategory | null; logoUrl?: string | null; pct: number; maxAbs: number; kind: 'up' | 'down' }) {
   const color = kind === 'up' ? 'var(--positive)' : 'var(--negative)'
@@ -73,8 +35,6 @@ function MoverRow({ name, symbol, category, logoUrl, pct, maxAbs, kind }: { name
 export default function PerformancePage() {
   const { data, isLoading } = useProviderPerformance(30)
   const { data: portfolio } = usePortfolio()
-  const fromIso = useMemo(() => isoFrom(365), [])
-  const { data: yearHistory } = usePortfolioHistory(fromIso)
   const { data: roi } = useROI()
   const { format } = useCurrency()
 
@@ -94,28 +54,6 @@ export default function PerformancePage() {
     if (!any || start === 0) return null
     return { abs: current - start, pct: ((current - start) / start) * 100 }
   }, [data])
-
-  // PnL mensual desde los snapshots del último año (últimos 6 meses con datos).
-  const months = useMemo<MonthPnl[]>(() => {
-    const pts = yearHistory?.points ?? []
-    if (pts.length < 2) return []
-    const byMonth = new Map<string, { first: number; last: number }>()
-    for (const p of pts) {
-      const d = new Date(p.snapshot_at)
-      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`
-      const e = byMonth.get(key)
-      if (!e) byMonth.set(key, { first: p.total_usd, last: p.total_usd })
-      else e.last = p.total_usd
-    }
-    return [...byMonth.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-6)
-      .map(([key, v]) => {
-        const [y, m] = key.split('-').map(Number)
-        const label = new Date(y, m, 1).toLocaleDateString('es-AR', { month: 'short' }).replace('.', '')
-        return { label, pnl: v.last - v.first }
-      })
-  }, [yearHistory])
 
   // Ganadores / rezagados 30d desde el ROI real por activo.
   const movers = useMemo(() => {
@@ -212,12 +150,6 @@ export default function PerformancePage() {
             No hay activos todavía. Cargá o conectá cuentas en Integraciones.
           </div>
         )}
-      </section>
-
-      {/* PNL MENSUAL */}
-      <section className="aa-sec aa-sec--3">
-        <span style={{ ...OVERLINE_MUTED, display: 'block', marginBottom: 4 }}>PnL mensual</span>
-        <MonthlyBars months={months} format={format} rate={rate} />
       </section>
 
       {/* GANADORES / REZAGADOS */}

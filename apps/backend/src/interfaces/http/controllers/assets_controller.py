@@ -3,7 +3,7 @@ from application.use_cases.assets.quote_asset import QuoteAsset
 from application.use_cases.assets.search_assets import SearchAssets
 from infrastructure.prices.coingecko_price_service import CoinGeckoPriceService
 from infrastructure.prices.logo_service import TradingViewLogoService
-from infrastructure.prices.stooq_price_service import StooqPriceService
+from infrastructure.prices.yahoo_price_service import YahooPriceService
 
 _AR_CATEGORIES = ("stock", "cedear", "bond")
 
@@ -14,7 +14,7 @@ class AssetsController:
         self._quote = QuoteAsset()
         self._coingecko = CoinGeckoPriceService()
         self._logos = TradingViewLogoService()
-        self._stooq = StooqPriceService()
+        self._yahoo = YahooPriceService()
 
     async def search_assets(self, query: str) -> list[AssetSearchResultDTO]:
         return await self._search.execute(query)
@@ -26,10 +26,10 @@ class AssetsController:
     async def asset_history(self, category: str, ref: str, days: int) -> dict:
         """Serie histórica de precios USD del activo para el gráfico de Analytics.
 
-        Cripto: CoinGecko market_chart. Acciones/CEDEARs: Stooq (la mayoría de los
-        CEDEARs son acciones de EE.UU.). Bonos AR y efectivo: sin fuente gratuita
-        conocida → serie vacía + available=False, y el frontend muestra sólo el
-        valor actual."""
+        Cripto: CoinGecko market_chart. Acciones/CEDEARs: Yahoo Finance (la mayoría
+        de los CEDEARs son acciones de EE.UU.). Bonos AR y efectivo: sin fuente
+        gratuita conocida → serie vacía + available=False, y el frontend muestra
+        sólo el valor actual."""
         cat = (category or "").lower()
         points: list[dict] = []
         if cat == "crypto":
@@ -46,7 +46,7 @@ class AssetsController:
                 pass
             points = await self._coingecko.market_chart(coin_id, days=days)
         elif cat in ("stock", "cedear"):
-            points = await self._stooq.market_chart(ref, days=days)
+            points = await self._yahoo.market_chart(ref, days=days)
         available = len(points) > 0
         return {"category": cat, "ref": ref, "days": days, "available": available, "points": points}
 
@@ -64,10 +64,13 @@ class AssetsController:
             elif cat in _AR_CATEGORIES:
                 url = await self._logos.logo_for_symbol_or_base(symbol)
             elif cat not in ("fx",):
-                # Autodetección: primero cripto, después acción/CEDEAR/bono.
-                url = await self._coingecko.logo_for_symbol(symbol)
+                # Autodetección (activo sin categoría, ej: ya borrado del historial).
+                # Probamos acción/CEDEAR primero: un símbolo tipo AAPL/AMD/AMZN
+                # podría matchear por casualidad un token cripto oscuro y traer un
+                # logo random; TradingView resuelve el logo real de la acción.
+                url = await self._logos.logo_for_symbol_or_base(symbol)
                 if not url:
-                    url = await self._logos.logo_for_symbol_or_base(symbol)
+                    url = await self._coingecko.logo_for_symbol(symbol)
         except Exception:
             url = None
         return {"symbol": symbol, "category": cat, "logo_url": url}
