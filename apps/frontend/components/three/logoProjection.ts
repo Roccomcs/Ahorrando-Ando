@@ -93,14 +93,46 @@ export function faceAxis(geo: THREE.BufferGeometry): THREE.Vector3 {
  * Muta la geometría (la comparten todas las instancias del mismo .glb) y se
  * marca en `userData` para no recalcular.
  */
-export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3): void {
-  if (geo.userData.logoUV) return
+export interface LogoUVOptions {
+  /** Rotación del logo en el plano de la cara, en grados. */
+  rotationDeg?: number
+  /** Espeja la U (horizontal). */
+  flipU?: boolean
+  /** Espeja la V (vertical). */
+  flipV?: boolean
+  /** Recalcula aunque ya haya UVs (para el slider de depuración). */
+  force?: boolean
+}
+
+export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3, opts?: LogoUVOptions): void {
+  // Si no se pasan opciones, se leen del query (?brot=grados&bflip=0..3) para
+  // poder ajustar la orientación en vivo desde el landing. DIAGNÓSTICO temporal.
+  let rotationDeg = opts?.rotationDeg ?? 0
+  let flipU = opts?.flipU ?? false
+  let flipV = opts?.flipV ?? false
+  const force = opts?.force ?? false
+  if (!opts && typeof window !== 'undefined') {
+    const q = new URLSearchParams(window.location.search)
+    const br = q.get('brot'); if (br) rotationDeg = Number(br) || 0
+    const bf = q.get('bflip'); if (bf) { const m = Number(bf) || 0; flipU = m === 1 || m === 3; flipV = m === 2 || m === 3 }
+  }
+
+  if (geo.userData.logoUV && !force) return
 
   // Base ortonormal del plano de la cara.
   const u = new THREE.Vector3(0, 1, 0)
   if (Math.abs(axis.dot(u)) > 0.9) u.set(1, 0, 0)
   u.crossVectors(u, axis).normalize()
   const v = new THREE.Vector3().crossVectors(axis, u).normalize()
+
+  // Rotación del logo en el plano: giramos la base (u, v) por el ángulo pedido.
+  if (rotationDeg) {
+    const a = (rotationDeg * Math.PI) / 180
+    const ca = Math.cos(a), sa2 = Math.sin(a)
+    const u2 = u.clone().multiplyScalar(ca).addScaledVector(v, sa2)
+    const v2 = v.clone().multiplyScalar(ca).addScaledVector(u, -sa2)
+    u.copy(u2); v.copy(v2)
+  }
 
   const pos = geo.getAttribute('position')
   const su = new Float32Array(pos.count)
@@ -129,18 +161,6 @@ export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3): v
   const spanU = maxU - minU || 1
   const spanV = maxV - minV || 1
   const midA = (minA + maxA) / 2
-
-  // DIAGNÓSTICO temporal: no puedo renderizar el WebGL para verificar la
-  // orientación de la "B", así que expongo las 4 combinaciones (espejar U / V)
-  // vía el query `?bflip=0..3` en el landing. Cuando sepamos cuál es la correcta,
-  // fijamos ese modo y sacamos esto.
-  let mode = 0
-  if (typeof window !== 'undefined') {
-    const bf = new URLSearchParams(window.location.search).get('bflip')
-    if (bf) mode = Number(bf) || 0
-  }
-  const flipU = mode === 1 || mode === 3
-  const flipV = mode === 2 || mode === 3
 
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {
