@@ -129,18 +129,32 @@ export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3): v
   const spanU = maxU - minU || 1
   const spanV = maxV - minV || 1
   const midA = (minA + maxA) / 2
+
+  // DIAGNÓSTICO temporal: no puedo renderizar el WebGL para verificar la
+  // orientación de la "B", así que expongo las 4 combinaciones (espejar U / V)
+  // vía el query `?bflip=0..3` en el landing. Cuando sepamos cuál es la correcta,
+  // fijamos ese modo y sacamos esto.
+  let mode = 0
+  if (typeof window !== 'undefined') {
+    const bf = new URLSearchParams(window.location.search).get('bflip')
+    if (bf) mode = Number(bf) || 0
+  }
+  const flipU = mode === 1 || mode === 3
+  const flipV = mode === 2 || mode === 3
+
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {
     const nu = (su[i] - minU) / spanU
-    // Ahora `axis` apunta a +Z (hacia cámara), así que la cara del lado del eje
-    // (sa ≥ midA) es la de frente. Con la base v = axis × u, su screen-right cae
-    // sobre +u, de modo que el UV directo (nu) la deja sin espejar. La cara de
-    // atrás, que se ve desde el otro lado al girar, lleva la U espejada (1−nu)
-    // para leerse igual de bien. Así la "B" de Bitcoin queda derecha en ambas.
-    uv[i * 2] = sa[i] < midA ? 1 - nu : nu
+    // Cara de frente (sa ≥ midA) con U directa; cara de atrás con U espejada, para
+    // que el logo se lea bien de ambos lados al girar.
+    let uu = sa[i] < midA ? 1 - nu : nu
+    if (flipU) uu = 1 - uu
+    uv[i * 2] = uu
     // V invertida: el origen de la textura está arriba (y por eso el material
     // desactiva `flipY`, que si no la invertiría de nuevo).
-    uv[i * 2 + 1] = 1 - (sv[i] - minV) / spanV
+    let vv = 1 - (sv[i] - minV) / spanV
+    if (flipV) vv = 1 - vv
+    uv[i * 2 + 1] = vv
   }
 
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
