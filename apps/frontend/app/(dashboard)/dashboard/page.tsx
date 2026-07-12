@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { usePortfolio, usePortfolioHistory, useProviderPerformance, useRefreshPortfolio } from '@/hooks/usePortfolio'
+import { usePortfolio, usePortfolioHistory, useRefreshPortfolio } from '@/hooks/usePortfolio'
 import { Button } from '@/components/ds/Button'
 import { EmptyState } from '@/components/ds/EmptyState'
 import { Delta, formatPct } from '@/components/ds/Delta'
@@ -11,30 +11,12 @@ import { AssetAvatar, CATEGORY_LABEL } from '@/components/ds/AssetAvatar'
 import { useCurrency } from '@/lib/currency-context'
 import type { PortfolioSummaryDTO } from '@/lib/types'
 
-// Paleta categórica: azul Cielo al frente. Verde/rojo reservados para P&L.
-const CHART_COLORS = ['#41A4EF', '#63B8F4', '#00B1EA', '#00C896', '#FFB454', '#8FC8F6', '#B6FF3C', '#5DE9C4', '#8A97AB']
-
-// Color de marca por cuenta (como en la referencia: Binance dorado, brokers
-// azul, Mercado Pago verde agua). Fallback: paleta categórica.
-const PROVIDER_COLORS: Record<string, string> = {
-  binance: '#E8C268', bullmarket: '#63B8F4', bullmarket_csv: '#63B8F4',
-  mercadopago: '#45D4C8', lemoncash: '#3DD993', iol: '#41A4EF',
-  onchain: '#9D8CFF', solana: '#B5D85A', balanz_csv: '#F08FB7', manual: '#8A97AB',
-}
-
 const PROVIDER_LABELS: Record<string, string> = {
   binance: 'Binance', mercadopago: 'Mercado Pago', bullmarket: 'Bull Market',
   bullmarket_csv: 'Bull Market', lemoncash: 'Lemon', iol: 'IOL', onchain: 'Wallet EVM',
   solana: 'Solana', balanz_csv: 'Balanz', manual: 'Manual',
 }
-const PROVIDER_SUBTITLES: Record<string, string> = {
-  binance: 'Exchange · API solo lectura', mercadopago: 'Saldo remunerado',
-  bullmarket: 'Broker · CEDEARs y bonos', bullmarket_csv: 'Broker · CEDEARs y bonos',
-  lemoncash: 'Wallet cripto', iol: 'Broker · Acciones y bonos', onchain: 'Wallet EVM',
-  solana: 'Wallet Solana', balanz_csv: 'Broker · CSV', manual: 'Ingreso manual',
-}
 function label(p: string) { return PROVIDER_LABELS[p] ?? p }
-function subtitle(p: string) { return PROVIDER_SUBTITLES[p] ?? 'Cuenta conectada' }
 
 type Period = { label: string; days: number }
 const PERIODS: Period[] = [
@@ -57,35 +39,6 @@ const OVERLINE: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--primary)',
 }
 const META: React.CSSProperties = { fontSize: 12, color: 'var(--text-3)' }
-
-/* ── Sparkline ──────────────────────────────────────────────── */
-function Sparkline({ series, w = 88, h = 28 }: { series: number[]; w?: number; h?: number }) {
-  if (series.length < 2) return <div style={{ width: w, height: h }} />
-  const min = Math.min(...series), max = Math.max(...series), range = max - min || 1
-  const up = series[series.length - 1] >= series[0]
-  const color = up ? 'var(--positive)' : 'var(--negative)'
-  const pts = series.map((v, i) => {
-    const x = (i / (series.length - 1)) * w
-    const y = h - 2 - ((v - min) / range) * (h - 4)
-    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
-  }).join(' ')
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
-      <path d={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-/* ── Distribution bar ───────────────────────────────────────── */
-function DistributionBar({ segments }: { segments: { pct: number; color: string }[] }) {
-  return (
-    <div style={{ display: 'flex', gap: 3, height: 8, width: '100%' }}>
-      {segments.map((s, i) => (
-        <div key={i} style={{ width: `${s.pct}%`, background: s.color, borderRadius: 999, minWidth: s.pct > 0 ? 6 : 0 }} />
-      ))}
-    </div>
-  )
-}
 
 /* ── Evolution area chart ───────────────────────────────────── */
 function AreaChart({ points: rawPoints, symbol }: { points: { date: string; usd: number }[]; symbol: string }) {
@@ -167,7 +120,6 @@ export default function DashboardPage() {
   // cambia siempre y entra en loop de refetch infinito (429 en el backend).
   const fromIso = useMemo(() => isoFrom(period.days), [period.days])
   const { data: history, isLoading: historyLoading } = usePortfolioHistory(fromIso)
-  const { data: perf } = useProviderPerformance(30)
   const { currency, format } = useCurrency()
 
   if (isLoading) return <Skeleton />
@@ -201,15 +153,6 @@ export default function DashboardPage() {
   const d1 = portfolio.change_pct_24h
   const d30 = portfolio.change_pct_30d
   const d7 = pctChange(history?.points ?? [], 7)
-
-  // Sparkline por provider desde /performance.
-  const perfByProvider = new Map((perf?.providers ?? []).map(p => [p.provider, p.history.map(h => h.balance_usd)]))
-
-  const providers = portfolio.providers.map((p, i) => ({
-    ...p, color: PROVIDER_COLORS[p.provider] ?? CHART_COLORS[i % CHART_COLORS.length],
-    pct: portfolio.total_usd > 0 ? (p.balance_usd / portfolio.total_usd) * 100 : 0,
-    spark: perfByProvider.get(p.provider) ?? [],
-  }))
 
   // Principales activos: aplanar holdings, ordenar por valor.
   const topAssets = portfolio.providers
@@ -246,35 +189,9 @@ export default function DashboardPage() {
           : <AreaChart points={pts} symbol={currency === 'ARS' && rate ? 'AR$' : 'US$'} />}
       </section>
 
-      {/* POR CUENTA */}
-      <section className="aa-sec aa-sec--3">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <span style={OVERLINE}>Por cuenta</span>
-          <span style={META}>{providers.length} cuenta{providers.length !== 1 ? 's' : ''} conectada{providers.length !== 1 ? 's' : ''}</span>
-        </div>
-        <DistributionBar segments={providers.map(p => ({ pct: p.pct, color: p.color }))} />
-        <div style={{ marginTop: 8 }}>
-          {providers.map(p => (
-            <div key={p.provider} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 0', borderBottom: '1px solid var(--border-1)' }}>
-              <div style={{ width: 9, height: 9, borderRadius: 2.5, background: p.color, flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{label(p.provider)}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{subtitle(p.provider)}</div>
-              </div>
-              <Sparkline series={p.spark} />
-              <div className="aa-num" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', minWidth: 120, textAlign: 'right' }}>{format(p.balance_usd, rate)}</div>
-              <div className="aa-num" style={{ fontSize: 13, color: 'var(--text-3)', minWidth: 48, textAlign: 'right' }}>{p.pct.toFixed(1)}%</div>
-              <div style={{ minWidth: 56, textAlign: 'right' }}>
-                {typeof p.performance?.['24h'] === 'number' ? <Delta value={p.performance['24h']} /> : <span style={{ color: 'var(--text-3)', fontSize: 13 }}>—</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* PRINCIPALES ACTIVOS */}
       {topAssets.length > 0 && (
-        <section className="aa-sec aa-sec--4">
+        <section className="aa-sec aa-sec--3">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={OVERLINE}>Principales activos</span>
             <Link href="/history" style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>Ver historial completo →</Link>

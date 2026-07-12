@@ -218,7 +218,7 @@ export default function AnalyticsPage() {
             <PriceChart points={chart.pts} up={chart.up} />
           ) : (
             <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-3)', fontSize: 13, border: '1px dashed var(--border-2)', borderRadius: 'var(--radius-md)', padding: '0 20px' }}>
-              El gráfico histórico está disponible para cripto. Para {selected.name || selected.symbol} mostramos el valor actual; el histórico de acciones/CEDEARs argentinos todavía no tiene una fuente gratuita.
+              Mostramos el valor actual de {selected.name || selected.symbol}. Su serie histórica no está disponible por ahora (sin fuente gratuita para este activo).
             </div>
           )}
         </section>

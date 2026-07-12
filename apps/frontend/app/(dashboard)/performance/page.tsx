@@ -2,19 +2,10 @@
 
 import { useMemo } from 'react'
 import { Delta } from '@/components/ds/Delta'
-import { AssetAvatar } from '@/components/ds/AssetAvatar'
+import { AssetAvatar, CATEGORY_LABEL } from '@/components/ds/AssetAvatar'
 import { useProviderPerformance, usePortfolio, usePortfolioHistory, useROI } from '@/hooks/usePortfolio'
 import { useCurrency } from '@/lib/currency-context'
-import type { ProviderPerformanceItem, AssetCategory } from '@/lib/types'
-
-// Colores de marca por cuenta (mismos que el dashboard).
-const PROVIDER_COLORS: Record<string, string> = {
-  binance: '#E8C268', bullmarket: '#63B8F4', bullmarket_csv: '#63B8F4',
-  mercadopago: '#45D4C8', lemoncash: '#3DD993', iol: '#41A4EF',
-  onchain: '#9D8CFF', solana: '#B5D85A', balanz_csv: '#F08FB7', manual: '#8A97AB',
-}
-const FALLBACK = ['#41A4EF', '#63B8F4', '#00B1EA', '#00C896', '#FFB454', '#8FC8F6']
-function pColor(name: string, idx: number) { return PROVIDER_COLORS[name] ?? FALLBACK[idx % FALLBACK.length] }
+import type { AssetCategory } from '@/lib/types'
 
 const OVERLINE: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--primary)',
@@ -24,24 +15,6 @@ const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantN
 
 function isoFrom(days: number) {
   const d = new Date(); d.setDate(d.getDate() - days); return d.toISOString()
-}
-
-/* ── Sparkline (tendencia verde/roja, como el dashboard) ────── */
-function Sparkline({ series, w = 120, h = 30 }: { series: number[]; w?: number; h?: number }) {
-  if (series.length < 2) return <div style={{ width: w, height: h }} />
-  const min = Math.min(...series), max = Math.max(...series), range = max - min || 1
-  const up = series[series.length - 1] >= series[0]
-  const color = up ? 'var(--positive)' : 'var(--negative)'
-  const pts = series.map((v, i) => {
-    const x = (i / (series.length - 1)) * w
-    const y = h - 2 - ((v - min) / range) * (h - 4)
-    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
-  }).join(' ')
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
-      <path d={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
 }
 
 /* ── Barras de PnL mensual ──────────────────────────────────── */
@@ -155,6 +128,12 @@ export default function PerformancePage() {
     return { winners, laggards, maxAbs }
   }, [roi])
 
+  // Activos individuales (con logo y nombre real), ordenados por valor.
+  const assetRows = useMemo(
+    () => [...(roi ?? [])].sort((a, b) => b.current_value_usd - a.current_value_usd),
+    [roi],
+  )
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -171,8 +150,6 @@ export default function PerformancePage() {
       </div>
     )
   }
-
-  const providers = data?.providers ?? []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
@@ -200,40 +177,39 @@ export default function PerformancePage() {
         </div>
       </div>
 
-      {/* RESUMEN POR CUENTA */}
+      {/* RESUMEN POR ACTIVO */}
       <section className="aa-sec aa-sec--2">
-        <span style={{ ...OVERLINE_MUTED, display: 'block', marginBottom: 14 }}>Resumen por cuenta</span>
-        <div className="aa-tablewrap" role="region" aria-label="Resumen por cuenta" tabIndex={0}>
+        <span style={{ ...OVERLINE_MUTED, display: 'block', marginBottom: 14 }}>Resumen por activo</span>
+        <div className="aa-tablewrap" role="region" aria-label="Resumen por activo" tabIndex={0}>
           <div role="table">
-            <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, padding: '0 0 10px', borderBottom: '1px solid var(--border-1)' }}>
-              {['Cuenta', 'Evolución', 'Actual', '24h', '7d', '30d'].map((h, i) => (
-                <span role="columnheader" key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i >= 2 ? 'right' : 'left' }}>
-                  {/* La columna del sparkline no mostraba encabezado: visualmente
-                      está bien, pero un lector de pantalla necesita nombrarla. */}
-                  <span className={i === 1 ? 'aa-sr-only' : undefined}>{h}</span>
-                </span>
+            <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 2fr) 1fr 1fr 0.7fr 0.7fr', gap: 8, padding: '0 0 10px', borderBottom: '1px solid var(--border-1)' }}>
+              {['Activo', 'Cantidad', 'Actual', '24h', '30d'].map((h, i) => (
+                <span role="columnheader" key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)', textAlign: i >= 1 ? 'right' : 'left' }}>{h}</span>
               ))}
             </div>
-            {providers.map((p: ProviderPerformanceItem, i: number) => (
-              <div role="row" key={p.provider} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.4fr) minmax(120px, 1fr) 1fr 0.6fr 0.6fr 0.6fr', gap: 8, alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border-1)' }}>
+            {assetRows.map((a) => (
+              <div role="row" key={a.asset_symbol + a.provider} style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 2fr) 1fr 1fr 0.7fr 0.7fr', gap: 8, alignItems: 'center', padding: '16px 0', borderBottom: '1px solid var(--border-1)' }}>
                 <div role="cell" style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <div aria-hidden style={{ width: 9, height: 9, borderRadius: 2.5, background: pColor(p.provider, i), flexShrink: 0 }} />
-                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label}</span>
+                  <AssetAvatar symbol={a.asset_symbol} category={a.category} logoUrl={a.logo_url} size={34} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_name || a.asset_symbol}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{a.category ? CATEGORY_LABEL[a.category] : a.asset_symbol}</div>
+                  </div>
                 </div>
-                <span role="cell"><Sparkline series={p.history.map(h => h.balance_usd)} /></span>
-                <span role="cell" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(p.current_usd, rate)}</span>
-                {[p.change_pct_24h, p.change_pct_7d, p.change_pct_30d].map((v, j) => (
+                <span role="cell" style={{ ...MONO, fontSize: 13, color: 'var(--text-2)', textAlign: 'right' }}>{a.amount.toLocaleString('es-AR', { maximumFractionDigits: 6 })}</span>
+                <span role="cell" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: 'var(--text-1)', textAlign: 'right' }}>{format(a.current_value_usd, rate)}</span>
+                {[a.performance_24h, a.performance_30d].map((v, j) => (
                   <span role="cell" key={j} style={{ textAlign: 'right' }}>
-                    {v !== null ? <Delta value={v} /> : <span style={{ ...MONO, color: 'var(--text-3)', fontSize: 13 }}>—</span>}
+                    {typeof v === 'number' ? <Delta value={v} /> : <span style={{ ...MONO, color: 'var(--text-3)', fontSize: 13 }}>—</span>}
                   </span>
                 ))}
               </div>
             ))}
           </div>
         </div>
-        {providers.length === 0 && (
+        {assetRows.length === 0 && (
           <div style={{ padding: '28px 0', color: 'var(--text-3)', fontSize: 13 }}>
-            No hay datos de performance todavía. Conectá cuentas en Integraciones.
+            No hay activos todavía. Cargá o conectá cuentas en Integraciones.
           </div>
         )}
       </section>

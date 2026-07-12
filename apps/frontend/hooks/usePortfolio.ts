@@ -40,13 +40,16 @@ export function useTransactions(days = 30, txType?: string, account?: string) {
  *  backend (holdings manuales guardados), no se pide nada. */
 export function useAssetLogo(symbol: string, category?: string | null, provided?: string | null) {
   const ready = useAuthReady()
-  const canFetch = !provided && !!symbol && !!category && category !== 'fx'
+  // Sin categoría (ej: un activo ya borrado que sigue en el historial) igual
+  // pedimos el logo: el backend lo autodetecta por símbolo. Sólo `fx` queda afuera
+  // (usa bandera).
+  const canFetch = !provided && !!symbol && category !== 'fx'
   const q = useQuery<string | null>({
-    queryKey: ['asset-logo', symbol, category],
+    queryKey: ['asset-logo', symbol, category ?? null],
     queryFn: () =>
       api
         .get<{ logo_url: string | null }>(
-          `/api/v1/assets/logo?symbol=${encodeURIComponent(symbol)}&category=${encodeURIComponent(category!)}`
+          `/api/v1/assets/logo?symbol=${encodeURIComponent(symbol)}&category=${encodeURIComponent(category ?? '')}`
         )
         .then((r) => r.data.logo_url ?? null),
     enabled: ready && canFetch,

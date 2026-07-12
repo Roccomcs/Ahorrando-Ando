@@ -39,7 +39,6 @@ const CONNECTIONS: { name: string; src: string }[] = [
   { name: 'IOL',         src: 'https://icons.duckduckgo.com/ip3/invertironline.com.ico' },
   { name: 'Balanz',      src: '/providers/balanz.svg' },
   { name: 'Ethereum',    src: '/crypto/eth.svg' },
-  { name: 'ARS',         src: '/providers/ars.svg' },
   { name: 'USDT',        src: '/crypto/usdt.svg' },
   { name: 'Lemon',       src: '/providers/lemon.svg' },
   { name: 'Bitcoin',     src: '/crypto/btc.svg' },

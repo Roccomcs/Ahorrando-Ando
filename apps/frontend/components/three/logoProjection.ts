@@ -76,9 +76,13 @@ export function faceAxis(geo: THREE.BufferGeometry): THREE.Vector3 {
 /** Genera UVs proyectando la geometría sobre el plano perpendicular a `axis`.
  *
  * El bounding box de la proyección se estira a [0,1]², de modo que la
- * silueta del modelo queda calzada con el arte de la imagen. Las dos caras
- * comparten UV (la de atrás se ve espejada, como en una moneda real) y el
- * canto samplea los bordes de la textura.
+ * silueta del modelo queda calzada con el arte de la imagen. El canto samplea
+ * los bordes de la textura.
+ *
+ * La cara de atrás se ve desde el otro lado: si compartiera el UV con la de
+ * adelante, el logo saldría espejado ahí (la "B" de Bitcoin al revés cuando la
+ * moneda gira). Por eso a los vértices de la cara trasera se les espeja la U,
+ * de modo que el logo se lee bien en AMBAS caras.
  *
  * Muta la geometría (la comparten todas las instancias del mismo .glb) y se
  * marca en `userData` para no recalcular.
@@ -95,26 +99,36 @@ export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3): v
   const pos = geo.getAttribute('position')
   const su = new Float32Array(pos.count)
   const sv = new Float32Array(pos.count)
+  const sa = new Float32Array(pos.count) // proyección sobre el eje (para separar caras)
   const p = new THREE.Vector3()
   let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity
+  let minA = Infinity, maxA = -Infinity
 
   for (let i = 0; i < pos.count; i++) {
     p.fromBufferAttribute(pos, i)
     const pu = p.dot(u)
     const pv = p.dot(v)
+    const pa = p.dot(axis)
     su[i] = pu
     sv[i] = pv
+    sa[i] = pa
     if (pu < minU) minU = pu
     if (pu > maxU) maxU = pu
     if (pv < minV) minV = pv
     if (pv > maxV) maxV = pv
+    if (pa < minA) minA = pa
+    if (pa > maxA) maxA = pa
   }
 
   const spanU = maxU - minU || 1
   const spanV = maxV - minV || 1
+  const midA = (minA + maxA) / 2
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {
-    uv[i * 2] = (su[i] - minU) / spanU
+    const nu = (su[i] - minU) / spanU
+    // Cara trasera (del lado opuesto al eje): U espejada para que el logo no se
+    // vea al revés cuando la moneda muestra ese lado.
+    uv[i * 2] = sa[i] < midA ? 1 - nu : nu
     // V invertida: el origen de la textura está arriba (y por eso el material
     // desactiva `flipY`, que si no la invertiría de nuevo).
     uv[i * 2 + 1] = 1 - (sv[i] - minV) / spanV
