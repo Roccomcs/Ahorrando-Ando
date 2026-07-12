@@ -70,6 +70,12 @@ export function faceAxis(geo: THREE.BufferGeometry): THREE.Vector3 {
     if (r.lengthSq() === 0) break
     v.copy(r).normalize()
   }
+  // La iteración de potencia converge a +n o −n de forma arbitraria (el signo del
+  // autovector no está definido). Ese signo decide qué cara recibe el UV directo
+  // y cuál el espejado, así que sin fijarlo el logo salía bien o espejado según
+  // el build. Lo fijamos hacia +Z: en reposo las monedas miran a la cámara (que
+  // está en +Z), de modo que la cara que se ve primero es siempre la "de frente".
+  if (v.z < 0) v.negate()
   return v
 }
 
@@ -126,12 +132,12 @@ export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3): v
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {
     const nu = (su[i] - minU) / spanU
-    // Una cara lleva U directa y la otra espejada, para que el logo se lea bien
-    // por ambos lados de la moneda al girar. La base u/v del plano queda con una
-    // orientación arbitraria (depende del signo del autovector), y en la práctica
-    // la cara que mira a cámara salía espejada (la "B" de Bitcoin al revés): por
-    // eso la cara del lado del eje (sa ≥ midA) es la que se espeja.
-    uv[i * 2] = sa[i] < midA ? nu : 1 - nu
+    // Ahora `axis` apunta a +Z (hacia cámara), así que la cara del lado del eje
+    // (sa ≥ midA) es la de frente. Con la base v = axis × u, su screen-right cae
+    // sobre +u, de modo que el UV directo (nu) la deja sin espejar. La cara de
+    // atrás, que se ve desde el otro lado al girar, lleva la U espejada (1−nu)
+    // para leerse igual de bien. Así la "B" de Bitcoin queda derecha en ambas.
+    uv[i * 2] = sa[i] < midA ? 1 - nu : nu
     // V invertida: el origen de la textura está arriba (y por eso el material
     // desactiva `flipY`, que si no la invertiría de nuevo).
     uv[i * 2 + 1] = 1 - (sv[i] - minV) / spanV
