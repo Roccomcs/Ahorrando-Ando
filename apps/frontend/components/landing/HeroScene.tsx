@@ -28,35 +28,15 @@ const MODELS = {
   usdt: '/models/USDT_Logo.glb',
 }
 
-// Orientación del logo de Bitcoin sobre la moneda. La "B" del .glb queda ~10°
-// ladeada de frente, así que se corrige acá (solo para BTC).
-//
-// DIAGNÓSTICO temporal: la cara de atrás todavía se está calibrando, así que los
-// valores se pueden overridear por query en el landing (público, sin login):
-//   ?brot=  rotación de la cara de FRENTE (default 10)
-//   ?bfu=1  espejar U de la cara de frente
-//   ?bfv=1  espejar V de la cara de frente
-//   ?bbrot= rotación de la cara de ATRÁS (default = frente)
-//   ?bbfu=  espejar U de la cara de atrás (default 1)
-//   ?bbfv=1 espejar V de la cara de atrás
-// Recargá la página entera al cambiar un valor. Cuando demos con la combinación
-// correcta la fijamos y sacamos todo esto.
-function btcLogoUV(): LogoUVOptions {
-  if (typeof window === 'undefined') return { rotationDeg: 10 }
-  const q = new URLSearchParams(window.location.search)
-  const numOr = (k: string, d: number) => { const v = q.get(k); return v != null && v !== '' ? Number(v) : d }
-  const boolOr = (k: string, d: boolean) => { const v = q.get(k); return v != null ? (v === '1' || v === 'true') : d }
-  const rot = numOr('brot', 10)
-  return {
-    rotationDeg: rot,
-    flipU: boolOr('bfu', false),
-    flipV: boolOr('bfv', false),
-    backRotationDeg: numOr('bbrot', rot),
-    backFlipU: boolOr('bbfu', true),
-    backFlipV: boolOr('bbfv', false),
-  }
+// Orientación del logo de Bitcoin sobre la moneda (solo para BTC). La "B" del
+// .glb queda ladeada: la cara de frente se corrige rotando 10°, y la de atrás
+// (que se ve desde el otro lado al girar) rotando 350° con la U espejada. Valores
+// calibrados a ojo contra el render real.
+const BTC_LOGO_UV: LogoUVOptions = {
+  rotationDeg: 10,
+  backRotationDeg: 350,
+  backFlipU: true,
 }
-const BTC_LOGO_UV: LogoUVOptions = btcLogoUV()
 
 useGLTF.preload(MODELS.bitcoin)
 useGLTF.preload(MODELS.binance)
