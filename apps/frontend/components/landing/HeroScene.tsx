@@ -9,6 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import * as THREE from 'three'
 import { CoinModel } from './CoinModel'
+import type { LogoUVOptions } from '@/components/three/logoProjection'
 import { GravityField } from './GravityField'
 import { RadarWaves } from './RadarWaves'
 import { EnergyStream } from './EnergyStream'
@@ -28,9 +29,34 @@ const MODELS = {
 }
 
 // Orientación del logo de Bitcoin sobre la moneda. La "B" del .glb queda ~10°
-// ladeada, así que se corrige acá (solo para BTC). Referencia estable para no
-// recalcular el UV en cada render.
-const BTC_LOGO_UV = { rotationDeg: 10 }
+// ladeada de frente, así que se corrige acá (solo para BTC).
+//
+// DIAGNÓSTICO temporal: la cara de atrás todavía se está calibrando, así que los
+// valores se pueden overridear por query en el landing (público, sin login):
+//   ?brot=  rotación de la cara de FRENTE (default 10)
+//   ?bfu=1  espejar U de la cara de frente
+//   ?bfv=1  espejar V de la cara de frente
+//   ?bbrot= rotación de la cara de ATRÁS (default = frente)
+//   ?bbfu=  espejar U de la cara de atrás (default 1)
+//   ?bbfv=1 espejar V de la cara de atrás
+// Recargá la página entera al cambiar un valor. Cuando demos con la combinación
+// correcta la fijamos y sacamos todo esto.
+function btcLogoUV(): LogoUVOptions {
+  if (typeof window === 'undefined') return { rotationDeg: 10 }
+  const q = new URLSearchParams(window.location.search)
+  const numOr = (k: string, d: number) => { const v = q.get(k); return v != null && v !== '' ? Number(v) : d }
+  const boolOr = (k: string, d: boolean) => { const v = q.get(k); return v != null ? (v === '1' || v === 'true') : d }
+  const rot = numOr('brot', 10)
+  return {
+    rotationDeg: rot,
+    flipU: boolOr('bfu', false),
+    flipV: boolOr('bfv', false),
+    backRotationDeg: numOr('bbrot', rot),
+    backFlipU: boolOr('bbfu', true),
+    backFlipV: boolOr('bbfv', false),
+  }
+}
+const BTC_LOGO_UV: LogoUVOptions = btcLogoUV()
 
 useGLTF.preload(MODELS.bitcoin)
 useGLTF.preload(MODELS.binance)
