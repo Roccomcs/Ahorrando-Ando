@@ -6,6 +6,7 @@ from domain.entities.user import User
 from domain.repositories.i_user_repository import IUserRepository
 
 
+# Caso de uso para registrar un nuevo usuario. Verifica si el email ya está registrado, maneja cuentas no verificadas y crea un nuevo usuario en la base de datos.
 class RegisterUser:
     def __init__(self, user_repo: IUserRepository) -> None:
         self._repo = user_repo

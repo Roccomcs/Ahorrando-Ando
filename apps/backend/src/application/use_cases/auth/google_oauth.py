@@ -18,6 +18,7 @@ _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
+# Arma la URL de autorización de Google con los parámetros del OAuth2. El estado sirve para prevenir CSRF.
 def build_google_auth_url(state: str) -> str:
     from urllib.parse import urlencode
     params = {
@@ -39,6 +40,7 @@ class GoogleUserInfo:
     email_verified: bool
 
 
+# Intercambia el code de OAuth2 por un access_token y luego pide los datos del usuario a Google
 async def fetch_google_user(code: str) -> GoogleUserInfo:
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(_GOOGLE_TOKEN_URL, data={
@@ -65,6 +67,8 @@ async def fetch_google_user(code: str) -> GoogleUserInfo:
     )
 
 
+# Caso de uso que maneja el callback de Google OAuth2.
+# Busca al usuario por google_id o email, lo crea si no existe, y devuelve la entidad User lista para generar tokens.
 class HandleGoogleCallback:
     def __init__(self, user_repo: IUserRepository) -> None:
         self._repo = user_repo

@@ -1,7 +1,7 @@
 from application.dtos.auth.login_dto import LoginDTO, TokenDTO
 from domain.repositories.i_user_repository import IUserRepository
 
-
+# Caso de uso para iniciar sesión de un usuario. Verifica las credenciales y genera tokens de acceso y actualización.
 class LoginUser:
     def __init__(self, user_repo: IUserRepository) -> None:
         self._repo = user_repo

@@ -16,6 +16,10 @@ from infrastructure.database.postgres.repositories.postgres_push_subscription_re
 from interfaces.http.dependencies.get_current_user import get_current_user
 
 
+# Controlador de alertas de precio. Maneja crear, listar, eliminar, activar/desactivar alertas
+# y suscripciones push para notificaciones en el navegador del usuario.
+
+# DTO de entrada para crear una nueva alerta de precio
 class CreateAlertRequest(BaseModel):
     asset_symbol: str = Field(min_length=1, max_length=10, pattern=r"^[A-Za-z0-9]+$")
     threshold_usd: float = Field(gt=0)
@@ -28,6 +32,7 @@ class CreateAlertRequest(BaseModel):
         return v.upper()
 
 
+# Hosts de push permitidos: solo servicios conocidos (Google, Mozilla, Windows, Apple)
 _ALLOWED_PUSH_HOSTS = {
     "fcm.googleapis.com",
     "updates.push.services.mozilla.com",
@@ -36,6 +41,7 @@ _ALLOWED_PUSH_HOSTS = {
 }
 
 
+# DTO de entrada para suscribirse a notificaciones push del navegador
 class PushSubscribeRequest(BaseModel):
     endpoint: str
     p256dh: str
@@ -54,10 +60,12 @@ class PushSubscribeRequest(BaseModel):
         return v
 
 
+# DTO de entrada para activar o desactivar una alerta existente
 class ToggleAlertRequest(BaseModel):
     is_active: bool
 
 
+# DTO de respuesta de una alerta (se usa tanto en list como en create)
 class AlertResponse(BaseModel):
     id: str
     asset_symbol: str
@@ -69,6 +77,7 @@ class AlertResponse(BaseModel):
     triggered_at: str | None
 
 
+# Convierte la entidad PriceAlert del dominio al DTO de respuesta HTTP
 def _alert_to_response(a: PriceAlert) -> AlertResponse:
     return AlertResponse(
         id=a.id,
@@ -83,6 +92,7 @@ def _alert_to_response(a: PriceAlert) -> AlertResponse:
 
 
 class AlertsController:
+    # Lista todas las alertas del usuario ordenadas por fecha de creación
     async def list_alerts(
         self,
         session: AsyncSession = Depends(get_session),
@@ -92,6 +102,7 @@ class AlertsController:
         alerts = await repo.find_by_user(current_user.id)
         return [_alert_to_response(a) for a in alerts]
 
+    # Crea una nueva alerta de precio para un activo del usuario
     async def create_alert(
         self,
         body: CreateAlertRequest,
@@ -111,6 +122,7 @@ class AlertsController:
             raise HTTPException(status_code=422, detail=str(e))
         return _alert_to_response(alert)
 
+    # Elimina una alerta del usuario por su id
     async def delete_alert(
         self,
         alert_id: str,
@@ -120,6 +132,7 @@ class AlertsController:
         await DeleteAlert(PostgresPriceAlertRepository(session)).execute(alert_id, current_user.id)
         return {"ok": True}
 
+    # Activa o desactiva una alerta. Al reactivar, limpia triggered_at para que pueda volver a dispararse
     async def toggle_alert(
         self,
         alert_id: str,
@@ -130,6 +143,7 @@ class AlertsController:
         await PostgresPriceAlertRepository(session).set_active(alert_id, current_user.id, body.is_active)
         return {"ok": True}
 
+    # Registra un dispositivo para recibir notificaciones push cuando se dispare una alerta
     async def subscribe_push(
         self,
         body: PushSubscribeRequest,
@@ -149,6 +163,7 @@ class AlertsController:
         await PostgresPushSubscriptionRepository(session).save(sub)
         return {"ok": True}
 
+    # Elimina la suscripción push de un dispositivo específico
     async def unsubscribe_push(
         self,
         body: PushSubscribeRequest,

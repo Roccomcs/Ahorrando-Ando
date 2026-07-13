@@ -10,9 +10,12 @@ from domain.entities.user import User
 from interfaces.http.controllers.dashboard_controller import DashboardController
 from interfaces.http.dependencies.get_current_user import get_current_user
 
+# Endpoints del dashboard financiero del usuario. Todos requieren autenticación.
+# Agrupa portfolio, historial, allocación, ROI, benchmark, performance por provider y exportación CSV.
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+# Endpoint para obtener el portfolio agregado del usuario (todos sus proveedores sumados)
 @router.get("/", response_model=PortfolioSummaryDTO)
 async def get_dashboard(
     current_user: User = Depends(get_current_user),
@@ -21,6 +24,7 @@ async def get_dashboard(
     return await controller.get_aggregated(user_id=current_user.id)
 
 
+# Invalida la caché del portfolio y fuerza recarga de todos los proveedores
 @router.post("/refresh", response_model=PortfolioSummaryDTO)
 async def refresh_dashboard(
     current_user: User = Depends(get_current_user),
@@ -30,6 +34,7 @@ async def refresh_dashboard(
     return await controller.refresh(user_id=current_user.id)
 
 
+# Historial de snapshots del portfolio. Acepta rango de fechas (default: últimos 30 días)
 @router.get("/history", response_model=PortfolioHistoryDTO)
 async def get_history(
     current_user: User = Depends(get_current_user),
@@ -58,6 +63,7 @@ async def get_history(
     return await controller.get_history(user_id=current_user.id, start=start, end=end)
 
 
+# Distribución del portfolio por categoría (cripto, acciones, efectivo, etc.)
 @router.get("/allocation")
 async def get_allocation(
     current_user: User = Depends(get_current_user),
@@ -66,6 +72,7 @@ async def get_allocation(
     return await controller.get_allocation(user_id=current_user.id)
 
 
+# Retorno sobre la inversión (ROI) del usuario comparado contra snapshots históricos
 @router.get("/roi")
 async def get_roi(
     current_user: User = Depends(get_current_user),
@@ -74,6 +81,7 @@ async def get_roi(
     return await controller.get_roi(user_id=current_user.id)
 
 
+# Comparación del portfolio del usuario contra un activo de referencia (BTC o ETH por defecto)
 @router.get("/benchmark")
 async def get_benchmark(
     asset: str = Query(default="BTC", description="Activo de referencia: BTC o ETH"),
@@ -84,6 +92,7 @@ async def get_benchmark(
     return await controller.get_benchmark(user_id=current_user.id, asset=asset, period=period)
 
 
+# Rendimiento histórico por proveedor (Binance, IOL, Manual, etc.) con gráfico de evolución
 @router.get("/performance", response_model=ProviderPerformanceResponseDTO)
 async def get_provider_performance(
     days: int = Query(default=30, ge=1, le=365, description="Período en días: 7, 30, 90, 365"),
@@ -94,6 +103,7 @@ async def get_provider_performance(
     return await controller.get_provider_performance(user_id=current_user.id, days=days)
 
 
+# Exporta el historial del portfolio como archivo CSV descargable
 @router.get("/export")
 async def export_csv(
     days: int = Query(default=365, ge=1, le=1825, description="Días de historial a exportar"),

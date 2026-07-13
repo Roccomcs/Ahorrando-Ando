@@ -8,10 +8,12 @@ from domain.repositories.i_transaction_repository import ITransactionRepository
 from infrastructure.database.postgres.models.transaction_model import TransactionModel
 
 
+# Implementación PostgreSQL del repositorio de transacciones. Registra movimientos financieros reales del usuario.
 class PostgresTransactionRepository(ITransactionRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Inserta múltiples transacciones en una sola operación (usado al sincronizar posiciones manuales)
     async def save_many(self, transactions: list[Transaction]) -> None:
         if not transactions:
             return
@@ -32,6 +34,7 @@ class PostgresTransactionRepository(ITransactionRepository):
             ))
         await self._session.commit()
 
+    # Lista las transacciones del usuario con filtros opcionales de fecha, tipo y cuenta. Máximo 500 resultados.
     async def find_by_user(
         self,
         user_id: str,
@@ -52,6 +55,7 @@ class PostgresTransactionRepository(ITransactionRepository):
         return [_to_entity(m) for m in result.scalars().all()]
 
 
+# Convierte el modelo SQLAlchemy (TransactionModel) a la entidad del dominio (Transaction)
 def _to_entity(m: TransactionModel) -> Transaction:
     return Transaction(
         id=m.id,

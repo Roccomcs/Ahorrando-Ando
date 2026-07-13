@@ -9,10 +9,13 @@ from domain.repositories.i_provider_snapshot_repository import IProviderSnapshot
 from infrastructure.database.postgres.models.provider_snapshot_model import ProviderSnapshotModel
 
 
+# Implementación PostgreSQL del repositorio de snapshots por proveedor.
+# Guarda el balance de cada integración (Binance, IOL, manual...) en el tiempo para graficar por cuenta.
 class PostgresProviderSnapshotRepository(IProviderSnapshotRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Inserta múltiples snapshots en una sola transacción (uno por cada proveedor activo)
     async def save_many(self, snapshots: list[ProviderSnapshot]) -> None:
         for snap in snapshots:
             model = ProviderSnapshotModel(
@@ -25,6 +28,7 @@ class PostgresProviderSnapshotRepository(IProviderSnapshotRepository):
             self._session.add(model)
         await self._session.commit()
 
+    # Snapshots de todos los proveedores del usuario desde una fecha hasta ahora
     async def find_by_user_since(
         self, user_id: str, since: datetime
     ) -> list[ProviderSnapshot]:
@@ -36,6 +40,7 @@ class PostgresProviderSnapshotRepository(IProviderSnapshotRepository):
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 
+    # Snapshot más cercano ANTES de una fecha para un proveedor puntual (para calcular delta)
     async def find_nearest_before(
         self, user_id: str, provider: str, before: datetime
     ) -> ProviderSnapshot | None:
@@ -50,6 +55,7 @@ class PostgresProviderSnapshotRepository(IProviderSnapshotRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    # Convierte el modelo SQLAlchemy (ProviderSnapshotModel) a la entidad del dominio (ProviderSnapshot)
     def _to_entity(self, model: ProviderSnapshotModel) -> ProviderSnapshot:
         return ProviderSnapshot(
             id=model.id,

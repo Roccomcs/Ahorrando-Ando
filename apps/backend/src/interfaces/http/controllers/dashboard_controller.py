@@ -26,19 +26,23 @@ from interfaces.http.dependencies.get_db_session import get_db_session
 
 logger = logging.getLogger(__name__)
 
+# Clave de caché Redis para el tipo de cambio USD → ARS y TTL de 10 minutos
 _USD_ARS_CACHE_KEY = "fx:usd_to_ars"
-_USD_ARS_TTL = 600  # 10 min
+_USD_ARS_TTL = 600
 
 
+# Controlador del dashboard. Orquesta todos los use cases relacionados con el portfolio del usuario:
+# portfolio agregado, historial, allocación, ROI, benchmark, performance por proveedor y exportación CSV.
 class DashboardController:
+    # FastAPI inyecta la sesión de BD. El controller crea el caché Redis y los repositorios de snapshots.
     def __init__(self, session: AsyncSession = Depends(get_db_session)) -> None:
         self._session = session
         self._cache = RedisCacheService()
         self._snapshot_repo = PostgresPortfolioSnapshotRepository(session)
         self._provider_snapshot_repo = PostgresProviderSnapshotRepository(session)
 
+    # Cotización USD → ARS cacheada en Redis 10 minutos para no hacer fetch en cada request
     async def _usd_to_ars(self) -> float | None:
-        """Cotización dólar blue cacheada en Redis. None si no se pudo obtener."""
         cached = await self._cache.get(_USD_ARS_CACHE_KEY)
         if cached:
             return cached
@@ -52,6 +56,7 @@ class DashboardController:
             return rate
         return None
 
+    # Construye el use case de portfolio con todas sus dependencias (repo, caché, proveedores)
     def _get_portfolio_use_case(self) -> GetAggregatedPortfolio:
         return GetAggregatedPortfolio(
             integration_repo=PostgresIntegrationRepository(self._session),
@@ -62,11 +67,13 @@ class DashboardController:
             provider_snapshot_repo=self._provider_snapshot_repo,
         )
 
+    # Portfolio agregado del usuario + cotización ARS adjunta
     async def get_aggregated(self, user_id: str) -> PortfolioSummaryDTO:
         summary = await self._get_portfolio_use_case().execute(user_id)
         summary.usd_to_ars = await self._usd_to_ars()
         return summary
 
+    # Historial de snapshots del portfolio entre dos fechas + cotización ARS
     async def get_history(
         self, user_id: str, start: datetime, end: datetime
     ) -> PortfolioHistoryDTO:
@@ -75,24 +82,30 @@ class DashboardController:
         history.usd_to_ars = await self._usd_to_ars()
         return history
 
+    # Invalida el caché del portfolio y fuerza recarga desde todos los proveedores
     async def refresh(self, user_id: str) -> PortfolioSummaryDTO:
         await RefreshPortfolioData(self._cache).execute(user_id)
         summary = await self._get_portfolio_use_case().execute(user_id)
         summary.usd_to_ars = await self._usd_to_ars()
         return summary
 
+    # Distribución del portfolio por categoría (cripto, acciones, efectivo, etc.)
     async def get_allocation(self, user_id: str) -> dict:
         return await GetAllocation(self._get_portfolio_use_case()).execute(user_id)
 
+    # Retorno sobre la inversión comparado contra snapshots históricos
     async def get_roi(self, user_id: str) -> list[dict]:
         return await GetROI(self._get_portfolio_use_case(), self._snapshot_repo).execute(user_id)
 
+    # Comparación del portfolio del usuario contra BTC o ETH en un período dado
     async def get_benchmark(self, user_id: str, asset: str, period: str) -> dict:
         return await GetBenchmark(self._snapshot_repo).execute(user_id, asset, period)
 
+    # Exporta el historial del portfolio a formato CSV
     async def export_csv(self, user_id: str, days: int) -> str:
         return await ExportCSV(self._snapshot_repo).execute(user_id, days)
 
+    # Rendimiento histórico desglosado por proveedor (Binance, IOL, etc.)
     async def get_provider_performance(
         self, user_id: str, days: int
     ) -> ProviderPerformanceResponseDTO:

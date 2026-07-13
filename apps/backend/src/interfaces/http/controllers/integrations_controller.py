@@ -18,7 +18,11 @@ from infrastructure.providers.registry import ProviderRegistry
 from interfaces.http.dependencies.get_db_session import get_db_session
 
 
+# Controlador de integraciones. Orquesta conexión con proveedores (Binance, IOL, manual, etc.),
+# importación de archivos XLS, sincronización, actualización y eliminación.
+# Invalida el caché del portfolio en cada operación que modifica datos para que el dashboard se actualice.
 class IntegrationsController:
+    # FastAPI inyecta la sesión de BD. El controller crea los repos, el servicio de encriptación y el caché.
     def __init__(self, session: AsyncSession = Depends(get_db_session)) -> None:
         self._repo = PostgresIntegrationRepository(session)
         self._tx_repo = PostgresTransactionRepository(session)
@@ -26,9 +30,11 @@ class IntegrationsController:
         self._registry = ProviderRegistry()
         self._cache = RedisCacheService()
 
+    # Lista todas las integraciones activas del usuario
     async def list_integrations(self, user_id: str) -> list[IntegrationSummaryDTO]:
         return await ListUserIntegrations(self._repo).execute(user_id)
 
+    # Agrega una nueva integración. Para integraciones manuales, también registra las posiciones iniciales como transacciones reales.
     async def add_integration(self, user_id: str, dto: AddIntegrationDTO) -> IntegrationSummaryDTO:
         result = await AddIntegration(self._repo, self._encryption, self._registry).execute(user_id, dto)
         # Alta manual: la carga inicial de posiciones son movimientos reales
@@ -44,6 +50,7 @@ class IntegrationsController:
         await self._cache.delete(f"portfolio:{user_id}")
         return result
 
+    # Actualiza una integración manual. Calcula el delta de posiciones y lo registra como transacciones.
     async def update_integration(
         self, user_id: str, integration_id: str, dto: UpdateIntegrationDTO
     ) -> IntegrationSummaryDTO:
@@ -70,6 +77,7 @@ class IntegrationsController:
         await self._cache.delete(f"portfolio:{user_id}")
         return result
 
+    # Devuelve las posiciones crudas de una integración manual para que el usuario las pueda editar
     async def get_manual_holdings(self, user_id: str, integration_id: str) -> dict:
         integration = await self._repo.find_by_id(integration_id)
         if not integration or integration.user_id != user_id:
@@ -85,17 +93,20 @@ class IntegrationsController:
             "editable": integration.type.value == "manual",
         }
 
+    # Elimina la integración e invalida el caché para que el dashboard se actualice de inmediato
     async def remove_integration(self, user_id: str, integration_id: str) -> None:
         await RemoveIntegration(self._repo).execute(user_id, integration_id)
         # Sin esto, la cuenta borrada sigue sumando al total hasta que venza el
         # cache de 5 min del portfolio.
         await self._cache.delete(f"portfolio:{user_id}")
 
+    # Importa y parsea el XLS de IOL, crea la integración y limpia el caché del portfolio
     async def import_iol_xls(self, user_id: str, file_bytes: bytes) -> IntegrationSummaryDTO:
         result = await ImportIOLXls(self._repo, self._encryption).execute(user_id, file_bytes)
         await self._cache.delete(f"portfolio:{user_id}")
         return result
 
+    # Fuerza resincronización de una integración invalidando el caché del portfolio
     async def sync_integration(self, user_id: str, integration_id: str) -> dict:
         integration = await self._repo.find_by_id(integration_id)
         if not integration or integration.user_id != user_id:

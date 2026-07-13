@@ -6,10 +6,13 @@ from domain.repositories.i_push_subscription_repository import IPushSubscription
 from infrastructure.database.postgres.models.push_subscription_model import PushSubscriptionModel
 
 
+# Implementación PostgreSQL del repositorio de suscripciones push.
+# Guarda los endpoints del navegador para enviar notificaciones web push (alertas de precio).
 class PostgresPushSubscriptionRepository(IPushSubscriptionRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Registra una suscripción push nueva; si el endpoint ya existe, no duplica
     async def save(self, sub: PushSubscription) -> PushSubscription:
         existing = await self._session.execute(
             select(PushSubscriptionModel).where(PushSubscriptionModel.endpoint == sub.endpoint)
@@ -29,11 +32,13 @@ class PostgresPushSubscriptionRepository(IPushSubscriptionRepository):
         await self._session.commit()
         return sub
 
+    # Lista todos los dispositivos/navegadores suscritos del usuario (para enviarles la notificación)
     async def find_by_user(self, user_id: str) -> list[PushSubscription]:
         stmt = select(PushSubscriptionModel).where(PushSubscriptionModel.user_id == user_id)
         result = await self._session.execute(stmt)
         return [_to_entity(r) for r in result.scalars().all()]
 
+    # Elimina una suscripción por endpoint (cuando el usuario desactiva las notificaciones)
     async def delete(self, endpoint: str, user_id: str) -> None:
         stmt = select(PushSubscriptionModel).where(
             PushSubscriptionModel.endpoint == endpoint,
@@ -46,6 +51,7 @@ class PostgresPushSubscriptionRepository(IPushSubscriptionRepository):
             await self._session.commit()
 
 
+# Convierte el modelo SQLAlchemy (PushSubscriptionModel) a la entidad del dominio (PushSubscription)
 def _to_entity(m: PushSubscriptionModel) -> PushSubscription:
     return PushSubscription(
         id=m.id,

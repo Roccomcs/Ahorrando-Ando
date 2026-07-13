@@ -8,10 +8,12 @@ from domain.repositories.i_price_alert_repository import IPriceAlertRepository
 from infrastructure.database.postgres.models.price_alert_model import PriceAlertModel
 
 
+# Implementación PostgreSQL del repositorio de alertas de precio. CRUD completo + activar/desactivar.
 class PostgresPriceAlertRepository(IPriceAlertRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Inserta una nueva alerta en la BD
     async def save(self, alert: PriceAlert) -> PriceAlert:
         model = PriceAlertModel(
             id=alert.id,
@@ -28,6 +30,7 @@ class PostgresPriceAlertRepository(IPriceAlertRepository):
         await self._session.commit()
         return alert
 
+    # Lista todas las alertas del usuario ordenadas por fecha de creación (más recientes primero)
     async def find_by_user(self, user_id: str) -> list[PriceAlert]:
         stmt = (
             select(PriceAlertModel)
@@ -37,11 +40,13 @@ class PostgresPriceAlertRepository(IPriceAlertRepository):
         result = await self._session.execute(stmt)
         return [_to_entity(r) for r in result.scalars().all()]
 
+    # Lista todas las alertas activas de todos los usuarios (usado por el scheduler cada 5 min)
     async def find_active(self, limit: int = 2000) -> list[PriceAlert]:
         stmt = select(PriceAlertModel).where(PriceAlertModel.is_active.is_(True)).limit(limit)
         result = await self._session.execute(stmt)
         return [_to_entity(r) for r in result.scalars().all()]
 
+    # Marca una alerta como disparada: la desactiva y registra la fecha en triggered_at
     async def mark_triggered(self, alert_id: str) -> None:
         await self._session.execute(
             update(PriceAlertModel)
@@ -72,6 +77,7 @@ class PostgresPriceAlertRepository(IPriceAlertRepository):
             await self._session.commit()
 
 
+# Convierte el modelo SQLAlchemy (PriceAlertModel) a la entidad del dominio (PriceAlert)
 def _to_entity(m: PriceAlertModel) -> PriceAlert:
     return PriceAlert(
         id=m.id,

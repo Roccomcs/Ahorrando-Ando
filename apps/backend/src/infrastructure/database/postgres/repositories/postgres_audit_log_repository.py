@@ -9,10 +9,12 @@ from domain.repositories.i_audit_log_repository import IAuditLogRepository
 from infrastructure.database.postgres.models.audit_log_model import AuditLogModel
 
 
+# Implementación PostgreSQL del repositorio de audit logs. Registra cada acción relevante del usuario (login, registro, logout, etc.)
 class PostgresAuditLogRepository(IAuditLogRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Inserta un nuevo registro de auditoría en la BD
     async def save(self, log: AuditLog) -> None:
         model = AuditLogModel(
             id=log.id,
@@ -26,6 +28,7 @@ class PostgresAuditLogRepository(IAuditLogRepository):
         self._session.add(model)
         await self._session.commit()
 
+    # Trae los últimos N registros de auditoría del usuario, opcionalmente filtrados por fecha
     async def find_by_user(
         self,
         user_id: str,
@@ -46,6 +49,7 @@ class PostgresAuditLogRepository(IAuditLogRepository):
         return [_to_entity(r) for r in rows]
 
 
+# Convierte el modelo SQLAlchemy (AuditLogModel) a la entidad del dominio (AuditLog)
 def _to_entity(m: AuditLogModel) -> AuditLog:
     return AuditLog(
         id=m.id,

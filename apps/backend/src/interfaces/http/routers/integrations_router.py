@@ -6,9 +6,12 @@ from application.dtos.integration.update_integration_dto import UpdateIntegratio
 from interfaces.http.controllers.integrations_controller import IntegrationsController
 from interfaces.http.dependencies.get_current_user import get_current_user
 
+# Endpoints de integraciones (conexiones a proveedores financieros). Todos requieren autenticación.
+# Una integración puede ser Binance, IOL, Mercado Pago, carga manual de activos, o importación desde XLS.
 router = APIRouter(prefix="/integrations", tags=["Integrations"])
 
 
+# Lista todas las integraciones activas del usuario
 @router.get("/", response_model=list[IntegrationSummaryDTO])
 async def list_integrations(
     current_user=Depends(get_current_user),
@@ -17,6 +20,7 @@ async def list_integrations(
     return await controller.list_integrations(user_id=current_user.id)
 
 
+# Crea una nueva integración (API key de Binance, credenciales IOL, activos manuales, etc.)
 @router.post("/", response_model=IntegrationSummaryDTO, status_code=status.HTTP_201_CREATED)
 async def add_integration(
     dto: AddIntegrationDTO,
@@ -29,6 +33,7 @@ async def add_integration(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+# Importa la cartera desde el archivo XLS exportado por IOL (Invertir Online)
 @router.post("/iol/import", response_model=IntegrationSummaryDTO, status_code=status.HTTP_201_CREATED)
 async def import_iol_xls(
     file: UploadFile,
@@ -56,6 +61,7 @@ async def import_iol_xls(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+# Devuelve las posiciones editables de una integración manual (solo el dueño puede verlas)
 @router.get("/{integration_id}/manual")
 async def get_manual_holdings(
     integration_id: str,
@@ -71,6 +77,7 @@ async def get_manual_holdings(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+# Actualiza credenciales o posiciones de una integración existente
 @router.patch("/{integration_id}", response_model=IntegrationSummaryDTO)
 async def update_integration(
     integration_id: str,
@@ -86,6 +93,7 @@ async def update_integration(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+# Fuerza una resincronización manual de una integración (invalida su caché)
 @router.post("/{integration_id}/sync")
 async def sync_integration(
     integration_id: str,
@@ -98,6 +106,7 @@ async def sync_integration(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+# Elimina una integración y la borra del caché del portfolio
 @router.delete("/{integration_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_integration(
     integration_id: str,

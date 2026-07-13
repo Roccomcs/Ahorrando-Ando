@@ -4,9 +4,12 @@ from application.dtos.asset.asset_search_result_dto import AssetSearchResultDTO
 from interfaces.http.controllers.assets_controller import AssetsController
 from interfaces.http.dependencies.get_current_user import get_current_user
 
+# Endpoints para buscar activos, cotizarlos, ver su historial de precios y obtener su logo.
+# Todos requieren autenticación. Cripto vía CoinGecko, acciones/CEDEARs vía Yahoo Finance y TradingView.
 router = APIRouter(prefix="/assets", tags=["Assets"])
 
 
+# Busca activos por símbolo o nombre (ej: "BTC", "Apple", "GGAL")
 @router.get("/search", response_model=list[AssetSearchResultDTO])
 async def search_assets(
     q: str = Query(..., min_length=1, description="Texto a buscar (símbolo o nombre)"),
@@ -16,6 +19,7 @@ async def search_assets(
     return await controller.search_assets(query=q)
 
 
+# Cotización actual de un activo en USD por su categoría e identificador
 @router.get("/quote")
 async def quote_asset(
     category: str = Query(..., description="crypto | stock | cedear | bond | fx"),
@@ -26,6 +30,7 @@ async def quote_asset(
     return await controller.quote_asset(category=category, ref=ref)
 
 
+# Serie histórica de precios USD de un activo para el gráfico de Analytics
 @router.get("/history")
 async def asset_history(
     category: str = Query(..., description="crypto | stock | cedear | bond | fx"),
@@ -38,6 +43,7 @@ async def asset_history(
     return await controller.asset_history(category=category, ref=ref, days=days)
 
 
+# Logo de un activo. Se resuelve fuera del portfolio para no bloquearlo. Sin categoría, autodetecta la fuente.
 @router.get("/logo")
 async def asset_logo(
     symbol: str = Query(..., min_length=1, max_length=20),

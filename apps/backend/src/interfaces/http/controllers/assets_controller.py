@@ -5,6 +5,8 @@ from infrastructure.prices.coingecko_price_service import CoinGeckoPriceService
 from infrastructure.prices.logo_service import TradingViewLogoService
 from infrastructure.prices.yahoo_price_service import YahooPriceService
 
+# Controlador de activos. Resuelve búsquedas, cotizaciones, historial de precios y logos.
+# Cripto vía CoinGecko, acciones/CEDEARs vía Yahoo Finance, logos vía TradingView.
 _AR_CATEGORIES = ("stock", "cedear", "bond")
 
 
@@ -16,9 +18,11 @@ class AssetsController:
         self._logos = TradingViewLogoService()
         self._yahoo = YahooPriceService()
 
+    # Busca activos por símbolo o nombre en todas las fuentes disponibles
     async def search_assets(self, query: str) -> list[AssetSearchResultDTO]:
         return await self._search.execute(query)
 
+    # Cotización actual de un activo en USD
     async def quote_asset(self, category: str, ref: str) -> dict:
         price = await self._quote.execute(category, ref)
         return {"category": category, "ref": ref, "price_usd": price}
@@ -50,6 +54,7 @@ class AssetsController:
         available = len(points) > 0
         return {"category": cat, "ref": ref, "days": days, "available": available, "points": points}
 
+    # Logo de un activo. Sin categoría autodetecta la fuente (TradingView primero, luego CoinGecko)
     async def asset_logo(self, symbol: str, category: str = "") -> dict:
         """Logo de un activo. Cripto vía CoinGecko, acciones/CEDEARs/bonos vía
         TradingView. `fx` no tiene logo acá (el frontend usa la bandera). Sin

@@ -5,10 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # without introducing a delete_all_by_user method on every repository.
 
 
+# Caso de uso para eliminar una cuenta de usuario con todos sus datos asociados.
+# Usa la sesión de SQLAlchemy directamente para borrar en cascada de forma atómica (una sola transacción).
 class DeleteAccount:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Borra en orden correcto para respetar foreign keys: suscripciones → alertas → integraciones → snapshots → audit → usuario
     async def execute(self, user_id: str) -> None:
         from infrastructure.database.postgres.models.audit_log_model import AuditLogModel
         from infrastructure.database.postgres.models.integration_model import IntegrationModel

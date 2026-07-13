@@ -13,9 +13,12 @@ from infrastructure.database.postgres.repositories.postgres_transaction_reposito
 )
 from interfaces.http.dependencies.get_current_user import get_current_user
 
+# Endpoints de transacciones del usuario. Todos requieren autenticación.
+# Una transacción registra un movimiento financiero real: compra, venta, depósito, retiro o rendimiento.
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
+# DTO de respuesta de una transacción individual
 class TransactionResponse(BaseModel):
     id: str
     tx_type: str
@@ -28,6 +31,7 @@ class TransactionResponse(BaseModel):
     occurred_at: str
 
 
+# Convierte la entidad Transaction del dominio al DTO de respuesta HTTP
 def _to_response(t: Transaction) -> TransactionResponse:
     return TransactionResponse(
         id=t.id,
@@ -42,6 +46,7 @@ def _to_response(t: Transaction) -> TransactionResponse:
     )
 
 
+# Lista las transacciones del usuario con filtros opcionales de período, tipo y cuenta
 @router.get("", response_model=list[TransactionResponse])
 async def list_transactions(
     days: int = Query(default=30, ge=1, le=730),

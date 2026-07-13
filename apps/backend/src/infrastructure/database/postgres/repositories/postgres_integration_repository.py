@@ -9,16 +9,19 @@ from domain.value_objects.provider_type import ProviderType
 from infrastructure.database.postgres.models.integration_model import IntegrationModel
 
 
+# Implementación PostgreSQL del repositorio de integraciones. Traduce entre la entidad Integration del dominio y el modelo SQLAlchemy IntegrationModel.
 class PostgresIntegrationRepository(IIntegrationRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    # Lista todas las integraciones de un usuario
     async def find_by_user(self, user_id: str) -> list[Integration]:
         result = await self._session.execute(
             select(IntegrationModel).where(IntegrationModel.user_id == user_id)
         )
         return [self._to_entity(m) for m in result.scalars().all()]
 
+    # Busca una integración por su id (para verificar pertenencia o actualizar)
     async def find_by_id(self, integration_id: str) -> Integration | None:
         result = await self._session.execute(
             select(IntegrationModel).where(IntegrationModel.id == integration_id)
@@ -26,6 +29,7 @@ class PostgresIntegrationRepository(IIntegrationRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    # Inserta una nueva integración en la BD con las credenciales encriptadas
     async def save(self, integration: Integration) -> Integration:
         model = IntegrationModel(
             id=integration.id,
@@ -49,6 +53,7 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             await self._session.delete(model)
             await self._session.commit()
 
+    # Actualiza el estado de sincronización: error, fecha y si está activa
     async def update_sync_status(
         self, integration_id: str, error: str | None, synced_at: datetime | None
     ) -> None:
@@ -62,6 +67,7 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             model.is_active = error is None
             await self._session.commit()
 
+    # Pisa las credenciales encriptadas y reactiva la integración (limpia el último error)
     async def update_credentials(
         self, integration_id: str, encrypted_credentials: str
     ) -> None:
@@ -75,6 +81,7 @@ class PostgresIntegrationRepository(IIntegrationRepository):
             model.is_active = True
             await self._session.commit()
 
+    # Convierte el modelo SQLAlchemy (IntegrationModel) a la entidad del dominio (Integration)
     def _to_entity(self, model: IntegrationModel) -> Integration:
         return Integration(
             id=model.id,
