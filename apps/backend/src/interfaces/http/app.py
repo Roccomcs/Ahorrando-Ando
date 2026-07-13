@@ -31,7 +31,7 @@ from interfaces.http.routers.health_router import router as health_router
 from interfaces.http.routers.integrations_router import router as integrations_router
 from interfaces.http.routers.transactions_router import router as transactions_router
 
-# Configuración de logging en formato JSON para que Prometheus pueda parsearlo correctamente
+# Configuración de logging en formato JSON
 from pythonjsonlogger.json import JsonFormatter
 
 _handler = logging.StreamHandler()
@@ -104,7 +104,7 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
 
-    
+    # Registramos los routers de los distintos módulos de la API, cada uno con su prefijo correspondiente
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(dashboard_router, prefix="/api/v1")
