@@ -14,7 +14,9 @@ const URL_GLB = '/models/Bitcoin_Logo.glb'
 const LOGO = '/crypto/btc.svg'
 const BASE = '#F7931A'
 
-function DebugCoin({ rot, flipU, flipV }: { rot: number; flipU: boolean; flipV: boolean }) {
+interface Cfg { rot: number; flipU: boolean; flipV: boolean; backRot: number; backFlipU: boolean; backFlipV: boolean }
+
+function DebugCoin({ cfg }: { cfg: Cfg }) {
   const { scene } = useGLTF(URL_GLB)
   const [tex, setTex] = useState<THREE.Texture | null>(null)
 
@@ -32,7 +34,11 @@ function DebugCoin({ rot, flipU, flipV }: { rot: number; flipU: boolean; flipV: 
       const geo = mesh.geometry as THREE.BufferGeometry
       if (!geo.getAttribute('normal')) geo.computeVertexNormals()
       // force:true → recalcula el UV en cada cambio de slider.
-      applyPlanarUV(geo, faceAxis(geo), { rotationDeg: rot, flipU, flipV, force: true })
+      applyPlanarUV(geo, faceAxis(geo), {
+        rotationDeg: cfg.rot, flipU: cfg.flipU, flipV: cfg.flipV,
+        backRotationDeg: cfg.backRot, backFlipU: cfg.backFlipU, backFlipV: cfg.backFlipV,
+        force: true,
+      })
       mesh.material = new THREE.MeshStandardMaterial({
         color: '#ffffff', map: tex, metalness: 0.6, roughness: 0.28,
         emissive: new THREE.Color(BASE), emissiveIntensity: 0.08,
@@ -43,16 +49,16 @@ function DebugCoin({ rot, flipU, flipV }: { rot: number; flipU: boolean; flipV: 
     const sphere = box.getBoundingSphere(new THREE.Sphere())
     cloned.position.sub(center)
     return { object: cloned, scale: 1.9 / (sphere.radius || 1) }
-  }, [scene, tex, rot, flipU, flipV])
+  }, [scene, tex, cfg])
 
   return <group scale={scale}><primitive object={object} /></group>
 }
 
 export default function CoinTest() {
-  const [rot, setRot] = useState(0)
-  const [flipU, setFlipU] = useState(false)
-  const [flipV, setFlipV] = useState(false)
-  const [spin, setSpin] = useState(false)
+  const [cfg, setCfg] = useState<Cfg>({ rot: 10, flipU: false, flipV: false, backRot: 10, backFlipU: true, backFlipV: false })
+  const [spin, setSpin] = useState(true)
+  const set = (patch: Partial<Cfg>) => setCfg(c => ({ ...c, ...patch }))
+  const wrap = (n: number) => ((n % 360) + 360) % 360
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#0a0a0a', position: 'relative' }}>
@@ -62,26 +68,39 @@ export default function CoinTest() {
         <directionalLight position={[-4, -2, -3]} intensity={0.6} color="#2f6bb0" />
         <Environment preset="city" />
         <SpinWrap spin={spin}>
-          <DebugCoin rot={rot} flipU={flipU} flipV={flipV} />
+          <DebugCoin cfg={cfg} />
         </SpinWrap>
       </Canvas>
 
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 16, background: 'rgba(0,0,0,0.65)', color: '#fff', fontFamily: 'monospace', fontSize: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>
-          Rotación: {rot}°  ·  flipU={String(flipU)}  ·  flipV={String(flipV)}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 14, background: 'rgba(0,0,0,0.72)', color: '#fff', fontFamily: 'monospace', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>
+          FRENTE rot={cfg.rot}° flipU={String(cfg.flipU)} flipV={String(cfg.flipV)} · ATRÁS rot={cfg.backRot}° flipU={String(cfg.backFlipU)} flipV={String(cfg.backFlipV)}
         </div>
-        <input type="range" min={0} max={359} step={1} value={rot} onChange={e => setRot(Number(e.target.value))} style={{ width: '100%' }} />
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button onClick={() => setRot(r => (r + 359) % 360)}>◀ −1°</button>
-          <button onClick={() => setRot(r => (r + 1) % 360)}>+1° ▶</button>
-          <button onClick={() => setRot(r => (r + 355) % 360)}>◀◀ −5°</button>
-          <button onClick={() => setRot(r => (r + 5) % 360)}>+5° ▶▶</button>
-          <button onClick={() => setRot(r => (r + 90) % 360)}>+90°</button>
-          <button onClick={() => setFlipU(f => !f)}>toggle flipU</button>
-          <button onClick={() => setFlipV(f => !f)}>toggle flipV</button>
-          <button onClick={() => setSpin(s => !s)}>{spin ? 'parar giro' : 'girar'}</button>
+
+        <div>Cara de FRENTE — rotación: {cfg.rot}°</div>
+        <input type="range" min={0} max={359} value={cfg.rot} onChange={e => set({ rot: Number(e.target.value) })} style={{ width: '100%' }} />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={() => set({ rot: wrap(cfg.rot - 1) })}>◀ −1°</button>
+          <button onClick={() => set({ rot: wrap(cfg.rot + 1) })}>+1° ▶</button>
+          <button onClick={() => set({ rot: wrap(cfg.rot + 90) })}>+90°</button>
+          <button onClick={() => set({ flipU: !cfg.flipU })}>flipU frente</button>
+          <button onClick={() => set({ flipV: !cfg.flipV })}>flipV frente</button>
         </div>
-        <div style={{ opacity: 0.8 }}>Ajustá hasta que la B quede derecha (probá también &quot;girar&quot; para ver las dos caras) y pasame estos 3 valores.</div>
+
+        <div>Cara de ATRÁS — rotación: {cfg.backRot}°</div>
+        <input type="range" min={0} max={359} value={cfg.backRot} onChange={e => set({ backRot: Number(e.target.value) })} style={{ width: '100%' }} />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={() => set({ backRot: wrap(cfg.backRot - 1) })}>◀ −1°</button>
+          <button onClick={() => set({ backRot: wrap(cfg.backRot + 1) })}>+1° ▶</button>
+          <button onClick={() => set({ backRot: wrap(cfg.backRot + 90) })}>+90°</button>
+          <button onClick={() => set({ backFlipU: !cfg.backFlipU })}>flipU atrás</button>
+          <button onClick={() => set({ backFlipV: !cfg.backFlipV })}>flipV atrás</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setSpin(s => !s)}>{spin ? 'PARAR giro' : 'GIRAR'}</button>
+        </div>
+        <div style={{ opacity: 0.8 }}>Con la moneda girando, ajustá FRENTE y ATRÁS hasta que la B se lea bien de los dos lados, y pasame la línea de arriba completa.</div>
       </div>
     </div>
   )

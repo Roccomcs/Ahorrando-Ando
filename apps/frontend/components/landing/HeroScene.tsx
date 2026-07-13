@@ -27,6 +27,11 @@ const MODELS = {
   usdt: '/models/USDT_Logo.glb',
 }
 
+// Orientación del logo de Bitcoin sobre la moneda. La "B" del .glb queda ~10°
+// ladeada, así que se corrige acá (solo para BTC). Referencia estable para no
+// recalcular el UV en cada render.
+const BTC_LOGO_UV = { rotationDeg: 10 }
+
 useGLTF.preload(MODELS.bitcoin)
 useGLTF.preload(MODELS.binance)
 useGLTF.preload(MODELS.usdt)
@@ -112,6 +117,7 @@ function Scene() {
           tilt={THREE.MathUtils.degToRad(12)}
           paint={{ base: '#F7931A', metalness: 0.6, roughness: 0.28, emissive: '#F7931A', emissiveIntensity: 0.16 }}
           logo="/crypto/btc.svg"
+          logoUV={BTC_LOGO_UV}
           floatSpeed={0.6}
           floatAmplitude={0.14}
           spinSpeed={0.12}

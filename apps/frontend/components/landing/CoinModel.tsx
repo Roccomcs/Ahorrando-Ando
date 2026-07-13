@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { faceAxis, applyPlanarUV, loadLogoTexture } from '@/components/three/logoProjection'
+import { faceAxis, applyPlanarUV, loadLogoTexture, type LogoUVOptions } from '@/components/three/logoProjection'
 
 interface Paint {
   /** Color del cuerpo de la moneda. */
@@ -31,6 +31,8 @@ interface Props {
   /** Imagen del logo a proyectar sobre las dos caras (ver `logoProjection`).
    *  Cuando está presente, `paint.base` queda como color del canto. */
   logo?: string
+  /** Orientación del logo proyectado (rotación/espejado por cara). */
+  logoUV?: LogoUVOptions
   /** Radio final de la moneda en unidades de escena. */
   size?: number
   /** Inclinación fija en X (radianes) — cada moneda con la suya para variedad. */
@@ -46,6 +48,7 @@ export function CoinModel({
   phase = 0,
   paint,
   logo,
+  logoUV,
   size = 1.25,
   tilt = 0,
 }: Props) {
@@ -77,7 +80,7 @@ export function CoinModel({
       // el material PBR no tiene con qué sombrear y la malla se ve negra.
       if (!geo.getAttribute('normal')) geo.computeVertexNormals()
       // Y sin UV no hay dónde pegar la imagen del logo.
-      if (logo && !geo.getAttribute('uv')) applyPlanarUV(geo, faceAxis(geo))
+      if (logo && !geo.getAttribute('uv')) applyPlanarUV(geo, faceAxis(geo), logoUV)
 
       if (!paint) return
 
@@ -129,7 +132,7 @@ export function CoinModel({
     cloned.position.sub(center)
     const radius = sphere.radius || 1
     return { content: <primitive object={cloned} />, scale: size / radius }
-  }, [scene, paint, size, logo, tex])
+  }, [scene, paint, size, logo, tex, logoUV])
 
   useFrame(({ clock }) => {
     if (!group.current) return

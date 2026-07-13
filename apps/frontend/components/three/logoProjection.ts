@@ -94,86 +94,99 @@ export function faceAxis(geo: THREE.BufferGeometry): THREE.Vector3 {
  * marca en `userData` para no recalcular.
  */
 export interface LogoUVOptions {
-  /** Rotación del logo en el plano de la cara, en grados. */
+  /** Rotación del logo en la cara de frente, en grados. */
   rotationDeg?: number
-  /** Espeja la U (horizontal). */
+  /** Espeja la U (horizontal) de la cara de frente. */
   flipU?: boolean
-  /** Espeja la V (vertical). */
+  /** Espeja la V (vertical) de la cara de frente. */
   flipV?: boolean
+  /** Rotación de la cara de atrás (default: igual que la de frente). */
+  backRotationDeg?: number
+  /** Espeja la U de la cara de atrás (default: true — es la imagen espejo). */
+  backFlipU?: boolean
+  /** Espeja la V de la cara de atrás. */
+  backFlipV?: boolean
   /** Recalcula aunque ya haya UVs (para el slider de depuración). */
   force?: boolean
 }
 
-export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3, opts?: LogoUVOptions): void {
-  // Si no se pasan opciones, se leen del query (?brot=grados&bflip=0..3) para
-  // poder ajustar la orientación en vivo desde el landing. DIAGNÓSTICO temporal.
-  let rotationDeg = opts?.rotationDeg ?? 0
-  let flipU = opts?.flipU ?? false
-  let flipV = opts?.flipV ?? false
-  const force = opts?.force ?? false
-  if (!opts && typeof window !== 'undefined') {
-    const q = new URLSearchParams(window.location.search)
-    const br = q.get('brot'); if (br) rotationDeg = Number(br) || 0
-    const bf = q.get('bflip'); if (bf) { const m = Number(bf) || 0; flipU = m === 1 || m === 3; flipV = m === 2 || m === 3 }
-  }
-
-  if (geo.userData.logoUV && !force) return
-
-  // Base ortonormal del plano de la cara.
+/** Base ortonormal (u, v) del plano perpendicular a `axis`, rotada `deg` grados. */
+function planeBasis(axis: THREE.Vector3, deg: number): { u: THREE.Vector3; v: THREE.Vector3 } {
   const u = new THREE.Vector3(0, 1, 0)
   if (Math.abs(axis.dot(u)) > 0.9) u.set(1, 0, 0)
   u.crossVectors(u, axis).normalize()
   const v = new THREE.Vector3().crossVectors(axis, u).normalize()
-
-  // Rotación del logo en el plano: giramos la base (u, v) por el ángulo pedido.
-  if (rotationDeg) {
-    const a = (rotationDeg * Math.PI) / 180
-    const ca = Math.cos(a), sa2 = Math.sin(a)
-    const u2 = u.clone().multiplyScalar(ca).addScaledVector(v, sa2)
-    const v2 = v.clone().multiplyScalar(ca).addScaledVector(u, -sa2)
+  if (deg) {
+    const a = (deg * Math.PI) / 180
+    const ca = Math.cos(a), sa = Math.sin(a)
+    const u2 = u.clone().multiplyScalar(ca).addScaledVector(v, sa)
+    const v2 = v.clone().multiplyScalar(ca).addScaledVector(u, -sa)
     u.copy(u2); v.copy(v2)
   }
+  return { u, v }
+}
 
-  const pos = geo.getAttribute('position')
+/** Proyecta todos los vértices sobre (u, v) y devuelve coords normalizadas a [0,1]. */
+function project(pos: THREE.BufferAttribute | THREE.InterleavedBufferAttribute, u: THREE.Vector3, v: THREE.Vector3) {
   const su = new Float32Array(pos.count)
   const sv = new Float32Array(pos.count)
-  const sa = new Float32Array(pos.count) // proyección sobre el eje (para separar caras)
   const p = new THREE.Vector3()
   let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity
-  let minA = Infinity, maxA = -Infinity
-
   for (let i = 0; i < pos.count; i++) {
     p.fromBufferAttribute(pos, i)
-    const pu = p.dot(u)
-    const pv = p.dot(v)
-    const pa = p.dot(axis)
-    su[i] = pu
-    sv[i] = pv
-    sa[i] = pa
+    const pu = p.dot(u), pv = p.dot(v)
+    su[i] = pu; sv[i] = pv
     if (pu < minU) minU = pu
     if (pu > maxU) maxU = pu
     if (pv < minV) minV = pv
     if (pv > maxV) maxV = pv
+  }
+  const spanU = maxU - minU || 1, spanV = maxV - minV || 1
+  return { su, sv, minU, minV, spanU, spanV }
+}
+
+export function applyPlanarUV(geo: THREE.BufferGeometry, axis: THREE.Vector3, opts?: LogoUVOptions): void {
+  const force = opts?.force ?? false
+  if (geo.userData.logoUV && !force) return
+
+  const rotationDeg = opts?.rotationDeg ?? 0
+  const flipU = opts?.flipU ?? false
+  const flipV = opts?.flipV ?? false
+  const backRotationDeg = opts?.backRotationDeg ?? rotationDeg
+  const backFlipU = opts?.backFlipU ?? true // la cara de atrás es la imagen espejo
+  const backFlipV = opts?.backFlipV ?? false
+
+  const pos = geo.getAttribute('position')
+
+  // Proyección independiente por cara: cada una con su propia rotación (la de
+  // atrás se ve desde el otro lado, así que necesita su propio ajuste).
+  const front = planeBasis(axis, rotationDeg)
+  const back = planeBasis(axis, backRotationDeg)
+  const F = project(pos, front.u, front.v)
+  const B = project(pos, back.u, back.v)
+
+  // Separación de caras por la proyección sobre el eje.
+  const p = new THREE.Vector3()
+  let minA = Infinity, maxA = -Infinity
+  const paArr = new Float32Array(pos.count)
+  for (let i = 0; i < pos.count; i++) {
+    p.fromBufferAttribute(pos, i)
+    const pa = p.dot(axis)
+    paArr[i] = pa
     if (pa < minA) minA = pa
     if (pa > maxA) maxA = pa
   }
-
-  const spanU = maxU - minU || 1
-  const spanV = maxV - minV || 1
   const midA = (minA + maxA) / 2
 
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {
-    const nu = (su[i] - minU) / spanU
-    // Cara de frente (sa ≥ midA) con U directa; cara de atrás con U espejada, para
-    // que el logo se lea bien de ambos lados al girar.
-    let uu = sa[i] < midA ? 1 - nu : nu
-    if (flipU) uu = 1 - uu
+    const isFront = paArr[i] >= midA
+    const S = isFront ? F : B
+    let uu = (S.su[i] - S.minU) / S.spanU
+    let vv = 1 - (S.sv[i] - S.minV) / S.spanV
+    if (isFront ? flipU : backFlipU) uu = 1 - uu
+    if (isFront ? flipV : backFlipV) vv = 1 - vv
     uv[i * 2] = uu
-    // V invertida: el origen de la textura está arriba (y por eso el material
-    // desactiva `flipY`, que si no la invertiría de nuevo).
-    let vv = 1 - (sv[i] - minV) / spanV
-    if (flipV) vv = 1 - vv
     uv[i * 2 + 1] = vv
   }
 
