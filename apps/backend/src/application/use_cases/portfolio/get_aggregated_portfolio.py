@@ -95,12 +95,6 @@ class GetAggregatedPortfolio:
         credentials = self._encryption.decrypt(integration.encrypted_credentials)
         provider: IFinancialProvider = self._registry.get(integration.type, credentials)
 
-        try:
-            import sentry_sdk
-            sentry_sdk.set_tag("provider", str(integration.type))
-        except ImportError:
-            pass
-
         cb = CircuitBreaker(integration.type)
         async with cb:
             holdings, performance = await asyncio.gather(

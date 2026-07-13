@@ -5,25 +5,17 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Carga el .env desde apps/backend/.env (dos niveles arriba de src/)
+# Entry point de toda la API
+
+# Carga el .env desde apps/backend/.env
 load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
+# Obtenemos el JWT_SECRET y verificamos que no sea inseguro
 import sys
 _jwt_secret = os.getenv("JWT_SECRET", "")
 if not _jwt_secret or _jwt_secret == "changeme":
     print("ERROR: JWT_SECRET no está configurado o usa el valor por defecto inseguro. Abortando.", file=sys.stderr)
     sys.exit(1)
-
-import sentry_sdk
-
-_sentry_dsn = os.getenv("SENTRY_DSN", "")
-if _sentry_dsn:
-    sentry_sdk.init(
-        dsn=_sentry_dsn,
-        traces_sample_rate=0.2,
-        profiles_sample_rate=0.1,
-        environment=os.getenv("ENV", "production"),
-    )
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,7 +31,7 @@ from interfaces.http.routers.health_router import router as health_router
 from interfaces.http.routers.integrations_router import router as integrations_router
 from interfaces.http.routers.transactions_router import router as transactions_router
 
-# ── Structured JSON logging ────────────────────────────────────────────────────
+# Configuración de logging en formato JSON para que Prometheus pueda parsearlo correctamente
 from pythonjsonlogger.json import JsonFormatter
 
 _handler = logging.StreamHandler()
@@ -47,6 +39,8 @@ _handler.setFormatter(JsonFormatter("%(asctime)s %(levelname)s %(name)s %(messag
 logging.basicConfig(level=logging.INFO, handlers=[_handler])
 
 
+# Sincroniza la estructura de la DB con lo que el código necesita
+# SQLAlchemy = permite trabajar con la DB usando objetos Python en lugar de SQL strings
 async def _run_db_migrations() -> None:
     from sqlalchemy import text
     from infrastructure.database.postgres.connection import engine
@@ -59,6 +53,7 @@ async def _run_db_migrations() -> None:
         ))
 
 
+# Es el ciclo de vida de la aplicación, se ejecuta al iniciar y al cerrar la app. Aquí se ejecutan las migraciones, se inicia el scheduler, el servidor está listo para recibir requests, y al cerrar se detiene el scheduler.
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     await _run_db_migrations()
@@ -67,44 +62,40 @@ async def _lifespan(app: FastAPI):
     stop_scheduler()
 
 
+# Función para crear la aplicación FastAPI
+# FastAPI es un framework web moderno y rápido para construir APIs con Python, es una libreria que nos permite:
+# Definir endpoints (rutas) con decoradores (@app.get("/users"))
+# Validar datos automáticamente
+# Generar documentación Swagger automática
+# Soportar async/await nativo
+
 def create_app() -> FastAPI:
+
+    # Creamos la instancia de FastAPI con un título y versión, y le pasamos el lifespan para manejar el ciclo de vida de la aplicación
     app = FastAPI(title="Ahorrando Ando API", version="0.1.0", lifespan=_lifespan)
 
-    # ── Prometheus metrics ─────────────────────────────────────────────────────
-    _metrics_token = os.getenv("METRICS_SECRET_TOKEN", "")
-    try:
-        from prometheus_fastapi_instrumentator import Instrumentator
-        from starlette.responses import Response as _Resp
-
-        _inst = Instrumentator().instrument(app)
-
-        if _metrics_token:
-            from fastapi import Depends, HTTPException, Header as _Header
-            async def _metrics_auth(x_metrics_token: str = _Header(default="")):
-                if x_metrics_token != _metrics_token:
-                    raise HTTPException(status_code=403, detail="Forbidden")
-            _inst.expose(app, endpoint="/metrics", include_in_schema=False, dependencies=[Depends(_metrics_auth)])
-        else:
-            _inst.expose(app, endpoint="/metrics", include_in_schema=False)
-    except ImportError:
-        pass
-
+    # Configuración de CORS (Cross-Origin Resource Sharing)
     _env = os.getenv("ENV", "production")
     _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
     _origins_list = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
+    # En desarrollo permitimos localhost explícitamente (nunca wildcard con credentials)
     if _env == "development" and not _origins_list:
-        # En desarrollo permitimos localhost explícitamente (nunca wildcard con credentials)
         _origins_list = ["http://localhost:3000", "http://localhost:8000"]
+
+    # En producción, si no hay ALLOWED_ORIGINS configurado, abortamos para evitar problemas de seguridad
     elif not _origins_list:
         print("ERROR: ALLOWED_ORIGINS no está configurado en producción. Abortando.", file=sys.stderr)
         sys.exit(1)
 
+    # Agregamos los manejadores de errores personalizados para que la API devuelva respuestas consistentes y amigables en caso de errores
     add_error_handlers(app)
 
+    # Agregamos el middleware de rate limiting para limitar la cantidad de requests por IP y evitar abusos
     from interfaces.http.middlewares.rate_limiter import RateLimiterMiddleware
     app.add_middleware(RateLimiterMiddleware)
 
+    # Agregamos el middleware de CORS para permitir que la API sea consumida desde los orígenes permitidos
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_origins_list,
@@ -113,6 +104,7 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
 
+    
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(dashboard_router, prefix="/api/v1")

@@ -1,5 +1,4 @@
 import logging
-import os
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -9,28 +8,7 @@ from infrastructure.providers._base.provider_error import ProviderError
 logger = logging.getLogger(__name__)
 
 
-def _init_sentry() -> None:
-    dsn = os.getenv("SENTRY_DSN")
-    if not dsn:
-        return
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-
-        sentry_sdk.init(
-            dsn=dsn,
-            integrations=[FastApiIntegration(), SqlalchemyIntegration()],
-            traces_sample_rate=0.2,
-            environment=os.getenv("ENV", "production"),
-        )
-        logger.info("Sentry inicializado")
-    except ImportError:
-        logger.warning("sentry-sdk no instalado — ignorando SENTRY_DSN")
-
-
 def add_error_handlers(app: FastAPI) -> None:
-    _init_sentry()
     @app.exception_handler(ValueError)
     async def value_error_handler(request: Request, exc: ValueError):
         # Loguear para visibilidad server-side aunque sea un error controlado
