@@ -20,9 +20,11 @@ from application.use_cases.auth.register_user import RegisterUser
 from domain.entities.user import User
 from infrastructure.cache.redis_token_blacklist_service import RedisTokenBlacklistService
 from infrastructure.cache.redis_verification_service import MAX_ATTEMPTS, RedisVerificationService
+from infrastructure.cache.redis_cache_service import RedisCacheService
 from infrastructure.database.postgres.repositories.postgres_audit_log_repository import PostgresAuditLogRepository
 from infrastructure.database.postgres.repositories.postgres_user_repository import PostgresUserRepository
 from infrastructure.services.email_service import EmailService
+from infrastructure.services.demo_account_service import DEMO_EMAIL, DemoAccountService
 from interfaces.http.dependencies.get_db_session import get_db_session
 
  # Controlador de autenticación y autorización. Maneja el registro, login, verificación de email, recuperación de contraseña, integración con Google OAuth2, y manejo de tokens JWT. 
@@ -159,6 +161,13 @@ class AuthController:
         await self._audit.log("login", request, user_id=user.id)
         return _make_token_pair(user.id)
 
+    async def demo_login(self, request: Request) -> TokenDTO:
+        """Restaura la cartera pública de muestra e inicia una sesión normal."""
+        user = await DemoAccountService(self._session).reset()
+        await RedisCacheService().delete(f"portfolio:{user.id}")
+        await self._audit.log("demo_login", request, user_id=user.id)
+        return _make_token_pair(user.id)
+
     # Devuelve el perfil del usuario autenticado como DTO.
     async def me(self, current_user: User) -> UserDTO:
         return UserDTO(
@@ -166,6 +175,7 @@ class AuthController:
             email=current_user.email,
             created_at=current_user.created_at,
             email_verified=current_user.email_verified,
+            is_demo=current_user.email == DEMO_EMAIL,
         )
 
     # Renueva un access token a partir de un refresh token válido.
@@ -324,6 +334,8 @@ class AuthController:
 
     # Cambia la contraseña de la cuenta autenticada después de validar la actual.
     async def change_password(self, current_user: User, current_password: str, new_password: str) -> dict:
+        if current_user.email == DEMO_EMAIL:
+            raise ValueError("La contraseña no se puede modificar en modo demo.")
         if not current_user.hashed_password:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Esta cuenta usa Google. No podés cambiar la contraseña.")
         if not _verify_password(current_password, current_user.hashed_password):
@@ -335,6 +347,8 @@ class AuthController:
 
     # Elimina la cuenta si el email de confirmación coincide con el del usuario autenticado.
     async def delete_account(self, current_user: User, confirm_email: str) -> dict:
+        if current_user.email == DEMO_EMAIL:
+            raise ValueError("La cuenta de demostración no se puede eliminar.")
         # Verifica que el email confirmado coincida con el del usuario
         if confirm_email.lower() != current_user.email.lower():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El email de confirmación no coincide")

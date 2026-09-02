@@ -1,5 +1,6 @@
 """
-Provider de balance manual — para cuentas sin API pública (Cocos Capital, Naranja X, Ualá, Bull Market, etc.)
+Provider de balance manual — para cuentas sin API pública (Cocos Capital,
+Naranja X, Ualá, Bull Market, etc.)
 
 El usuario carga cada activo con un buscador tipo TradingView. Cada holding puede
 traer `category` y `ref` para cotizar en vivo:
@@ -19,6 +20,7 @@ from application.ports.i_financial_provider import IFinancialProvider
 from domain.entities.holding import Holding
 from domain.value_objects.money import Currency, Money
 from domain.value_objects.percentage import Percentage
+
 from infrastructure.prices.coingecko_price_service import CoinGeckoPriceService
 from infrastructure.prices.data912_price_service import Data912PriceService
 from infrastructure.prices.exchange_rate_service import ExchangeRateService
@@ -27,9 +29,17 @@ _AR_CATEGORIES = ("stock", "cedear", "bond")
 
 
 class ManualProvider(IFinancialProvider):
-    def __init__(self, institution_name: str, holdings: list) -> None:
+    def __init__(
+        self,
+        institution_name: str,
+        holdings: list,
+        use_live_prices: bool = True,
+        performance: dict[str, float] | None = None,
+    ) -> None:
         self._institution = institution_name
         self._holdings_data = holdings or []
+        self._use_live_prices = use_live_prices
+        self._performance = performance or {}
         self._coingecko = CoinGeckoPriceService()
         self._data912 = Data912PriceService()
         self._fx = ExchangeRateService()
@@ -46,10 +56,13 @@ class ManualProvider(IFinancialProvider):
         return bool(self._institution)
 
     async def _live_prices(self) -> dict[str, float]:
-        """Cotiza en vivo los holdings que tengan category+ref. Devuelve {ref_key: price_usd}.
+        """Cotiza holdings con category+ref. Devuelve {ref_key: price_usd}.
 
         La key es f"{category}:{ref}" para no mezclar un símbolo AR con un id cripto.
         """
+        if not self._use_live_prices:
+            return {}
+
         crypto_refs: set[str] = set()
         ar_refs: set[str] = set()
         needs_ars = False
@@ -135,9 +148,11 @@ class ManualProvider(IFinancialProvider):
                     asset_name=h.get("name", h.get("symbol", "?")),
                     asset_symbol=h.get("symbol", "?"),
                     amount=amount,
-                    current_value=Money(amount=amount * price_usd, currency=Currency.USD),
-                    performance_24h=Percentage(0.0),
-                    performance_30d=Percentage(0.0),
+                    current_value=Money(
+                        amount=amount * price_usd, currency=Currency.USD
+                    ),
+                    performance_24h=Percentage(float(h.get("performance_24h", 0) or 0)),
+                    performance_30d=Percentage(float(h.get("performance_30d", 0) or 0)),
                     category=(h.get("category") or None),
                     logo_url=(h.get("logo_url") or None),
                 )
@@ -150,4 +165,4 @@ class ManualProvider(IFinancialProvider):
         return Money(amount=total, currency=Currency.USD)
 
     async def get_performance(self) -> dict[str, float]:
-        return {}
+        return self._performance

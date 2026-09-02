@@ -14,6 +14,7 @@ interface AuthContextValue {
    *  autenticadas esperan esto para no salir sin token y comerse un 401. */
   ready: boolean
   login: (email: string, password: string) => Promise<void>
+  demoLogin: () => Promise<void>
   register: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
 }
@@ -75,6 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me.data)
   }
 
+  async function demoLogin() {
+    const res = await fetch('/api/auth/demo', { method: 'POST' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail ?? 'No se pudo iniciar la demostración')
+    }
+    const data: Pick<TokenPair, 'access_token'> = await res.json()
+    tokenStore.set(data.access_token)
+    const me = await api.get<User>('/api/v1/auth/me')
+    setUser(me.data)
+  }
+
   async function register(email: string, password: string) {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
@@ -107,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, ready, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, ready, login, demoLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

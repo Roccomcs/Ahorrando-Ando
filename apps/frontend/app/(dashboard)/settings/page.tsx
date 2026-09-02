@@ -30,7 +30,7 @@ export default function SettingsPage() {
     setPwError('')
     setPwSuccess(false)
     if (pwForm.new_password !== pwForm.confirm) { setPwError('Las contraseñas nuevas no coinciden.'); return }
-    if (pwForm.new_password.length < 8) { setPwError('Mínimo 8 caracteres, con letras y números.'); return }
+    if (pwForm.new_password.length < 12) { setPwError('Mínimo 12 caracteres, con letras y números.'); return }
     try {
       await changePw.mutateAsync({ current_password: pwForm.current_password, new_password: pwForm.new_password })
       setPwSuccess(true)
@@ -70,6 +70,11 @@ export default function SettingsPage() {
       {/* Profile */}
       <Card padding="md">
         <p style={sectionHeadStyle}>Perfil</p>
+        {user?.is_demo && (
+          <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--accent-bg)', color: 'var(--text-accent)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+            Estás usando una cuenta de demostración. Los datos son ficticios y se restauran al iniciar una nueva demo.
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={fieldStyle}><span style={labelStyle}>Email</span><span style={valueStyle}>{user?.email}</span></div>
           <div style={fieldStyle}><span style={labelStyle}>ID de usuario</span><span style={monoStyle}>{user?.id}</span></div>
@@ -110,11 +115,11 @@ export default function SettingsPage() {
       </Card>
 
       {/* Change password */}
-      <Card padding="md">
+      {!user?.is_demo && <Card padding="md">
         <p style={sectionHeadStyle}>Cambiar contraseña</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Input label="Contraseña actual" type="password" placeholder="••••••••" value={pwForm.current_password} onChange={e => setPwForm(f => ({ ...f, current_password: e.target.value }))} autoComplete="current-password" />
-          <Input label="Nueva contraseña" type="password" placeholder="Mínimo 8 caracteres" value={pwForm.new_password} onChange={e => setPwForm(f => ({ ...f, new_password: e.target.value }))} autoComplete="new-password" hint="Mínimo 8 caracteres, con letras y números" />
+          <Input label="Nueva contraseña" type="password" placeholder="Mínimo 12 caracteres" value={pwForm.new_password} onChange={e => setPwForm(f => ({ ...f, new_password: e.target.value }))} autoComplete="new-password" hint="Mínimo 12 caracteres, con letras y números" />
           <Input label="Confirmar nueva contraseña" type="password" placeholder="••••••••" value={pwForm.confirm} onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))} autoComplete="new-password" />
         </div>
         {pwError && <div style={{ marginTop: 12, background: 'var(--down-bg)', border: '1px solid rgba(244,98,110,0.25)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 'var(--text-sm)', color: 'var(--down)' }}>{pwError}</div>}
@@ -122,7 +127,7 @@ export default function SettingsPage() {
         <div style={{ marginTop: 16 }}>
           <Button onClick={handleChangePassword} disabled={changePw.isPending}>{changePw.isPending ? 'Actualizando…' : 'Actualizar contraseña'}</Button>
         </div>
-      </Card>
+      </Card>}
 
       {/* Session */}
       <Card padding="md">
@@ -132,11 +137,11 @@ export default function SettingsPage() {
       </Card>
 
       {/* Danger zone */}
-      <Card padding="md" style={{ border: '1px solid rgba(244,98,110,0.25)' }}>
+      {!user?.is_demo && <Card padding="md" style={{ border: '1px solid rgba(244,98,110,0.25)' }}>
         <p style={{ ...sectionHeadStyle, color: 'var(--down)' }}>Zona de peligro</p>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-2)', margin: '0 0 16px' }}>Eliminar tu cuenta borra permanentemente todos tus datos: integraciones, alertas, historial y configuración. Esta acción no se puede deshacer.</p>
         <Button variant="danger" onClick={() => setShowDeleteModal(true)}>Eliminar mi cuenta</Button>
-      </Card>
+      </Card>}
 
       {/* Delete modal */}
       {showDeleteModal && (

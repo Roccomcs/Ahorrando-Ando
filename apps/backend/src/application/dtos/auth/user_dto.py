@@ -8,3 +8,4 @@ class UserDTO(BaseModel):
     email: EmailStr
     created_at: datetime
     email_verified: bool = False
+    is_demo: bool = False

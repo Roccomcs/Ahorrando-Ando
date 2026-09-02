@@ -111,3 +111,27 @@ async def test_dashboard_without_token_returns_401(client):
 async def test_alerts_without_token_returns_401(client):
     resp = await client.get("/api/v1/alerts")
     assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_demo_login_returns_token_pair(app_with_mocks):
+    app, _ = app_with_mocks
+    from application.dtos.auth.login_dto import TokenDTO
+    from interfaces.http.controllers.auth_controller import AuthController
+
+    token_pair = TokenDTO(
+        access_token="demo-access",
+        refresh_token="demo-refresh",
+    )
+    with patch.object(
+        AuthController, "demo_login", new=AsyncMock(return_value=token_pair)
+    ):
+        from httpx import ASGITransport, AsyncClient
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as c:
+            resp = await c.post("/api/v1/auth/demo")
+
+    assert resp.status_code == 200
+    assert resp.json() == token_pair.model_dump()

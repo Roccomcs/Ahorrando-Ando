@@ -48,6 +48,12 @@ async def register(dto: RegisterDTO, request: Request, controller: AuthControlle
 async def login(dto: LoginDTO, request: Request, controller: AuthController = Depends()):
     return await controller.login(dto, request)
 
+
+@router.post("/demo", response_model=TokenDTO)
+async def demo_login(request: Request, controller: AuthController = Depends()):
+    """Acceso público a una cartera ficticia; no usa credenciales reales."""
+    return await controller.demo_login(request)
+
 # Endpoint para enviar un email de verificación. Recibe un SendVerificationRequest y devuelve un mensaje de éxito.
 @router.post("/send-verification")
 async def send_verification(body: SendVerificationRequest, controller: AuthController = Depends()):

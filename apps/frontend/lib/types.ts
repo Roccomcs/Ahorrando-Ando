@@ -9,6 +9,7 @@ export interface User {
   email: string
   created_at: string
   email_verified: boolean
+  is_demo: boolean
 }
 
 export interface HoldingDTO {

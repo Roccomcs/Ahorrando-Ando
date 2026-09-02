@@ -79,3 +79,31 @@ async def test_name_and_type():
 async def test_authenticate_true_with_name():
     provider = ManualProvider(institution_name="Naranja X", holdings=[])
     assert await provider.authenticate() is True
+
+
+@pytest.mark.asyncio
+async def test_demo_mode_uses_frozen_prices_and_performance():
+    provider = ManualProvider(
+        institution_name="Demo",
+        use_live_prices=False,
+        holdings=[
+            {
+                "symbol": "BTC",
+                "name": "Bitcoin",
+                "amount": 2,
+                "category": "crypto",
+                "ref": "bitcoin",
+                "price_usd": 71000,
+                "performance_24h": 2.4,
+                "performance_30d": 12.8,
+            }
+        ],
+        performance={"24h": 2.4, "30d": 12.8},
+    )
+
+    holdings = await provider.get_holdings()
+
+    assert holdings[0].current_value.amount == 142000
+    assert holdings[0].performance_24h.value == 2.4
+    assert holdings[0].performance_30d.value == 12.8
+    assert await provider.get_performance() == {"24h": 2.4, "30d": 12.8}

@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 # Límites diferenciados por tipo de endpoint
-_PUBLIC_PATHS = {"/api/v1/auth/login", "/api/v1/auth/register"}
+_PUBLIC_PATHS = {"/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/demo"}
 PUBLIC_MAX = 20       # 20 req/min en endpoints públicos (evita brute-force)
 AUTHED_MAX = 120      # 120 req/min para usuarios autenticados
 WINDOW_SECONDS = 60

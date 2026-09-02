@@ -98,6 +98,9 @@ export function UserMenu() {
                 {user?.email_verified === false && (
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--down)', marginTop: 3 }}>Email sin verificar</div>
                 )}
+                {user?.is_demo && (
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--primary)', marginTop: 3, fontWeight: 700 }}>Modo demostración</div>
+                )}
               </div>
             </div>
           </div>

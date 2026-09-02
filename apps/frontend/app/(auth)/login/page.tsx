@@ -27,8 +27,16 @@ function LockIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
 }
 
+function DemoIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.85 12.15 5.3-5.3"/><path d="m15 8 2 2"/><path d="m18 5 2 2"/></svg>
+}
+
+function ArrowIcon() {
+  return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+}
+
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, demoLogin } = useAuth()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,6 +44,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [showResend, setShowResend] = useState(false)
   const [resendSent, setResendSent] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
 
   // Errores que llegan por query param desde el flujo de OAuth
   useEffect(() => {
@@ -78,6 +87,19 @@ export default function LoginPage() {
     })
     setResendSent(true)
     router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+  }
+
+  async function handleDemoLogin() {
+    setError('')
+    setDemoLoading(true)
+    try {
+      await demoLogin()
+      router.push('/dashboard')
+    } catch {
+      setError('No pudimos abrir la demostración. Intentá de nuevo en unos segundos.')
+    } finally {
+      setDemoLoading(false)
+    }
   }
 
   return (
@@ -123,6 +145,25 @@ export default function LoginPage() {
           {loading ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
+
+
+      <section className={a.demoBox} aria-labelledby="demo-title">
+        <div className={a.demoHeading}>
+          <span className={a.demoKey}><DemoIcon /></span>
+          <div>
+            <h2 id="demo-title">Acceso de demostración</h2>
+            <p>Explorá una cartera completa sin conectar cuentas reales.</p>
+          </div>
+        </div>
+        <button type="button" className={a.demoCard} onClick={handleDemoLogin} disabled={demoLoading || loading}>
+          <span className={a.demoCopy}>
+            <strong>Cartera diversificada</strong>
+            <small>ARS, USD, criptomonedas, CEDEARs, acciones y bonos</small>
+            <span>{demoLoading ? 'Preparando datos…' : 'Usar cuenta demo'} <ArrowIcon /></span>
+          </span>
+          <span className={a.demoBadge}>DEMO</span>
+        </button>
+      </section>
     </AuthShell>
   )
 }
